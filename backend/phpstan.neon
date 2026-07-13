@@ -1,0 +1,36 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - vendor/mrpunyapal/peststan/extension.neon
+    - phpstan-baseline.neon
+
+parameters:
+
+    level: 5
+
+    paths:
+        - app/
+        - config/
+        - database/
+        - routes/
+        - tests/
+
+    tmpDir: storage/framework/cache/phpstan
+
+    excludePaths:
+        - .phpstorm.meta.php (?)
+        - _ide_helper.php (?)
+
+    scanFiles: []
+
+    scanDirectories: []
+
+    checkOctaneCompatibility: false
+
+    checkModelProperties: true
+
+    checkUninitializedProperties: true
+
+    checkExplicitMixedMissingReturn: false
+
+    databaseMigrationsPath:
+        - database/migrations/
