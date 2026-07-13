@@ -1,0 +1,791 @@
+# CareerPilot AI — OpenSpec project configuration
+# Place this file at: openspec/config.yaml
+# OpenSpec reads .yaml, not config.yml.
+# Update this file in the same OpenSpec change whenever a stable global decision changes.
+
+schema: spec-driven
+
+context: |
+  # DOCUMENT CONTROL
+  Project: CareerPilot AI
+  Product owner: ILYAS EL MOCH
+  Baseline: PRD version 1.4, dated 2026-07-13
+  Stage: Three-week intensive MVP / final training project
+  Primary market: Morocco first, international-ready
+  Primary audience: B2C junior technology candidates
+  Architecture: Laravel 13 API-first modular monolith plus a separate Vue 3 SPA
+
+  Product promise:
+  Create a trusted professional profile once, turn each job offer into a truthful
+  tailored application, and learn which skills the market repeatedly requests.
+
+  Authority and conflict policy:
+  - This file is the project-wide source of truth for stable product, architecture,
+    security, quality, and delivery decisions.
+  - Accepted feature requirements live under openspec/specs/.
+  - Active changes under openspec/changes/ define bounded deltas only.
+  - OpenAPI, migrations, tests, and implementation must match approved OpenSpec artifacts.
+  - The detailed reference document is CareerPilot_AI_PRD_Ilyas_El_Moch v1.4.
+  - When sources conflict, do not guess. Stop, identify the conflict, and resolve it
+    through /opsx:update or a new OpenSpec change.
+  - MUST and SHALL are mandatory. SHOULD may be deferred only with a documented reason.
+    MAY is optional or post-MVP.
+  - Requirement IDs must remain traceable from spec to task, implementation, test,
+    OpenAPI, migration, and acceptance evidence.
+
+  # PRODUCT VISION AND USERS
+  Vision: From job offer to interview — with a profile that grows with the market.
+
+  Product definition:
+  CareerPilot AI is a web career operating system for young graduates and junior
+  professionals. A candidate creates a structured master profile, imports or enters
+  evidence, adds an opportunity, receives an explainable match analysis, answers
+  targeted clarifications, generates a truthful ATS-friendly resume, tracks the
+  application, prepares for interviews, and receives a learning roadmap based on
+  recurring market gaps.
+
+  Primary persona:
+  - Junior tech candidate: bootcamp, university, or OFPPT graduate; intern, junior
+    developer, or career switcher.
+  - Needs: understand fit, tailor applications truthfully, organize applications,
+    prepare effectively, and decide what to learn next.
+  - Constraints: limited experience, time, and budget; incomplete professional
+    vocabulary; inconsistent CV quality.
+
+  Secondary MVP persona:
+  - Platform administrator.
+  - Manages users, prompt versions, quotas, failed jobs, templates, and operational health.
+  - Candidate private documents are default-denied. Support access needs a documented
+    reason and an audit event.
+
+  Future personas:
+  - Career coach.
+  - Bootcamp or university operator.
+  - Organization administrator.
+  - Recruiter or mentor with candidate-granted access.
+
+  MVP goals:
+  - Deliver one complete end-to-end candidate workflow.
+  - Demonstrate serious Laravel backend engineering and meaningful AI orchestration.
+  - Generate real editable and downloadable PDF and DOCX resumes.
+  - Provide market-aligned skill-gap analytics.
+  - Deploy a secure, observable product with seeded demonstration data.
+
+  MVP non-goals:
+  - Aggressive LinkedIn or job-board scraping.
+  - Automatic applications, browser autofill, or recruiter outreach automation.
+  - Guaranteed ATS scores or employment outcomes.
+  - Microservices, Kubernetes, multi-region operations, or premature Octane.
+  - Native mobile applications, voice interviews, enterprise dashboards, billing,
+    multi-organization tenancy, browser extensions, calendar sync, or email sync.
+
+  # NON-NEGOTIABLE PRINCIPLES
+  Truth before optimization:
+  - AI may improve wording, order, clarity, and relevance.
+  - AI must never invent a skill, project, experience, certification, achievement, or
+    factual claim.
+  - Every resume fact must be traceable to trusted profile data or confirmed evidence.
+  - Missing capabilities remain missing, uncertain, or learning.
+
+  Explainability:
+  - Scores, gaps, recommendations, extracted facts, and AI-originated values expose their
+    basis, confidence, provenance, and relevant versions.
+
+  Human approval:
+  - AI changes to the trusted profile remain proposals until the candidate approves them.
+  - Approved resume versions are immutable; later edits create a new version.
+
+  Async by default for expensive work:
+  - CV parsing, job analysis, company research, AI generation, exports, and roadmap
+    recalculation use queues.
+
+  Privacy and security by design:
+  - Candidate data is private by default.
+  - Apply least privilege, minimization, retention, authorization-checked downloads,
+    redacted logs, and audit events.
+
+  Architecture discipline:
+  - Use a modular monolith for the MVP.
+  - Keep domain boundaries explicit.
+  - Prefer first-party Laravel/Vue capabilities and mature dependencies.
+  - Do not add a package, table, service, or abstraction without a concrete requirement
+    and an owning module.
+
+  # FUNCTIONAL REQUIREMENT CATALOG
+  Identity and account lifecycle:
+  - AUTH-001: Register with name, email, and password; email verification is required
+    before AI or export features.
+  - AUTH-002: Use Laravel Sanctum first-party SPA cookie authentication.
+  - AUTH-003: Support login, logout, password reset, session revocation, and secure
+    remember-me behavior.
+  - AUTH-004: Rate-limit authentication and password-reset endpoints by account and IP.
+  - AUTH-005: Expose current user and profile-completion state at /api/v1/me.
+  - AUTH-006: Support audited asynchronous account export and deletion.
+
+  Master profile:
+  - PROF-001: One active master profile per candidate with version and locale metadata.
+  - PROF-002: Headline, summary, contact links, preferred roles, locations, and remote
+    preference.
+  - PROF-003: CRUD education, training, experience, projects, certifications, languages,
+    and achievements.
+  - PROF-004: Profile items include source, confidence, verification state, and timestamps.
+  - PROF-005: AI-originated changes remain proposed until explicit approval.
+  - PROF-006: Preserve enough history to explain which resume used which profile data.
+
+  Skills and evidence:
+  - SKILL-001: Normalized skill catalog with aliases and categories.
+  - SKILL-002: Candidate skill states are claimed, verified, learning, rejected, archived.
+  - SKILL-003: Verified skills should reference project, experience, training,
+    certification, or repository evidence.
+  - SKILL-004: AI cannot promote a skill to verified without explicit confirmation.
+  - SKILL-005: Proficiency and evidence strength are separate concepts.
+  - SKILL-006: Normalize aliases without losing original wording.
+
+  CV ingestion:
+  - CVIN-001: Accept PDF/DOCX within configured size and MIME-signature limits.
+  - CVIN-002: Store privately with generated names and scan status.
+  - CVIN-003: Queue extraction and AI structuring; make operations idempotent.
+  - CVIN-004: Show confidence and source-page references when available.
+  - CVIN-005: Candidate accepts, edits, or rejects items before profile merge.
+  - CVIN-006: Safe failures expose controlled codes and allow retry or manual entry.
+
+  Opportunity ingestion:
+  - JOB-001: Add through pasted text, PDF/DOCX, image fallback, or permitted public URL.
+  - JOB-002: URL fetch enforces SSRF protection, redirect, type, size, and timeout limits.
+  - JOB-003: If fetch is blocked or disallowed, require paste/upload fallback.
+  - JOB-004: Extract title, company, location, contract, seniority, responsibilities,
+    skills, languages, education, salary, and deadline when present.
+  - JOB-005: Every requirement stores importance, confidence, source, and evidence snippet.
+  - JOB-006: Version original content and normalized analyses.
+
+  Company research:
+  - COMP-001: Create/reuse companies by normalized name and website domain.
+  - COMP-002: Store permitted source URL, title, retrieval date, and claims.
+  - COMP-003: Separate confirmed facts, inference, and unavailable information.
+  - COMP-004: Provide company summary, role context, talking points, and questions.
+  - COMP-005: Refresh research without overwriting historical context.
+
+  Matching and clarification:
+  - MATCH-001: Final numeric score is deterministic Laravel code, never direct LLM output.
+  - MATCH-002: Expose category scores, matches, uncertain items, gaps, and suggestions.
+  - MATCH-003: AI classification/normalization must pass schema and business validation.
+  - MATCH-004: High-impact uncertainty creates clarification questions, not silent changes.
+  - MATCH-005: Profile-changing answers require evidence or explicit no-evidence acknowledgement.
+  - MATCH-006: Every recomputation creates a snapshot linked to exact source versions.
+
+  Resume tailoring and export:
+  - RES-001: Generate from trusted profile data, selected analysis, and template.
+  - RES-002: Improve truthful content without inventing facts.
+  - RES-003: Candidate edits before approval.
+  - RES-004: Approved versions are immutable.
+  - RES-005: Export ATS-safe PDF/DOCX with template, generator version, and checksum.
+  - RES-006: Application retains the exact sent resume and optional letter/email version.
+
+  Application tracking:
+  - APP-001: Opportunity may become an application when marked ready/applied.
+  - APP-002: States are saved, analyzing, ready_to_apply, applied, hr_screening,
+    interview_scheduled, technical_interview, final_interview, offer_received, accepted,
+    rejected, archived.
+  - APP-003: Status changes create immutable actor/timestamp/note history.
+  - APP-004: Manage contacts, notes, documents, tasks, reminders, and interviews.
+  - APP-005: Dashboard shows overdue tasks and upcoming interviews.
+  - APP-006: Store optional rejection reasons and interview feedback.
+
+  Interview preparation:
+  - INT-001: Generate from exact analysis, company snapshot, resume, and interview stage.
+  - INT-002: Include introduction, why-company, why-role, likely questions, technical
+    review, candidate questions, and checklist.
+  - INT-003: Text mock interviews ask one question at a time and store answers/feedback.
+  - INT-004: Separate communication feedback from technical correctness and mark uncertainty.
+
+  Learning roadmap:
+  - ROAD-001: Aggregate demand across active saved opportunities.
+  - ROAD-002: Rank gaps by occurrence, importance, recency, and target-role relevance.
+  - ROAD-003: Show supporting opportunity count and measurable outcome.
+  - ROAD-004: States are planned, in_progress, completed, skipped, archived.
+  - ROAD-005: Completing learning never automatically verifies a skill.
+
+  Platform operations:
+  - PLAT-001: In-app notifications for completion, exports, failures, reminders, interviews.
+  - PLAT-002: Email preferences are configurable.
+  - PLAT-003: Enforce AI/export quotas atomically.
+  - PLAT-004: Admins inspect failed jobs, retry eligible work, manage templates, and
+    activate prompt versions.
+  - PLAT-005: Sensitive admin actions produce audit events.
+
+  # CORE STATES AND RULES
+  Candidate skill states:
+  - claimed: reported by candidate but evidence is absent/unreviewed; default no for
+    critical resume claims.
+  - verified: confirmed and linked to evidence; may appear as possessed.
+  - learning: may appear only as learning/interest, never as experience.
+  - rejected: must not appear.
+  - archived: must not appear unless restored.
+
+  Default match weights:
+  - Required skills: 50 percent.
+  - Preferred skills: 20 percent.
+  - Relevant projects/evidence: 15 percent.
+  - Experience/education: 10 percent.
+  - Languages/soft skills: 5 percent.
+
+  Match factors:
+  - verified: 1.00.
+  - claimed/needs clarification: 0.50 and shown separately.
+  - learning: 0.20.
+  - missing/rejected: 0.00.
+
+  Formula:
+  overall_score = round(
+    required_skill_score * 0.50 +
+    preferred_skill_score * 0.20 +
+    evidence_relevance_score * 0.15 +
+    experience_education_score * 0.10 +
+    language_soft_skill_score * 0.05
+  )
+
+  Critical missing requirements create warnings independently of the score. Every match
+  snapshot stores scoring version, profile version, and job-analysis version.
+
+  Application transitions:
+  - Validate in a dedicated domain service/state-machine policy.
+  - saved -> analyzing.
+  - analyzing -> ready_to_apply or saved_on_failure.
+  - ready_to_apply -> applied.
+  - applied -> hr_screening or rejected.
+  - Any non-terminal state -> archived.
+  - accepted and rejected are terminal unless reopened with a documented reason.
+
+  Async states:
+  - queued.
+  - processing.
+  - needs_input.
+  - completed.
+  - failed_retryable.
+  - failed_final.
+  - cancelled.
+
+  # REPOSITORY AND ARCHITECTURE
+  Monorepo:
+  - backend/: Laravel API.
+  - frontend/: Vue SPA.
+  - openspec/: config, canonical specs, and changes.
+  - docs/: ADRs, API docs, and runbooks.
+  - infrastructure/: Nginx/deployment assets only when approved.
+  - .github/workflows/: CI.
+  - Root AGENTS.md, opencode.json, boost.json, README.md when created.
+
+  Backend baseline:
+  - PHP 8.4 and Laravel 13.
+  - API-first modular monolith.
+  - Laravel Sanctum first-party SPA cookie sessions.
+  - MySQL relational persistence.
+  - Database-backed queues for local and initial MVP.
+  - File or database cache/session initially.
+  - Laravel private local storage initially.
+  - Laravel Scheduler.
+  - Laravel AI SDK with OpenAI API as primary product AI provider.
+  - Laravel Boost as a development dependency and local MCP integration.
+
+  Backend domains:
+  - Identity, Profile, Skills, Opportunities, Matching, Resumes, Applications, Learning,
+    AI Operations, Platform.
+
+  Backend organization:
+  - app/Domain/<Domain>/{Actions,Data,Enums,Events,Policies,Services}.
+  - app/Http/Controllers/Api/V1.
+  - app/Http/Requests/Api/V1.
+  - app/Http/Resources/Api/V1.
+  - app/Support/{Audit,Idempotency,Pagination,ProblemDetails}.
+  - tests/Unit/Domain, tests/Feature/Api/V1, tests/Integration, tests/Architecture.
+
+  Backend standards:
+  - Thin controllers: authorize, validate, invoke action/service, return API Resource.
+  - Domain actions own transaction boundaries.
+  - Models own relationships and small invariants, not workflows.
+  - Use Form Requests, typed immutable DTOs, Policies, Actions/Services, and Resources.
+  - Every owned resource lookup requires authorization; route binding is not enough.
+  - Use DB transactions for multi-table business operations and dispatch jobs after commit.
+  - Async creation/export uses idempotency keys or stable operation keys.
+  - Never return Eloquent models directly.
+  - Prevent N+1 queries, select required columns, and paginate collections.
+  - Domain exceptions map to stable problem codes; never expose stack traces.
+  - Application code never calls env() directly.
+  - Queue jobs define queue, retry/backoff, timeout, uniqueness where needed, and safe failure.
+
+  Frontend baseline:
+  - Vue 3 Composition API, TypeScript strict, SFCs with <script setup lang="ts">, Vite.
+  - Vue Router with lazy routes and typed metadata.
+  - Pinia only for auth/session UI state, preferences, and cross-route drafts.
+  - TanStack Vue Query for server state, invalidation, retries, and polling.
+  - Axios with credentials/XSRF for Sanctum and centralized problem mapping.
+  - VeeValidate plus Zod, or an approved equivalent.
+  - Tailwind CSS plus accessible headless primitives and design tokens.
+  - Vitest and Vue Test Utils; Playwright for critical journeys later.
+
+  Frontend organization:
+  - src/app/{router,providers,layouts}.
+  - src/api/{client,generated,problem-details}.
+  - src/features/{auth,profile,opportunities,matching,resumes,applications,interviews,roadmap}.
+  - src/components/{ui,forms,feedback}, src/composables, src/stores, src/types, src/assets.
+
+  Frontend standards:
+  - Keep pages, queries, mutations, schemas, and components in their feature folder.
+  - Keep business rules in Laravel; composables orchestrate UI behavior.
+  - Do not copy all API data into Pinia.
+  - Every async screen has loading, empty, validation, authorization, retry, and failure states.
+  - Semantic HTML, keyboard support, focus management, labels, contrast, and screen-reader
+    announcements are mandatory.
+  - Avoid unsanitized v-html.
+  - Handle 401 and 419 globally without infinite retries.
+
+  # LOCAL DEVELOPMENT
+  Required local stack:
+  - Windows.
+  - Laravel Herd for PHP, Composer, local Nginx, and .test domains.
+  - Backend path: C:\Users\Pc\Herd\careerpilot-ai\backend.
+  - Backend URL: http://careerpilot-api.test.
+  - Frontend path: C:\Users\Pc\Herd\careerpilot-ai\frontend.
+  - Frontend dev URL: http://localhost:5173.
+  - Existing Windows database service: MySQL80.
+  - MySQL host 127.0.0.1, port 3306, database careerpilot_ai.
+  - phpMyAdmin is optional and is only a database administration interface.
+
+  Database version policy:
+  - Target architecture baseline: MySQL 8.4 LTS.
+  - Current local service is MySQL80.
+  - Do not use features unavailable locally without an approved compatibility/upgrade decision.
+  - A database upgrade is a separate environment change, not a reason to install XAMPP.
+
+  Local drivers:
+  - QUEUE_CONNECTION=database.
+  - CACHE_STORE=file or database.
+  - SESSION_DRIVER=file or database.
+
+  Forbidden substitutions:
+  - Do not install or use XAMPP, WAMP, MariaDB, SQLite, Docker, Laravel Sail, Redis,
+    Horizon, MinIO, Kubernetes, or microservices unless an approved change establishes
+    a measured need.
+  - Do not replace Herd.
+  - Do not expose secrets or commit .env files.
+  - Do not call OpenAI directly from Vue.
+
+  # API CONTRACT
+  - Base path: /api/v1.
+  - JSON UTF-8; ISO 8601 UTC timestamps; money as integer minor units plus currency.
+  - Authentication: Sanctum stateful cookie session plus CSRF; no browser auth token in
+    localStorage.
+  - Versioning: major version in URL; backward-compatible additions within v1.
+  - Errors: RFC 9457-style fields type, title, status, detail, instance, code, errors,
+    request_id.
+  - Pagination: cursor for feeds/history; page-based only when totals are necessary.
+  - Filtering/sorting: allowlisted; unknown values return validation errors.
+  - Concurrency: updated_at or explicit version on editable profile/resume data.
+  - Async: HTTP 202 plus operation resource, polling endpoint, and Location when appropriate.
+  - Traceability: accept/generate X-Request-ID and propagate through jobs/providers/exports.
+  - Documentation: OpenAPI 3.1 in repository and validated in CI.
+
+  Representative endpoints:
+  - POST /api/v1/auth/register.
+  - POST /api/v1/auth/login.
+  - DELETE /api/v1/auth/session.
+  - GET /api/v1/me.
+  - GET/PATCH /api/v1/profile.
+  - POST /api/v1/profile/imports.
+  - POST /api/v1/profile/imports/{id}/confirm.
+  - GET/POST /api/v1/skills.
+  - POST /api/v1/skills/{id}/evidence.
+  - GET/POST /api/v1/opportunities.
+  - POST /api/v1/opportunities/{id}/analyze.
+  - POST /api/v1/opportunities/{id}/company-research.
+  - POST /api/v1/opportunities/{id}/matches.
+  - POST /api/v1/clarifications/{id}/answer.
+  - POST /api/v1/opportunities/{id}/resumes.
+  - PATCH /api/v1/resumes/{id}.
+  - POST /api/v1/resumes/{id}/approve.
+  - POST /api/v1/resumes/{id}/exports.
+  - GET/PATCH /api/v1/applications/{id}.
+  - POST /api/v1/applications/{id}/transitions.
+  - POST /api/v1/interviews/{id}/preparation-packs.
+  - GET /api/v1/roadmap.
+  - POST /api/v1/roadmap/recalculate.
+  - GET /api/v1/operations/{id}.
+
+  Rate-limit baseline:
+  - Login/password reset: 5 attempts/minute per account identifier plus IP controls.
+  - Authenticated reads: 120/minute/user.
+  - General writes: 60/minute/user.
+  - URL ingestion: 10/hour/user; concurrency 2.
+  - AI: plan quota plus initial burst of 5 queued operations/10 minutes.
+  - Exports: 10/hour/user; deduplicate identical exports.
+
+  # DATABASE DESIGN
+  Principles:
+  - InnoDB, utf8mb4, foreign keys, strict SQL mode.
+  - Normalize core business data.
+  - JSON only for bounded versioned provider payloads or flexible content not heavily queried.
+  - Index every foreign key and frequent filter/sort combination; verify with EXPLAIN.
+  - Use unique constraints for invariants.
+  - Store UTC timestamps.
+  - Prefer PHP enums stored as strings rather than MySQL ENUM.
+  - Use soft deletes only when recovery/audit value exists.
+  - Use one identifier convention consistently; use ULIDs for external identifiers when adopted.
+
+  Planned tables:
+  - Identity: users, candidate_profiles, candidate_preferences, sessions,
+    password_reset_tokens.
+  - Profile: educations, experiences, projects, project_links, certifications, languages,
+    achievements.
+  - Skills: skills, skill_aliases, candidate_skills, skill_evidence.
+  - CV ingestion: resume_sources, resume_imports, resume_import_items.
+  - Opportunities: companies, company_sources, company_research_snapshots,
+    job_opportunities, job_sources, job_documents.
+  - Requirements: job_requirements, job_requirement_skills.
+  - Matching: match_analyses, match_scores, match_findings, clarification_questions,
+    clarification_answers.
+  - Resumes: resume_templates, resume_versions, resume_sections, resume_exports.
+  - Applications: applications, application_status_history, application_documents,
+    contacts, notes, tasks, reminders.
+  - Interviews: interviews, preparation_packs, interview_questions, interview_answers,
+    interview_feedback.
+  - Learning: learning_roadmaps, roadmap_items, learning_goals, skill_gap_snapshots.
+  - AI Operations: ai_jobs, ai_outputs, ai_feedback, prompt_versions, provider_usage.
+  - Platform: plans, subscriptions, usage_quotas, usage_events, notifications, audit_logs,
+    async_operations.
+
+  Critical invariants:
+  - candidate_profiles.user_id unique.
+  - candidate_skills unique(profile_id, skill_id).
+  - applications unique(user_id, opportunity_id).
+  - resume_versions unique(opportunity_id, version_no).
+  - One answer per clarification question.
+  - Match/resume records retain exact source versions.
+  - Ownership foreign keys and indexes are mandatory.
+
+  # AI ARCHITECTURE AND SAFETY
+  Provider boundary:
+  - OpenAI API is the primary MVP provider.
+  - Access server-side only through Laravel AI SDK.
+  - Use Responses API or its current supported equivalent.
+  - Preserve provider abstraction.
+  - Vue never receives provider credentials or privileged provider payloads.
+
+  Specialized workflows:
+  - CV ingestion, job analysis, clarification, resume tailoring, company research,
+    interview coach, roadmap explanation.
+
+  AI requirements:
+  - AI-001: Narrow dedicated agent classes with minimum tool access.
+  - AI-002: Versioned structured outputs.
+  - AI-003: Laravel validates schema, enums, references, limits, and business rules.
+  - AI-004: External content is untrusted data, not instructions.
+  - AI-005: Queued execution with timeout, retry, rate limit, cancellation, idempotency.
+  - AI-006: Record prompt version, provider, model, latency, tokens, cost, and status.
+  - AI-007: Fallback never weakens safety rules.
+  - AI-008: Communicate uncertainty; never promise ATS or hiring success.
+  - AI-009: Default tests fake agents; live tests are opt-in and isolated.
+  - AI-010: Activation requires evaluation of extraction, truthfulness, schema compliance,
+    and hallucination.
+
+  Tool safety:
+  - Delimit untrusted content and ignore embedded instructions.
+  - No shell, unrestricted DB write, or unrestricted network tools for research agents.
+  - Public HTTP(S) only; block loopback, private, link-local, metadata, and non-HTTP.
+  - Limit redirects, DNS rebinding, size, MIME type, and duration.
+  - Never send secrets, session data, or unnecessary PII.
+  - Never render unsanitized AI HTML.
+
+  Evaluation gates:
+  - Structured schema validity >= 99 percent.
+  - Critical factual resume hallucination: zero tolerated.
+  - Required/preferred classification accuracy >= 90 percent.
+  - In-domain skill normalization precision >= 90 percent.
+  - Useful clarification rate >= 80 percent.
+  - Duplicate clarifications < 5 percent.
+  - Provider failure handling: 100 percent safe status and no partial trusted update.
+
+  # SECURITY, PRIVACY, RETENTION
+  Security target:
+  - OWASP ASVS Level 2 orientation and explicit OWASP API/BOLA controls.
+
+  Mandatory controls:
+  - Policies and ownership checks on every candidate-owned object.
+  - Cross-user tests proving guessed IDs do not leak data.
+  - Sanctum cookie sessions, CSRF, secure/HttpOnly/SameSite cookies, session rotation.
+  - Password hashing, strength rules, secure reset tokens.
+  - Allowlist validation, length limits, no privileged mass assignment.
+  - Parameterized queries and allowlisted sort/filter fields.
+  - Private file storage outside web root.
+  - Extension, MIME-signature, size validation, generated opaque names, quarantine,
+    scan-status abstraction, authorization-checked short-lived downloads.
+  - SSRF defenses on all remote fetching.
+  - Vue escaping by default; sanitized rich text; CSP before production.
+  - Secrets in environment/secret stores only; OpenAI keys server-side only.
+  - Redact CV text, phone, email, tokens, cookies, PII prompts, and keys from logs.
+  - Per-user quotas, concurrency limits, provider budgets.
+  - Lockfiles, dependency audits, and secret scanning.
+
+  Privacy:
+  - Collect only data required for career features.
+  - CNI, birthdate, and unrelated high-risk data are out of scope.
+  - Provide export, correction, and deletion workflows.
+  - Never train models on candidate content without separate explicit consent.
+  - Review Moroccan Law 09-08 and CNDP requirements before public launch.
+  - Review cross-border transfer and provider data terms before production.
+
+  Retention:
+  - CVs/exports: retain while active; individual deletion allowed; hard-delete after
+    account-deletion grace period.
+  - Job/company data: retain with opportunity/application; delete with account unless
+    legally required.
+  - AI: retain structured result and prompt version; minimize raw provider payload retention.
+  - Application history: retain while active and include in export/deletion.
+  - Audit logs: 12 months by default with redacted metadata.
+  - Failed uploads: short quarantine then automatic deletion.
+
+  # NON-FUNCTIONAL REQUIREMENTS
+  Performance:
+  - Non-AI read p95 <= 300 ms.
+  - Non-AI write p95 <= 500 ms.
+  - Async HTTP 202 acceptance <= 500 ms after validation/commit.
+  - Dashboard initial API p95 <= 1 second.
+  - 95 percent of resume exports complete within 60 seconds.
+  - AI queue lag <= 60 seconds under expected load.
+  - Frontend LCP <= 2.5 seconds on representative mid-range conditions.
+  - Non-user-caused server error rate < 1 percent.
+  - MVP assumption: 100 active concurrent users and burst of 10 AI jobs/minute.
+
+  Availability/resilience:
+  - MVP production target 99.5 percent monthly excluding maintenance.
+  - Daily backups with tested restore; RPO 24 hours; RTO 4 hours.
+  - AI outage must not block profile/application CRUD.
+  - Bounded exponential backoff with jitter.
+  - Protect non-idempotent operations.
+  - Provider cooldown/circuit-breaker should prevent cascading failures.
+
+  Accessibility/localization:
+  - Target WCAG 2.2 AA for critical journeys.
+  - Keyboard-accessible forms, dialogs, boards, and resume editor.
+  - Visible focus and meaningful error summaries.
+  - English/French-ready architecture; Arabic/RTL may follow without redesign.
+  - Store content as Unicode utf8mb4.
+
+  # OBSERVABILITY
+  Logging:
+  - Structured JSON logs in production with request_id, safe user reference, route,
+    duration, status, and environment.
+  - Propagate request_id through jobs, providers, and exports.
+  - Never log raw CVs, passwords, cookies, keys, tokens, or full PII prompts.
+
+  Metrics:
+  - HTTP counts/latencies/errors/slow routes.
+  - Queue pending/lag/runtime/retries/failures.
+  - AI success/schema failures/latency/tokens/cost/fallback/user correction.
+  - DB connections/slow queries/locks/deadlocks/growth.
+  - Product profile completion/analyses/approvals/exports/applications/packs.
+  - Security auth failures/rate limits/rejected uploads/blocked SSRF/admin actions.
+
+  Runbooks:
+  - Provider outage/quota exhaustion.
+  - Queue backlog/stuck workers.
+  - DB restore/migration recovery.
+  - Secret rotation.
+  - Malicious upload.
+  - User export/deletion failure.
+  - Post-deployment error/latency regression.
+
+  # TESTING AND DEFINITION OF DONE
+  Backend tests:
+  - Pest/PHPUnit unit, feature, integration, contract, security, and architecture tests.
+  - MySQL constraints, database queue behavior, private storage, document exporters.
+  - BOLA, upload bypass, SSRF, rate-limit, and CSRF tests.
+  - Live OpenAI tests are opt-in, isolated, budget-limited, and excluded from normal CI.
+
+  Frontend tests:
+  - Vitest/Vue Test Utils for forms, stores, composables, errors, and accessibility.
+  - Playwright critical journey after supporting features exist.
+
+  Coverage expectations:
+  - Direct tests for 100 percent of critical business rules and authorization policies.
+  - Every OpenSpec scenario has automated coverage or documented manual verification.
+  - Initial line target >= 80 percent for domain/application code.
+
+  Quality gates:
+  - Laravel Pint, PHPStan/Larastan, Pest.
+  - ESLint, Prettier, vue-tsc, Vitest, production build.
+  - Required failures block merge.
+
+  Definition of Done:
+  - Artifacts are coherent/reviewed and implementation stays in scope.
+  - Tests and static checks pass locally and in CI.
+  - Security/privacy/data handling reviewed.
+  - Migrations, constraints, indexes, factories, rollback/forward-fix reviewed.
+  - OpenAPI and docs updated.
+  - /opsx:verify has no unresolved critical issue.
+  - Archive only after CI success and acceptance demonstration.
+
+  # CI/CD AND DEPLOYMENT
+  CI backend quality:
+  - composer validate/install, Pint --test, PHPStan/Larastan, architecture tests.
+
+  CI backend tests:
+  - MySQL service, migrations, database queue setup, Pest, coverage.
+
+  CI frontend:
+  - npm ci, ESLint, Prettier check, vue-tsc, Vitest, production build.
+
+  CI contract/security:
+  - OpenAPI lint/contract tests, current generated types, composer audit, npm audit policy,
+    secret scan, Playwright smoke on protected branch/deployment candidate.
+
+  Environments:
+  - Local: Herd, local MySQL, database queues, fake AI by default.
+  - CI: isolated ephemeral services and deterministic tests.
+  - Staging: production-like, provider sandbox/small budget, acceptance demos.
+  - Production: protected secrets, backups, monitoring, APP_DEBUG=false.
+
+  Initial deployment:
+  - One Ubuntu VM with Nginx, PHP-FPM, Laravel API, database-backed workers, Scheduler,
+    and MySQL on VM or managed service.
+  - Redis/Horizon, Docker, external object storage only after an approved measured need.
+
+  Future Azure path:
+  - App Service/Container Apps, Azure Database for MySQL, Azure Cache for Redis,
+    Blob Storage, Key Vault, centralized monitoring.
+  - This is not the initial local/MVP requirement.
+
+  # ACCEPTANCE DEMO
+  Reference candidate:
+  A junior Laravel backend developer has PHP, Laravel, MySQL, REST APIs, Sanctum, Git,
+  and queues. The target job also requests Docker, Pest, and Redis.
+
+  Acceptance criteria:
+  - AC-01: CV extraction creates reviewable proposals that the user corrects/confirms.
+  - AC-02: Job analysis identifies required/preferred skills with evidence snippets.
+  - AC-03: Match shows Laravel/MySQL/REST/queues matched, Pest uncertain, Docker/Redis missing.
+  - AC-04: System asks whether Pest was used in a named project and requests evidence.
+  - AC-05: Confirmation/evidence updates trusted skill and match snapshot.
+  - AC-06: Resume emphasizes relevant projects but does not claim Docker or Redis.
+  - AC-07: User edits, approves, and downloads valid PDF and DOCX.
+  - AC-08: Application links exact approved resume and moves to applied.
+  - AC-09: Interview date triggers preparation pack and reminder.
+  - AC-10: Roadmap ranks Docker/Redis using opportunity evidence counts.
+  - AC-11: Second user cannot access first-user objects by guessed ID.
+  - AC-12: Malicious/private-network URL is rejected.
+
+  # OPENSPEC DELIVERY
+  Workflow:
+  - One bounded demonstrable change at a time.
+  - Explore only when a material decision is unclear.
+  - Propose before implementation.
+  - Review proposal/specs/design/tasks.
+  - Update artifacts when decisions change.
+  - Apply approved tasks.
+  - Run local quality gates.
+  - Verify implementation against artifacts.
+  - Fix critical issues and rerun CI.
+  - Sync canonical specs when needed.
+  - Archive only after acceptance.
+
+  Commands:
+  - /opsx:explore, /opsx:propose, /opsx:continue, /opsx:ff, /opsx:apply,
+    /opsx:verify, /opsx:sync, /opsx:archive.
+
+  Scope control:
+  - Split work larger than one focused vertical capability.
+  - Prefer a complete happy path plus failures over many incomplete screens.
+  - Do not add unapproved infrastructure or broad unrelated refactors.
+  - Reserve final delivery time for hardening, integration, deployment, and demo.
+
+  Approved change order:
+  1. foundation-quality-baseline.
+  2. candidate-authentication.
+  3. candidate-profile-core.
+  4. skills-and-evidence.
+  5. cv-ingestion-pipeline.
+  6. job-opportunity-ingestion.
+  7. job-requirement-analysis.
+  8. company-research-brief.
+  9. deterministic-match-engine.
+  10. clarification-workflow.
+  11. resume-tailoring-versioning.
+  12. resume-pdf-docx-export.
+  13. application-tracking.
+  14. tasks-reminders-interviews.
+  15. interview-preparation.
+  16. learning-roadmap.
+  17. notifications-quotas-ai-audit.
+  18. security-observability-deployment.
+
+  # AGENT RULES
+  - OpenCode is the primary coding environment; Codex may also be used.
+  - OpenSpec defines scope/acceptance; Laravel Boost MCP supplies local Laravel context.
+  - Boost is local-development only and never receives production secrets/access.
+  - Inspect repository and current artifacts before proposing/editing.
+  - Prefer Laravel Boost project-aware documentation for Laravel work.
+  - Use the smallest change satisfying approved requirements.
+  - Never claim a test, command, migration, or verification passed unless actually run.
+  - Do not edit system configuration or install infrastructure unless scope requires it.
+  - Do not use XAMPP or replace Herd.
+  - Never expose secrets or invent requirements.
+  - Flag assumptions, conflicts, missing acceptance criteria, and security risks.
+
+rules:
+  proposal:
+    - State the problem, expected value, and why the change is needed now.
+    - Use a bounded kebab-case capability name and identify the owning domain.
+    - Include explicit in-scope and out-of-scope sections.
+    - List affected requirement IDs and acceptance criteria.
+    - Identify affected modules, frontend features, APIs, tables, queues, files, and docs.
+    - Cover authorization, privacy, validation, abuse, rate limits, and failures.
+    - State sync/async behavior and idempotency expectations.
+    - Justify every new dependency or infrastructure service.
+    - Include migration, rollout, rollback/forward-fix implications.
+    - Document risks, assumptions, unresolved decisions, and measurable success.
+    - Do not implement code during proposal generation.
+    - Do not introduce XAMPP, Docker, Sail, Redis, Horizon, MinIO, microservices, or a new provider without an approved architecture decision.
+
+  specs:
+    - Use MUST/SHALL for mandatory behavior and SHOULD/MAY intentionally.
+    - Give every requirement a stable identifier.
+    - Use Given/When/Then scenarios.
+    - Include happy path and realistic failures.
+    - Include unauthenticated, unauthorized, cross-user/BOLA, validation, rate-limit, and abuse scenarios when applicable.
+    - Include concurrency, transaction, idempotency, retry, timeout, cancellation, and partial-failure scenarios for async work.
+    - Include loading, empty, error, retry, and accessibility expectations for frontend work.
+    - State provenance, confidence, versioning, and human approval for AI-derived data.
+    - Preserve the never-invent-skills rule across profile, matching, resume, interview, and roadmap capabilities.
+    - Reference canonical specs before creating new terminology or states.
+    - Define measurable acceptance criteria and test evidence.
+    - Do not duplicate requirements owned by another capability; reference them.
+
+  design:
+    - Start with current-state inspection and list relevant files/conventions.
+    - Explain decisions and rejected alternatives.
+    - Preserve API-first modular-monolith boundaries and assign one owning domain.
+    - Define Form Requests, Policies, DTOs, Actions/Services, Resources, Events, Jobs, and transactions.
+    - Specify schema changes, foreign keys, unique constraints, indexes, deletion behavior, and migration recovery.
+    - Define API paths, contracts, status codes, problem details, pagination, filters, concurrency, and OpenAPI changes.
+    - Define state machines and invalid transitions.
+    - Define queues, idempotency, after-commit dispatch, retries, backoff, timeout, cancellation, and polling.
+    - Define Vue routes, feature folders, queries, mutations, schemas, states, accessibility, and component boundaries.
+    - Include threat analysis for ownership, CSRF, SSRF, uploads, XSS, secrets, logs, prompt injection, quotas, and admin access.
+    - Include observability, request-ID propagation, audit events, metrics, and runbook impacts.
+    - Include unit, feature, integration, contract, frontend, security, and end-to-end tests.
+    - Keep OpenAI server-side, structured, versioned, validated, queued, auditable, and provider-abstracted.
+    - Do not select a package/service without documented need and trade-offs.
+
+  tasks:
+    - Order tasks by dependency and keep them small, verifiable, and scoped.
+    - Include repository inspection and baseline tests before implementation.
+    - Separate database, backend, frontend, documentation, and CI tasks.
+    - Add migrations before dependent implementation and include constraints/indexes.
+    - Add tests with or before critical business/security implementation.
+    - Include policy and cross-user tests for every candidate-owned resource.
+    - Include fake AI and malformed-output tests for AI features.
+    - Include OpenAPI, env example, README, ADR, and runbook updates when affected.
+    - Include Pint, PHPStan/Larastan, Pest, ESLint, Prettier, vue-tsc, Vitest, and build verification as applicable.
+    - Include migration status, queue behavior, and rollback/forward-fix verification.
+    - Include /opsx:verify and resolution of all critical findings before archive.
+    - Mark complete only after implementation and verification actually pass.
+    - Do not perform unrelated cleanup, dependency upgrades, or architecture changes.
