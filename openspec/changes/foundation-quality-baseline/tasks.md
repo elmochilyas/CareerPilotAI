@@ -123,4 +123,4 @@
 - [x] 15.6 Verify no CareerPilot business feature code exists (no auth, profile, skills, matching, resumes, etc.)
 - [x] 15.7 Stage all changed files, commit, and push to `feature/foundation-quality-baseline`
 - [x] 15.8 Run `/opsx:verify` and resolve any critical findings
-- [ ] 15.9 Create pull request to main
+- [x] 15.9 Create pull request to main
