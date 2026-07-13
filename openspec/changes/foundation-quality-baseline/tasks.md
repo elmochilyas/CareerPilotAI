@@ -100,7 +100,7 @@
 
 ## 13. GitHub Actions CI
 
-- [x] 13.1 Create `.github/workflows/backend.yml` — triggers: push/PR to main; jobs: Pint, PHPStan, Pest with MySQL service
+- [x] 13.1 Create `.github/workflows/backend.yml` — triggers: push/PR to main; jobs: composer validate, Pint, PHPStan, Pest with MySQL service
 - [x] 13.2 Create `.github/workflows/frontend.yml` — triggers: push/PR to main; jobs: npm ci, ESLint, Prettier, vue-tsc, Vitest, production build
 - [x] 13.3 Verify CI workflows do not reference Redis, Docker, Sail, or Horizon
 - [x] 13.4 Create `.github/workflows/combined.yml` — orchestrates backend + frontend for a single status check
@@ -121,6 +121,6 @@
 - [x] 15.4 Verify every API response contains `X-Request-ID` header and `request_id` field (via tests + curl)
 - [x] 15.5 Verify API errors never expose internal details (test with invalid route, 405, 500 trigger)
 - [x] 15.6 Verify no CareerPilot business feature code exists (no auth, profile, skills, matching, resumes, etc.)
-- [ ] 15.7 Stage all changed files, commit, and push to `feature/foundation-quality-baseline`
-- [ ] 15.8 Run `/opsx:verify` and resolve any critical findings
+- [x] 15.7 Stage all changed files, commit, and push to `feature/foundation-quality-baseline`
+- [x] 15.8 Run `/opsx:verify` and resolve any critical findings
 - [ ] 15.9 Create pull request to main
