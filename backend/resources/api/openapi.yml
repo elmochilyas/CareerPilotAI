@@ -1,0 +1,126 @@
+openapi: 3.1.0
+info:
+  title: CareerPilot AI API
+  version: 0.1.0
+  description: |
+    Career operating system for junior candidates.
+    Base URL: `/api/v1`
+    Authentication: Laravel Sanctum first-party SPA cookie auth.
+servers:
+  - url: http://careerpilot-api.test/api/v1
+    description: Local development (Laravel Herd)
+paths:
+  /health:
+    get:
+      operationId: health-check
+      summary: Health check
+      description: Returns the current status of the API and critical services.
+      tags:
+        - Platform
+      parameters:
+        - name: X-Request-ID
+          in: header
+          schema:
+            type: string
+            format: uuid
+          required: false
+          description: Client-provided request ID. A UUID is generated when omitted.
+      responses:
+        '200':
+          description: Service is healthy.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthSuccess'
+        '500':
+          description: One or more services are unhealthy.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthSuccess'
+components:
+  schemas:
+    HealthSuccess:
+      type: object
+      description: Health check success response.
+      properties:
+        data:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [pass, fail]
+            timestamp:
+              type: string
+              format: date-time
+              description: ISO 8601 UTC timestamp.
+            services:
+              type: object
+              properties:
+                database:
+                  type: string
+                  enum: [up, down]
+          required:
+            - status
+            - timestamp
+            - services
+        request_id:
+          type: string
+          format: uuid
+          description: Request identifier for tracing.
+      required:
+        - data
+        - request_id
+    ProblemDetail:
+      type: object
+      description: RFC 9457 problem detail.
+      properties:
+        type:
+          type: string
+          format: uri
+          description: URI identifying the problem type.
+        title:
+          type: string
+          description: Short human-readable title.
+        status:
+          type: integer
+          description: HTTP status code.
+        detail:
+          type: string
+          description: Human-readable explanation.
+        instance:
+          type: string
+          format: uri
+          description: URI identifying the specific occurrence.
+        code:
+          type: string
+          description: Stable application error code.
+        errors:
+          type: object
+          description: Validation errors keyed by field.
+        request_id:
+          type: string
+          format: uuid
+          description: Request identifier for tracing.
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - instance
+        - code
+        - errors
+        - request_id
+    ValidationError:
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetail'
+        - description: 422 Validation Error
+          properties:
+            code:
+              example: validation_error
+            errors:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
