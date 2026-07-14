@@ -550,6 +550,32 @@ Before declaring a change complete, report:
 
 The following block is preserved from Laravel Boost. Do not remove, shorten, or rewrite it manually.
 
+## Database design source of truth
+
+Before creating or modifying database migrations, Eloquent models, factories,
+seeders, enums, relationships, policies, or database tests, read:
+
+- `docs/database/README.md`
+- `docs/database/MCD.md`
+- `docs/database/MLD.md`
+- `docs/database/IMPLEMENTATION_PLAN.md`
+
+The approved OpenSpec change remains the feature-level authority.
+
+When references disagree, use this order:
+
+1. Current approved OpenSpec change
+2. `docs/database/MLD.md`
+3. `docs/database/MCD.md`
+4. Existing Laravel migrations
+5. Visual diagrams
+
+Do not invent tables, columns, relationships, pivots, enums, versioning systems,
+or deletion rules that are not approved in these references.
+
+Implement only the database section owned by the active OpenSpec change.
+Do not create the entire CareerPilot schema in one change.
+
 <laravel-boost-guidelines>
 === foundation rules ===
 
