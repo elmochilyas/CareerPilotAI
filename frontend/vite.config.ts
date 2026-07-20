@@ -16,4 +16,16 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://careerpilot-api.test',
+        changeOrigin: true,
+      },
+      '/sanctum': {
+        target: 'http://careerpilot-api.test',
+        changeOrigin: true,
+      },
+    },
+  },
 })
