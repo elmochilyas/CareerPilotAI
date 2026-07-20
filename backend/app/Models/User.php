@@ -22,6 +22,14 @@ class User extends Authenticatable implements MustVerifyEmail
     /** @use HasFactory<UserFactory> */
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
+    /**
+     * @return array{
+     *     email_verified_at: 'datetime',
+     *     password: 'hashed',
+     *     role: 'App\\Domain\\Identity\\Enums\\UserRole',
+     *     account_status: 'App\\Domain\\Identity\\Enums\\UserAccountStatus',
+     * }
+     */
     protected function casts(): array
     {
         return [

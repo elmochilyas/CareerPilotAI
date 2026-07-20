@@ -2,6 +2,7 @@
 
 namespace App\Domain\Identity\Actions;
 
+use App\Domain\Identity\Enums\UserAccountStatus;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Auth;
@@ -20,7 +21,7 @@ class LoginUserAction
             ]);
         }
 
-        if ($user->account_status->value === 'suspended') {
+        if ($user->account_status === UserAccountStatus::Suspended) {
             throw new AuthorizationException(__('Account is suspended.'));
         }
 
