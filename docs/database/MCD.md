@@ -1,445 +1,428 @@
-# CareerPilot AI — MCD
+# CareerPilot AI — MCD (Modèle Conceptuel de Données)
 
-## Purpose
+## Objectif
 
-This is the approved **Modèle Conceptuel de Données** for the CareerPilot AI MVP.
+Ce document est le **Modèle Conceptuel de Données** officiel pour la version MVP de CareerPilot AI.
 
-It defines business entities, conceptual attributes, associations, cardinalities, and invariants. SQL types, FK columns, indexes, and migration syntax are defined in `MLD.md`.
+Il définit les entités métier, leurs attributs conceptuels, les associations, les cardinalités et les règles de gestion. Les types SQL, les colonnes FK et les index sont définis dans `MLD.md`.
 
-## Cardinalities
+## Conventions
 
-- `1,1`: exactly one
-- `0,1`: zero or one
-- `1,N`: one or many
-- `0,N`: zero or many
+- Noms d'entités en français, au singulier, en majuscules.
+- `#` précède l'identifiant conceptuel.
+- Les cardinalités : `1,1` (exactement un), `0,1` (zéro ou un), `1,N` (un ou plusieurs), `0,N` (zéro ou plusieurs).
+- Les verbes d'association sont à l'infinitif.
+- Aucun type SQL, ni PK/FK, ni index dans ce document.
 
-## Global invariants
-
-1. A user has at most one candidate profile.
-2. All candidate-owned data is private to its owner.
-3. AI outputs remain proposals until validated.
-4. Imported CV data never updates the trusted profile automatically.
-5. `claimed` and `verified` are different skill states.
-6. An opportunity has one current description and at most one current job analysis.
-7. Offer-description versioning is outside the MVP.
-8. Every match computation creates a new result with bounded input snapshots.
-9. A logical resume can have multiple versions.
-10. An approved resume version is immutable.
-11. A candidate has at most one application for an opportunity.
-12. Every application status transition is preserved.
-13. An application document references the exact sent file or resume export.
-14. The learning roadmap is current-state only in the MVP.
-15. Completing learning work never verifies a skill automatically.
-
----
-
-# 1. Identity, profile, skills, and CV import
+## Carte conceptuelle
 
 ```mermaid
 erDiagram
-    USER ||--o| CANDIDATE_PROFILE : owns
-    CANDIDATE_PROFILE ||--o| CANDIDATE_PREFERENCE : defines
-    CANDIDATE_PROFILE ||--o{ EDUCATION : contains
-    CANDIDATE_PROFILE ||--o{ EXPERIENCE : contains
-    CANDIDATE_PROFILE ||--o{ PROJECT : contains
-    CANDIDATE_PROFILE ||--o{ CERTIFICATION : contains
-    CANDIDATE_PROFILE ||--o{ CANDIDATE_LANGUAGE : speaks
-    CANDIDATE_PROFILE ||--o{ CANDIDATE_SKILL : owns
-    SKILL ||--o{ CANDIDATE_SKILL : identifies
-    CANDIDATE_SKILL ||--o{ SKILL_EVIDENCE : supported_by
-    USER ||--o{ STORED_FILE : owns
-    CANDIDATE_PROFILE ||--o{ CV_IMPORT : imports
-    STORED_FILE ||--o| CV_IMPORT : source_file
+    USER ||--o| CANDIDATE_PROFILE : POSSEDER
+    CANDIDATE_PROFILE ||--o{ PROFILE_ITEM : COMPOSER
+    CANDIDATE_PROFILE ||--o{ CANDIDATE_SKILL : MAITRISER
+    SKILL ||--o{ CANDIDATE_SKILL : MAITRISER
+    USER ||--o{ FILE : STOCKER
+    CANDIDATE_PROFILE ||--o{ OPPORTUNITY : SAUVEGARDER
+    COMPANY ||--o{ OPPORTUNITY : PUBLIER
+    OPPORTUNITY ||--o| OPPORTUNITY_ANALYSIS : ANALYSER
+    CANDIDATE_PROFILE ||--o{ RESUME : GENERER_RESUME
+    OPPORTUNITY ||--o{ RESUME : CIBLER
+    RESUME ||--o| FILE : EXPORTER
+    CANDIDATE_PROFILE ||--o{ APPLICATION : SOUMETTRE
+    OPPORTUNITY ||--o{ APPLICATION : CONCERNER
+    RESUME ||--o{ APPLICATION : UTILISER
+    APPLICATION ||--o{ APPLICATION_ACTIVITY : HISTORISER
+    APPLICATION_ACTIVITY ||--o| FILE : JOINDRE
+    CANDIDATE_PROFILE ||--o{ TASK : PLANIFIER
+    APPLICATION ||--o{ TASK : RATTACHER
+    CANDIDATE_PROFILE ||--o{ LEARNING_ROADMAP : GENERER_ROADMAP
+    LEARNING_ROADMAP ||--o{ ROADMAP_ITEM : CONTENIR
+    SKILL ||--o{ ROADMAP_ITEM : CIBLER_COMPETENCE
 ```
 
-## Entities and conceptual attributes
+---
+
+## 1. Entités et attributs conceptuels
 
 ### USER
-Identifier: `user_id`
+- **#user_id**
+- full_name
+- email
+- password_hash
+- email_verified_at
+- role
+- account_status
+- timezone
 
-Attributes: full name, email, password credential, email verification date, role, account status, timezone.
+**Règles :** L'email est unique. Le mot de passe n'est jamais stocké en clair.
 
-Rules: email is unique; passwords are never stored in plain text; MVP roles are candidate and admin.
+---
 
 ### CANDIDATE_PROFILE
-Identifier: `profile_id`
+- **#profile_id**
+- headline
+- professional_summary
+- phone
+- city
+- country
+- linkedin_url
+- github_url
+- portfolio_url
+- availability_status
+- target_roles
+- preferred_locations
+- work_mode
+- contract_types
+- salary_min
+- salary_max
+- languages
+- profile_completion
 
-Attributes: headline, professional summary, phone, city, country, LinkedIn URL, GitHub URL, portfolio URL, availability status, completion percentage.
+---
 
-Association: USER `(1,1)` owns CANDIDATE_PROFILE `(0,1)`.
+### PROFILE_ITEM
+- **#item_id**
+- type
+- title
+- organization
+- location
+- start_date
+- end_date
+- description
+- metadata
 
-### CANDIDATE_PREFERENCE
-Identifier: `preference_id`
+**Règles :** Le type peut être `education`, `experience`, `project` ou `certification`.
 
-Attributes: target roles, desired locations, work mode, contract types, salary range, salary currency.
-
-Association: CANDIDATE_PROFILE `(1,1)` defines CANDIDATE_PREFERENCE `(0,1)`.
-
-### EDUCATION
-Identifier: `education_id`
-
-Attributes: institution, degree, field of study, start date, end date, description, display order.
-
-Association: CANDIDATE_PROFILE `(1,1)` contains EDUCATION `(0,N)`.
-
-### EXPERIENCE
-Identifier: `experience_id`
-
-Attributes: company name, job title, employment type, location, start date, end date, current-position flag, description, display order.
-
-Association: CANDIDATE_PROFILE `(1,1)` contains EXPERIENCE `(0,N)`.
-
-### PROJECT
-Identifier: `project_id`
-
-Attributes: title, context, description, repository URL, demo URL, start date, end date, display order.
-
-Association: CANDIDATE_PROFILE `(1,1)` contains PROJECT `(0,N)`.
-
-### CERTIFICATION
-Identifier: `certification_id`
-
-Attributes: title, issuer, issue date, expiry date, credential ID, credential URL, display order.
-
-Association: CANDIDATE_PROFILE `(1,1)` contains CERTIFICATION `(0,N)`.
-
-### CANDIDATE_LANGUAGE
-Identifier: `candidate_language_id`
-
-Attributes: language, proficiency level.
-
-Association: CANDIDATE_PROFILE `(1,1)` speaks CANDIDATE_LANGUAGE `(0,N)`.
-
-Rule: one language cannot be duplicated within one profile.
+---
 
 ### SKILL
-Identifier: `skill_id`
+- **#skill_id**
+- name
+- normalized_name
+- category
+- is_active
 
-Attributes: canonical name, normalized name, category, aliases, active flag.
-
-Rule: normalized name is globally unique.
-
-### CANDIDATE_SKILL
-Identifier: `candidate_skill_id`
-
-Attributes: state, proficiency level, years of experience, last-used date.
-
-Associations:
-- CANDIDATE_PROFILE `(1,1)` owns CANDIDATE_SKILL `(0,N)`.
-- SKILL `(1,1)` identifies CANDIDATE_SKILL `(0,N)`.
-
-Rules: one profile cannot contain the same skill twice; states are `claimed`, `verified`, `learning`, `rejected`, `archived`; AI cannot set `verified`.
-
-### SKILL_EVIDENCE
-Identifier: `evidence_id`
-
-Attributes: evidence type, title, description, URL, optional file, optional project, optional experience, optional certification.
-
-Association: CANDIDATE_SKILL `(1,1)` is supported by SKILL_EVIDENCE `(0,N)`.
-
-Rule: at least one meaningful source or manual description must exist.
-
-### STORED_FILE
-Identifier: `file_id`
-
-Attributes: original filename, stored filename, disk, storage path, MIME type, extension, size, checksum, visibility, scan status, scan date.
-
-Association: USER `(1,1)` owns STORED_FILE `(0,N)`.
-
-### CV_IMPORT
-Identifier: `cv_import_id`
-
-Attributes: processing status, extracted data, reviewed data, sanitized error, processing timestamps, review date, confirmation date.
-
-Associations:
-- CANDIDATE_PROFILE `(1,1)` imports CV_IMPORT `(0,N)`.
-- STORED_FILE `(1,1)` is the source of CV_IMPORT `(0,1)`.
-
-Rules: extracted data is temporary; only candidate-confirmed items enter the trusted profile.
+**Règles :** Le nom normalisé est globalement unique.
 
 ---
 
-# 2. Companies, opportunities, analysis, and matching
+### FILE
+- **#file_id**
+- original_name
+- stored_name
+- path
+- mime_type
+- size
+- checksum
+- purpose
+- processing_status
+- extracted_data
 
-```mermaid
-erDiagram
-    CANDIDATE_PROFILE ||--o{ COMPANY : owns
-    COMPANY ||--o| COMPANY_RESEARCH : has
-    CANDIDATE_PROFILE ||--o{ OPPORTUNITY : saves
-    COMPANY o|--o{ OPPORTUNITY : publishes
-    OPPORTUNITY ||--o| JOB_ANALYSIS : analyzed_as
-    JOB_ANALYSIS ||--o{ JOB_REQUIREMENT : contains
-    SKILL o|--o{ JOB_REQUIREMENT : normalizes
-    CANDIDATE_PROFILE ||--o{ MATCH_ANALYSIS : receives
-    OPPORTUNITY ||--o{ MATCH_ANALYSIS : evaluated_for
-    JOB_ANALYSIS ||--o{ MATCH_ANALYSIS : source_analysis
-    MATCH_ANALYSIS ||--o{ MATCH_FINDING : explains
-    JOB_REQUIREMENT o|--o{ MATCH_FINDING : concerns
-    CANDIDATE_SKILL o|--o{ MATCH_FINDING : compares
-    MATCH_ANALYSIS ||--o{ CLARIFICATION : generates
-    JOB_REQUIREMENT o|--o{ CLARIFICATION : concerns
-```
+**Règles :** `purpose` identifie l'usage métier (ex. `cv_import`, `resume_generated`). Les données extraites sont temporaires ; seules les données validées par le candidat entrent dans le profil de confiance.
+
+---
 
 ### COMPANY
-Identifier: `company_id`
+- **#company_id**
+- name
+- website
+- industry
+- location
+- size_band
+- research
+- researched_at
 
-Attributes: name, normalized name, website, industry, location, size band.
+**Règles :** Les entreprises sont propres à chaque candidat dans le MVP. Une entreprise peut être partagée entre plusieurs offres.
 
-Association: CANDIDATE_PROFILE `(1,1)` owns COMPANY `(0,N)`.
-
-Rule: companies are candidate-owned in the MVP.
-
-### COMPANY_RESEARCH
-Identifier: `research_id`
-
-Attributes: status, summary, culture, activity, interview tips, sources, sanitized error, researched date.
-
-Association: COMPANY `(1,1)` has COMPANY_RESEARCH `(0,1)`.
-
-Rule: only the current research is retained.
+---
 
 ### OPPORTUNITY
-Identifier: `opportunity_id`
+- **#opportunity_id**
+- title
+- source_type
+- source_url
+- description
+- location
+- work_mode
+- contract_type
+- seniority_level
+- salary_min
+- salary_max
+- status
 
-Attributes: title, source type, source URL, description, location, work mode, contract type, seniority level, salary information, status, saved date.
-
-Associations:
-- CANDIDATE_PROFILE `(1,1)` saves OPPORTUNITY `(0,N)`.
-- COMPANY `(0,1)` publishes OPPORTUNITY `(0,N)`.
-
-Rule: the description is current state; no offer version table.
-
-### JOB_ANALYSIS
-Identifier: `analysis_id`
-
-Attributes: status, summary, confidence, notes, sanitized error, analyzed date.
-
-Association: OPPORTUNITY `(1,1)` is analyzed as JOB_ANALYSIS `(0,1)`.
-
-Rule: reanalysis replaces the current analysis transactionally.
-
-### JOB_REQUIREMENT
-Identifier: `requirement_id`
-
-Attributes: type, label, importance, confidence, required flag, structured details, display order.
-
-Associations:
-- JOB_ANALYSIS `(1,1)` contains JOB_REQUIREMENT `(0,N)`.
-- SKILL `(0,1)` normalizes JOB_REQUIREMENT `(0,N)`.
-
-### MATCH_ANALYSIS
-Identifier: `match_analysis_id`
-
-Attributes: status, overall score, scoring version, weights, profile snapshot, job snapshot, calculation date.
-
-Associations:
-- CANDIDATE_PROFILE `(1,1)` receives MATCH_ANALYSIS `(0,N)`.
-- OPPORTUNITY `(1,1)` is evaluated by MATCH_ANALYSIS `(0,N)`.
-- JOB_ANALYSIS `(1,1)` is used by MATCH_ANALYSIS `(0,N)`.
-
-Rules: each recalculation creates a new row; scoring is deterministic backend logic.
-
-### MATCH_FINDING
-Identifier: `finding_id`
-
-Attributes: finding type, status, explanation, score contribution.
-
-Associations:
-- MATCH_ANALYSIS `(1,1)` explains through MATCH_FINDING `(1,N)`.
-- JOB_REQUIREMENT `(0,1)` concerns MATCH_FINDING `(0,N)`.
-- CANDIDATE_SKILL `(0,1)` is compared in MATCH_FINDING `(0,N)`.
-
-Statuses: `matched`, `partially_matched`, `missing`, `uncertain`.
-
-### CLARIFICATION
-Identifier: `clarification_id`
-
-Attributes: question, answer, status, candidate decision, answered date.
-
-Associations:
-- MATCH_ANALYSIS `(1,1)` generates CLARIFICATION `(0,N)`.
-- JOB_REQUIREMENT `(0,1)` concerns CLARIFICATION `(0,N)`.
-
-Rule: profile changes require explicit candidate action.
+**Règles :** La description est l'état courant ; il n'existe pas de versionnage d'offre dans le MVP.
 
 ---
 
-# 3. Resumes and exports
+### OPPORTUNITY_ANALYSIS
+- **#analysis_id**
+- status
+- summary
+- match_score
+- confidence
+- requirements
+- findings
+- clarification
+- profile_snapshot
+- job_snapshot
+- scoring_version
 
-```mermaid
-erDiagram
-    CANDIDATE_PROFILE ||--o{ RESUME : owns
-    OPPORTUNITY o|--o| RESUME : targets
-    RESUME ||--|{ RESUME_VERSION : contains
-    MATCH_ANALYSIS o|--o{ RESUME_VERSION : supports
-    RESUME_VERSION ||--o{ RESUME_EXPORT : exports
-    STORED_FILE ||--o| RESUME_EXPORT : stores
-```
+**Règles :** Une nouvelle analyse remplace transactionnellement l'analyse courante. Les instantanés (snapshots) préservent la cohérence historique.
+
+---
 
 ### RESUME
-Identifier: `resume_id`
+- **#resume_id**
+- title
+- template_key
+- content
+- status
+- generated_by
+- approved_at
 
-Attributes: title, target role, template key, status.
-
-Rules: one logical tailored resume maximum per opportunity; general resumes may have no opportunity.
-
-### RESUME_VERSION
-Identifier: `resume_version_id`
-
-Attributes: version number, structured content, status, generated-by source, approval date.
-
-Rules: version number is unique within a resume; approved versions are immutable; factual claims come from trusted data.
-
-### RESUME_EXPORT
-Identifier: `resume_export_id`
-
-Attributes: format, status, sanitized error, generated date, expiry date.
-
-Rules: formats are PDF and DOCX; exports are private and authorization-protected.
+**Règles :** Un CV peut être générique (sans cible) ou ciblé vers une opportunité (au plus un CV ciblé par opportunité). Les versions approuvées sont immuables.
 
 ---
-
-# 4. Applications, tasks, and interviews
-
-```mermaid
-erDiagram
-    CANDIDATE_PROFILE ||--o{ APPLICATION : owns
-    OPPORTUNITY ||--o| APPLICATION : becomes
-    APPLICATION ||--|{ APPLICATION_STATUS_HISTORY : records
-    APPLICATION ||--o{ APPLICATION_NOTE : contains
-    APPLICATION ||--o{ APPLICATION_DOCUMENT : includes
-    RESUME_EXPORT o|--o{ APPLICATION_DOCUMENT : exact_resume
-    STORED_FILE o|--o{ APPLICATION_DOCUMENT : other_file
-    CANDIDATE_PROFILE ||--o{ TASK : owns
-    APPLICATION o|--o{ TASK : contextualizes
-    APPLICATION ||--o{ INTERVIEW : schedules
-    INTERVIEW ||--o{ PREPARATION_PACK : prepares
-    PREPARATION_PACK ||--o{ MOCK_INTERVIEW_SESSION : starts
-    MOCK_INTERVIEW_SESSION ||--|{ MOCK_INTERVIEW_TURN : contains
-```
 
 ### APPLICATION
-Identifier: `application_id`
+- **#application_id**
+- current_status
+- applied_at
+- contact_name
+- contact_email
+- contact_phone
+- next_action_at
 
-Attributes: current status, applied date, contact name, contact email, contact phone.
+**Règles :** Un candidat ne peut soumettre qu'une seule candidature par opportunité.
 
-Rule: one application maximum per candidate and opportunity.
+---
 
-### APPLICATION_STATUS_HISTORY
-Identifier: `status_history_id`
+### APPLICATION_ACTIVITY
+- **#activity_id**
+- type
+- old_status
+- new_status
+- content
+- occurred_at
 
-Attributes: previous status, new status, reason, note, actor, changed date.
+**Règles :** Les activités forment un historique chronologique immuable.
 
-Rule: immutable; created transactionally with current-status updates.
-
-### APPLICATION_NOTE
-Identifier: `note_id`
-
-Attributes: note, creation date.
-
-### APPLICATION_DOCUMENT
-Identifier: `application_document_id`
-
-Attributes: document type, label, sent date, exact resume export or exact other file.
-
-Rule: exactly one document source must be present.
+---
 
 ### TASK
-Identifier: `task_id`
+- **#task_id**
+- type
+- title
+- description
+- status
+- priority
+- scheduled_at
+- due_at
+- remind_at
+- reminder_sent_at
+- metadata
 
-Attributes: title, description, status, priority, due date, reminder date, reminder-sent date, completion date.
-
-Rules: may be general, application-related, or roadmap-related; cannot be linked to both application and roadmap item.
-
-### INTERVIEW
-Identifier: `interview_id`
-
-Attributes: stage, schedule, timezone, mode, location, meeting URL, status.
-
-### PREPARATION_PACK
-Identifier: `preparation_pack_id`
-
-Attributes: status, summary, likely questions, checklist, context snapshot, sanitized error, generated date.
-
-Rule: context snapshot preserves the job, company research, resume, and stage used.
-
-### MOCK_INTERVIEW_SESSION
-Identifier: `mock_session_id`
-
-Attributes: mode, status, start date, completion date.
-
-### MOCK_INTERVIEW_TURN
-Identifier: `mock_turn_id`
-
-Attributes: sequence number, question, answer, structured feedback.
-
-Rule: sequence number is unique within a session.
+**Règles :** Le type peut être `task`, `reminder`, `interview` ou `follow_up`. Une tâche appartient toujours à un candidat et peut optionnellement être liée à une candidature.
 
 ---
-
-# 5. Learning roadmap
-
-```mermaid
-erDiagram
-    CANDIDATE_PROFILE ||--o| LEARNING_ROADMAP : owns
-    LEARNING_ROADMAP ||--o{ ROADMAP_ITEM : contains
-    SKILL ||--o{ ROADMAP_ITEM : targets
-    ROADMAP_ITEM o|--o{ TASK : may_generate
-```
 
 ### LEARNING_ROADMAP
-Identifier: `roadmap_id`
+- **#roadmap_id**
+- title
+- status
+- generated_at
 
-Attributes: status, last calculated date.
+**Règles :** Un candidat a au plus un roadmap actif.
 
-Rule: one current roadmap maximum per candidate.
+---
 
 ### ROADMAP_ITEM
-Identifier: `roadmap_item_id`
+- **#roadmap_item_id**
+- title
+- description
+- priority
+- status
+- progress_percent
+- target_date
 
-Attributes: priority score, demand count, reason, status, progress percentage, target date.
-
-Rules: one skill maximum per roadmap; completion never verifies a skill.
-
----
-
-# 6. AI audit and notifications
-
-```mermaid
-erDiagram
-    USER ||--o{ AI_RUN : initiates
-    USER ||--o| NOTIFICATION_PREFERENCE : configures
-    USER ||--o{ NOTIFICATION : receives
-```
-
-### AI_RUN
-Identifier: `ai_run_id`
-
-Attributes: operation type, related subject, provider, model, prompt version, status, tokens, estimated cost, request ID, sanitized error, timestamps.
-
-### NOTIFICATION_PREFERENCE
-Identifier: `notification_preference_id`
-
-Attributes: email enabled, app enabled, reminders enabled, interviews enabled, application updates enabled.
-
-### NOTIFICATION
-Identifier: `notification_id`
-
-Attributes: type, channel, structured data, status, sent date, read date.
+**Règles :** Un item peut référencer au plus une compétence. Compléter un item ne vérifie pas automatiquement la compétence.
 
 ---
 
-# Excluded from the MVP model
+## 2. Associations et cardinalités
 
-- opportunity description versions;
-- profile snapshot tables;
-- company research versions;
-- scoring-rule administration;
-- resume-template administration;
-- roadmap versions;
-- generic EAV models;
-- generic async-operation hierarchy;
-- multiple reminders per task;
-- contact-management tables;
-- multiple applications for one candidate and opportunity;
-- automatic skill verification by AI.
+### POSSEDER
+- USER `(0,1)` possède CANDIDATE_PROFILE `(1,1)`
+- **Attribut d'association :** date_creation
+
+**Règle :** Un utilisateur a au plus un profil candidat. Un profil appartient toujours à un utilisateur.
+
+---
+
+### STOCKER
+- USER `(0,N)` stocke FILE `(1,1)`
+- **Attribut d'association :** date_ajout
+
+---
+
+### COMPOSER
+- CANDIDATE_PROFILE `(0,N)` compose PROFILE_ITEM `(1,1)`
+- **Attribut d'association :** ordre_affichage
+
+---
+
+### MAITRISER
+- CANDIDATE_PROFILE `(0,N)` maîtrise SKILL `(0,N)`
+- **Attributs d'association :**
+  - niveau_competence
+  - annees_experience
+  - derniere_utilisation
+  - preuves
+
+**Règle :** Cette association devient la table `candidate_skills` dans le MLD. Un profil ne peut pas contenir deux fois la même compétence.
+
+---
+
+### SAUVEGARDER
+- CANDIDATE_PROFILE `(0,N)` sauvegarde OPPORTUNITY `(1,1)`
+- **Attribut d'association :** date_sauvegarde
+
+---
+
+### PUBLIER
+- COMPANY `(0,N)` publie OPPORTUNITY `(0,1)`
+
+**Règle :** Une offre peut être publiée par une entreprise ou être sans entreprise identifiée.
+
+---
+
+### ANALYSER
+- OPPORTUNITY `(0,1)` analyse OPPORTUNITY_ANALYSIS `(1,1)`
+- **Attribut d'association :** date_analyse
+
+**Règle :** Une opportunité a au plus une analyse courante.
+
+---
+
+### GENERER_RESUME
+- CANDIDATE_PROFILE `(0,N)` génère RESUME `(1,1)`
+- **Attribut d'association :** date_generation
+
+---
+
+### CIBLER
+- OPPORTUNITY `(0,N)` cible RESUME `(0,1)`
+
+**Règle :** Un CV peut cibler une opportunité spécifique ou être générique (sans cible).
+
+---
+
+### EXPORTER
+- RESUME `(0,1)` exporte FILE `(0,1)`
+- **Attribut d'association :** date_export
+
+---
+
+### SOUMETTRE
+- CANDIDATE_PROFILE `(0,N)` soumet APPLICATION `(1,1)`
+- **Attribut d'association :** date_creation
+
+---
+
+### CONCERNER
+- OPPORTUNITY `(0,1)` concerne APPLICATION `(1,1)`
+- **Attribut d'association :** date_candidature
+
+**Règle :** Une candidature concerne exactement une opportunité. Un candidat ne peut postuler qu'une seule fois à la même opportunité.
+
+---
+
+### UTILISER
+- RESUME `(0,N)` utilise APPLICATION `(0,1)`
+- **Attribut d'association :** date_utilisation
+
+---
+
+### HISTORISER
+- APPLICATION `(0,N)` historise APPLICATION_ACTIVITY `(1,1)`
+- **Attribut d'association :** date_action
+
+**Règle :** Les activités sont immuables et enregistrées chronologiquement.
+
+---
+
+### JOINDRE
+- APPLICATION_ACTIVITY `(0,1)` joint FILE `(0,1)`
+- **Attribut d'association :** date_ajout
+
+---
+
+### PLANIFIER
+- CANDIDATE_PROFILE `(0,N)` planifie TASK `(1,1)`
+- **Attribut d'association :** date_creation
+
+---
+
+### RATTACHER
+- APPLICATION `(0,N)` rattache TASK `(0,1)`
+
+---
+
+### GENERER_ROADMAP
+- CANDIDATE_PROFILE `(0,N)` génère LEARNING_ROADMAP `(1,1)`
+- **Attribut d'association :** date_generation
+
+---
+
+### CONTENIR
+- LEARNING_ROADMAP `(1,N)` contient ROADMAP_ITEM `(1,1)`
+- **Attribut d'association :** ordre_affichage
+
+---
+
+### CIBLER_COMPETENCE
+- SKILL `(0,N)` cible ROADMAP_ITEM `(0,1)`
+
+---
+
+## 3. Règles de gestion
+
+1. Un utilisateur a au plus un profil candidat.
+2. Un profil candidat appartient toujours à un utilisateur.
+3. Un élément de profil (PROFILE_ITEM) représente un diplôme, une expérience, un projet ou une certification.
+4. Une compétence (SKILL) peut être partagée par plusieurs profils candidats.
+5. L'association MAITRISER porte le niveau de compétence, l'expérience, la dernière utilisation et les preuves.
+6. Chaque offre (OPPORTUNITY) appartient à un profil candidat.
+7. Une offre peut avoir au plus une analyse courante.
+8. Une analyse d'offre stocke des instantanés (snapshots) pour préserver la cohérence historique.
+9. Un candidat ne peut soumettre qu'une seule candidature pour la même offre.
+10. Un CV peut être générique ou ciblé vers une opportunité.
+11. Les activités de candidature forment un historique chronologique immuable.
+12. Une tâche appartient toujours à un candidat et peut optionnellement être liée à une candidature.
+13. Un roadmap contient un ou plusieurs éléments (ROADMAP_ITEM).
+14. Un élément de roadmap peut optionnellement référencer une compétence.
+15. Les fichiers (FILE) sont une infrastructure partagée ; le champ `purpose` identifie leur usage métier.
+
+---
+
+## 4. Tables écartées du modèle MVP
+
+- Versions d'offre (opportunity description versions)
+- Préférences candidates (candidate_preferences) — fusionné dans CANDIDATE_PROFILE
+- Langues (candidate_languages) — fusionné dans CANDIDATE_PROFILE
+- Éducation, Expérience, Projet, Certification (entités séparées) — fusionnés dans PROFILE_ITEM
+- Preuves de compétence (skill_evidences) — fusionné dans MAITRISER
+- Import CV (cv_imports) — remplacé par FILE avec purpose `cv_import`
+- Recherche entreprise (company_research) — fusionné dans COMPANY
+- Analyse d'offre détaillée (job_analyses, job_requirements) — fusionné dans OPPORTUNITY_ANALYSIS
+- Analyse de correspondance (match_analyses, match_findings) — fusionné dans OPPORTUNITY_ANALYSIS
+- Clarifications (clarifications) — fusionné dans OPPORTUNITY_ANALYSIS
+- Versions de CV (resume_versions) — fusionné dans RESUME via content JSON
+- Export CV (resume_exports) — fusionné via RESUME → FILE
+- Historique statut (application_status_histories) — fusionné dans APPLICATION_ACTIVITY
+- Notes (application_notes) — fusionné dans APPLICATION_ACTIVITY
+- Documents (application_documents) — fusionné dans APPLICATION_ACTIVITY
+- Entretiens (interviews) — fusionné dans TASK via type `interview`
+- Kits de préparation, simulations d'entretien, échanges — reportés
+- Notifications et préférences de notification — reportées

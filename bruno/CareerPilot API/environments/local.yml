@@ -1,0 +1,6 @@
+name: local
+variables:
+  - name: baseUrl
+    value: http://careerpilot-api.test
+  - name: frontendUrl
+    value: http://localhost:5173

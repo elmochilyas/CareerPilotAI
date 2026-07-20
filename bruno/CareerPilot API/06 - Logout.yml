@@ -1,0 +1,24 @@
+info:
+  name: 06 - Logout
+  type: http
+  seq: 6
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/api/v1/auth/logout"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+    - name: X-XSRF-TOKEN
+      value: eyJpdiI6InB5dXhoZ3pxS0VsaU1zUktvSlVpVVE9PSIsInZhbHVlIjoiMXNTM2JNNDhKWGVYSWlwNXhLN2V1RHo2NTg0UGJ1a2FLLzFKMGVEazJ1MWlOcGFhR05LbUhFMU8yVHVNVStJYkh2STlxaWl1TmQwRElWZ1hWcUhGN2R0d0dzQW9sN25QemFpVEJQUnl4YjFWdHFpZlZQdXVrU1lMQ0hjZHRSOFgiLCJtYWMiOiIxMTkwNDE3Nzg2NWJiNzM2YzJjN2QwZjUzMTJjM2I3Y2ZiMzExYmUxYmUzNWM4ZDE1ZDE2NDlmZTYzNTkxZWIxIiwidGFnIjoiIn0
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

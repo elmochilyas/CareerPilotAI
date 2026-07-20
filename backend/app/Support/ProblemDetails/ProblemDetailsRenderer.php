@@ -5,11 +5,13 @@ namespace App\Support\ProblemDetails;
 use App\Support\RequestIdContext;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -41,6 +43,14 @@ class ProblemDetailsRenderer
 
         if ($e instanceof NotFoundHttpException) {
             return $this->buildResponse(404, 'Not Found', 'The requested resource was not found.', 'not_found', [], $debug, $e);
+        }
+
+        if ($e instanceof AccessDeniedHttpException) {
+            return $this->buildResponse(403, 'Forbidden', $e->getMessage() ?: 'You are not authorized to perform this action.', 'forbidden', [], $debug, $e);
+        }
+
+        if ($e instanceof ThrottleRequestsException) {
+            return $this->buildResponse(429, 'Too Many Requests', 'Too many attempts. Please try again later.', 'too_many_requests', [], $debug, $e);
         }
 
         if ($e instanceof MethodNotAllowedHttpException) {

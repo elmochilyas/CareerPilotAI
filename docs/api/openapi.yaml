@@ -1,0 +1,346 @@
+openapi: 3.1.0
+info:
+  title: CareerPilot AI API
+  version: 0.1.0
+  description: Candidate authentication endpoints
+
+servers:
+  - url: http://careerpilot-api.test
+    description: Local development
+  - url: https://careerpilot-api.test
+    description: Local development (HTTPS)
+
+components:
+  securitySchemes:
+    sanctum:
+      type: http
+      scheme: bearer
+      description: Sanctum API token authentication (for non-SPA clients)
+    cookie:
+      type: apiKey
+      in: cookie
+      name: careerpilot_session
+      description: |
+        SPA authentication uses Laravel Sanctum cookie-based sessions.
+        The client must first fetch `GET /sanctum/csrf-cookie` to obtain
+        an XSRF-TOKEN cookie, then include `X-XSRF-TOKEN` in subsequent
+        state-changing requests.
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+        email:
+          type: string
+          format: email
+        email_verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        role:
+          type: string
+          enum: [candidate, admin]
+        account_status:
+          type: string
+          enum: [active, suspended, disabled]
+        timezone:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - full_name
+        - email
+        - role
+        - account_status
+        - timezone
+        - created_at
+        - updated_at
+
+    ProblemDetail:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+        code:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        request_id:
+          type: string
+
+paths:
+  /api/v1/auth/register:
+    post:
+      summary: Register a new candidate account
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [full_name, email, password, password_confirmation]
+              properties:
+                full_name:
+                  type: string
+                  maxLength: 150
+                email:
+                  type: string
+                  format: email
+                  maxLength: 255
+                password:
+                  type: string
+                  minLength: 8
+                password_confirmation:
+                  type: string
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/v1/auth/login:
+    post:
+      summary: Log in with email and password
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        '422':
+          description: Invalid credentials or suspended account
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/v1/auth/logout:
+    post:
+      summary: Log out the current user
+      tags: [Authentication]
+      security:
+        - cookie: []
+      responses:
+        '204':
+          description: Logged out successfully
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/v1/me:
+    get:
+      summary: Get the authenticated user's profile
+      tags: [Authentication]
+      security:
+        - cookie: []
+      responses:
+        '200':
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/v1/auth/forgot-password:
+    post:
+      summary: Request a password reset link
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '202':
+          description: Reset link sent (or not — response is the same for unknown emails)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/v1/auth/reset-password:
+    post:
+      summary: Reset password using token from email
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, token, password, password_confirmation]
+              properties:
+                email:
+                  type: string
+                  format: email
+                token:
+                  type: string
+                password:
+                  type: string
+                  minLength: 8
+                password_confirmation:
+                  type: string
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '422':
+          description: Invalid token or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/v1/email/verify/{id}/{hash}:
+    get:
+      summary: Verify email address with signed hash
+      tags: [Email Verification]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: hash
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: expires
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: signature
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Email verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: Invalid hash or expired link
+
+  /api/v1/email/verification-notification:
+    post:
+      summary: Resend the email verification notification
+      tags: [Email Verification]
+      security:
+        - cookie: []
+      responses:
+        '202':
+          description: Verification email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '200':
+          description: Email already verified
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
