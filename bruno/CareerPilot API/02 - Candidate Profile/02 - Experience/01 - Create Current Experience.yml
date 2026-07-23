@@ -1,0 +1,84 @@
+info:
+  name: 01 - Create Current Experience
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/profile/items"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "type": "experience",
+        "title": "[Bruno Test] Current Experience",
+        "organization": "Acme Corp",
+        "location": "Casablanca",
+        "start_date": "2026-01-01",
+        "is_current": true,
+        "description": "Working as a full-stack developer on the main product team.",
+        "metadata": {
+          "employment_type": "full-time"
+        }
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run 02 - CSRF Cookie first."
+          );
+        }
+
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+    - type: after-response
+      code: |-
+        test("Status code is 201", function () {
+          expect(res.getStatus()).to.equal(201);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Experience item was created", function () {
+          const body = res.getBody();
+          const item = body.data ?? body;
+
+          expect(item.type).to.equal("experience");
+          expect(item.title).to.equal("[Bruno Test] Current Experience");
+        });
+
+        test("End date is null for current experience", function () {
+          const body = res.getBody();
+          const item = body.data ?? body;
+
+          expect(item.end_date).to.equal(null);
+        });
+
+        const body = res.getBody();
+        const item = body.data ?? body;
+        bru.setVar("currentExperienceItemId", String(item.id));
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

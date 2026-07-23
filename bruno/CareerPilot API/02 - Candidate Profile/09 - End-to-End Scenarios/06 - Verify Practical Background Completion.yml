@@ -1,0 +1,56 @@
+info:
+  name: 06 - Verify Practical Background Completion
+  type: http
+  seq: 6
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/profile"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status code is 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        const body = res.getBody();
+        const profile = body.data ?? body;
+        var completionAfter = profile.profile_completion;
+        var completionBefore = parseFloat(bru.getVar("beforeCompletion") || "0");
+
+        test("Completion did not decrease", function () {
+          expect(completionAfter).to.be.at.least(completionBefore);
+        });
+
+        const practicalArea = profile.completion_details.areas.find(function (a) {
+          return a.key === "practical_background";
+        });
+
+        test("Practical background area exists with 10% available", function () {
+          expect(practicalArea).to.not.equal(undefined);
+          expect(practicalArea.available).to.equal(10);
+        });
+
+        test("Multiple experience items do not exceed 10% practical background", function () {
+          expect(practicalArea.earned).to.be.at.most(practicalArea.available);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

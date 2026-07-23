@@ -1,0 +1,59 @@
+info:
+  name: 03 - Verify Certification Completion Unchanged
+  type: http
+  seq: 3
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/profile"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status code is 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        const body = res.getBody();
+        const profile = body.data ?? body;
+        var completionAfter = profile.profile_completion;
+        var completionBefore = parseFloat(bru.getVar("beforeCompletion") || "0");
+
+        test("Completion is unchanged after adding certification", function () {
+          expect(completionAfter).to.equal(completionBefore);
+        });
+
+        test("Certification does not appear in completion_details areas", function () {
+          const areas = profile.completion_details.areas;
+          const certArea = areas.find(function (a) {
+            return a.key === "certification";
+          });
+
+          expect(certArea).to.equal(undefined);
+        });
+
+        var certs = profile.items.certification.filter(function (item) {
+          return item.title === "[Bruno Test] E2E Cert Completion";
+        });
+        test("E2E certification item exists in profile", function () {
+          expect(certs.length).to.be.at.least(1);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

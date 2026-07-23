@@ -1,0 +1,73 @@
+info:
+  name: 05 - Experience Practical Background
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/profile/items"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "type": "experience",
+        "title": "[Bruno Test] E2E Practical Background",
+        "organization": "E2E Corp",
+        "start_date": "2026-03-01",
+        "is_current": true,
+        "description": "E2E test for practical background completion weight."
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run 02 - CSRF Cookie first."
+          );
+        }
+
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+    - type: after-response
+      code: |-
+        test("Status code is 201", function () {
+          expect(res.getStatus()).to.equal(201);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Experience item was created", function () {
+          const body = res.getBody();
+          const item = body.data ?? body;
+
+          expect(item.type).to.equal("experience");
+          expect(item.title).to.equal("[Bruno Test] E2E Practical Background");
+        });
+
+        const body = res.getBody();
+        const item = body.data ?? body;
+        bru.setVar("e2eExperienceItemId", String(item.id));
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

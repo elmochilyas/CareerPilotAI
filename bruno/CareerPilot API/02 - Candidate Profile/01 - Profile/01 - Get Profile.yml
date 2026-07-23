@@ -1,0 +1,69 @@
+info:
+  name: 01 - Get Profile
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/profile"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status code is 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Profile data exists", function () {
+          const body = res.getBody();
+
+          expect(body).to.be.an("object");
+          expect(body).to.have.property("data");
+        });
+
+        test("Profile contains items groups", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile).to.have.property("items");
+          expect(profile.items).to.have.property("education");
+          expect(profile.items).to.have.property("experience");
+          expect(profile.items).to.have.property("project");
+          expect(profile.items).to.have.property("certification");
+        });
+
+        test("Completion is between 0 and 100", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile.profile_completion).to.be.at.least(0);
+          expect(profile.profile_completion).to.be.at.most(100);
+        });
+
+        test("Completion details structure is present", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile).to.have.property("completion_details");
+          expect(profile.completion_details).to.have.property("areas");
+          expect(profile.completion_details).to.have.property("missing_areas");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

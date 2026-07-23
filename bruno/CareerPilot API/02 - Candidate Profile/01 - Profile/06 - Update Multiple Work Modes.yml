@@ -1,0 +1,85 @@
+info:
+  name: 06 - Update Multiple Work Modes
+  type: http
+  seq: 6
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/profile"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "work_modes": [
+          "remote",
+          "hybrid",
+          "on_site"
+        ]
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run 02 - CSRF Cookie first."
+          );
+        }
+
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+    - type: after-response
+      code: |-
+        test("Status code is 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Work modes are returned as an array", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile.work_modes).to.be.an("array");
+        });
+
+        test("All valid work mode values were saved", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile.work_modes).to.include("remote");
+          expect(profile.work_modes).to.include("hybrid");
+          expect(profile.work_modes).to.include("on_site");
+          expect(profile.work_modes).to.have.length(3);
+        });
+
+        test("Profile completion remains between 0 and 100", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile.profile_completion).to.be.at.least(0);
+          expect(profile.profile_completion).to.be.at.most(100);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,85 @@
+info:
+  name: 05 - Update Multiple Target Roles
+  type: http
+  seq: 5
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/profile"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "target_roles": [
+          "Backend Developer",
+          "Full Stack Developer",
+          "Laravel Developer"
+        ]
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run 02 - CSRF Cookie first."
+          );
+        }
+
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+    - type: after-response
+      code: |-
+        test("Status code is 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Target roles were saved as an array", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile.target_roles).to.be.an("array");
+          expect(profile.target_roles).to.include("Backend Developer");
+          expect(profile.target_roles).to.include("Full Stack Developer");
+          expect(profile.target_roles).to.include("Laravel Developer");
+        });
+
+        test("All three target roles were preserved", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile.target_roles).to.have.length(3);
+        });
+
+        test("Profile completion remains between 0 and 100", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile.profile_completion).to.be.at.least(0);
+          expect(profile.profile_completion).to.be.at.most(100);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

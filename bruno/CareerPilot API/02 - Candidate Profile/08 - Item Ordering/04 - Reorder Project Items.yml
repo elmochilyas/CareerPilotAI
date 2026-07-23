@@ -1,0 +1,90 @@
+info:
+  name: 04 - Reorder Project Items
+  type: http
+  seq: 4
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/profile/items/reorder"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "type": "project",
+        "item_ids": [0]
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run 02 - CSRF Cookie first."
+          );
+        }
+
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+
+        const beforeStr = bru.getVar("projectIdsBefore");
+        if (!beforeStr) {
+          throw new Error("Run 03 - Get Profile For Reorder first to capture project IDs.");
+        }
+
+        const ids = JSON.parse(beforeStr);
+        const tempAId = parseInt(bru.getVar("tempProjectAId"), 10);
+        const tempBId = parseInt(bru.getVar("tempProjectBId"), 10);
+
+        const idxA = ids.indexOf(tempAId);
+        const idxB = ids.indexOf(tempBId);
+        if (idxA === -1 || idxB === -1) {
+          throw new Error("Temporary items not found in project list.");
+        }
+
+        ids[idxA] = tempBId;
+        ids[idxB] = tempAId;
+
+        req.setBody(JSON.stringify({ type: "project", item_ids: ids }));
+    - type: after-response
+      code: |-
+        test("Status code is 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Response is an array of items", function () {
+          const body = res.getBody();
+
+          expect(body.data).to.be.an("array");
+        });
+
+        const body = res.getBody();
+        const items = body.data ?? body;
+        var idsAfter = items.map(function (item) {
+          return item.id;
+        });
+        bru.setVar("projectIdsAfter", JSON.stringify(idsAfter));
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,83 @@
+info:
+  name: 04 - Update Professional Links
+  type: http
+  seq: 4
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/profile"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "linkedin_url": "https://www.linkedin.com/in/bruno-test",
+        "github_url": "https://github.com/bruno-test",
+        "portfolio_url": "https://bruno-test.dev"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run 02 - CSRF Cookie first."
+          );
+        }
+
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+    - type: after-response
+      code: |-
+        test("Status code is 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Professional links were updated", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile.linkedin_url).to.equal(
+            "https://www.linkedin.com/in/bruno-test"
+          );
+
+          expect(profile.github_url).to.equal(
+            "https://github.com/bruno-test"
+          );
+
+          expect(profile.portfolio_url).to.equal(
+            "https://bruno-test.dev"
+          );
+        });
+
+        test("Profile completion remains between 0 and 100", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile.profile_completion).to.be.at.least(0);
+          expect(profile.profile_completion).to.be.at.most(100);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

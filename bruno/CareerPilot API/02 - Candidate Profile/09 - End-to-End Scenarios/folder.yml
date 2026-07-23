@@ -1,0 +1,7 @@
+info:
+  name: 09 - End-to-End Scenarios
+  type: folder
+  seq: 9
+
+request:
+  auth: inherit

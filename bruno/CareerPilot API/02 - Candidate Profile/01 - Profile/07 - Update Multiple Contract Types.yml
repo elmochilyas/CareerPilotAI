@@ -1,0 +1,89 @@
+info:
+  name: 07 - Update Multiple Contract Types
+  type: http
+  seq: 7
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/profile"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "contract_types": [
+          "full-time",
+          "part-time",
+          "contract",
+          "internship",
+          "freelance"
+        ]
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run 02 - CSRF Cookie first."
+          );
+        }
+
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+    - type: after-response
+      code: |-
+        test("Status code is 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Contract types are returned as an array", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile.contract_types).to.be.an("array");
+        });
+
+        test("All five contract type values were saved", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile.contract_types).to.include("full-time");
+          expect(profile.contract_types).to.include("part-time");
+          expect(profile.contract_types).to.include("contract");
+          expect(profile.contract_types).to.include("internship");
+          expect(profile.contract_types).to.include("freelance");
+          expect(profile.contract_types).to.have.length(5);
+        });
+
+        test("Profile completion remains between 0 and 100", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile.profile_completion).to.be.at.least(0);
+          expect(profile.profile_completion).to.be.at.most(100);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

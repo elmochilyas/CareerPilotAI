@@ -1,0 +1,75 @@
+info:
+  name: 06 - Get Profile And Verify Experience
+  type: http
+  seq: 6
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/profile"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status code is 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Profile contains experience items", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile.items).to.have.property("experience");
+          expect(profile.items.experience).to.be.an("array");
+        });
+
+        test("Our test experience items are present", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+          const titles = profile.items.experience.map(function (item) {
+            return item.title;
+          });
+
+          expect(titles).to.include("[Bruno Test] Current Experience");
+          expect(titles).to.include("[Bruno Test] Completed Experience");
+        });
+
+        test("Current experience has null end date", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+          const item = profile.items.experience.find(function (item) {
+            return item.title === "[Bruno Test] Completed Experience";
+          });
+
+          expect(item).to.not.equal(undefined);
+          expect(item.end_date).to.equal(null);
+        });
+
+        test("Completed experience has end date set", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+          const item = profile.items.experience.find(function (item) {
+            return item.title === "[Bruno Test] Current Experience";
+          });
+
+          expect(item).to.not.equal(undefined);
+          expect(item.end_date).to.equal("2026-06-30");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

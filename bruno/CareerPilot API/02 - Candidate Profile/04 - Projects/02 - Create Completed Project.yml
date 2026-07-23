@@ -1,0 +1,86 @@
+info:
+  name: 02 - Create Completed Project
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/profile/items"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "type": "project",
+        "title": "[Bruno Test] Completed Project",
+        "organization": "Freelance",
+        "location": "Casablanca",
+        "start_date": "2025-01-01",
+        "end_date": "2025-06-30",
+        "description": "Developed an e-commerce API.",
+        "metadata": {
+          "project_url": "https://github.com/bruno-test/ecommerce",
+          "role": "Backend Developer",
+          "technologies": ["Laravel", "MySQL", "Stripe"]
+        }
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run 02 - CSRF Cookie first."
+          );
+        }
+
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+    - type: after-response
+      code: |-
+        test("Status code is 201", function () {
+          expect(res.getStatus()).to.equal(201);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Project item was created", function () {
+          const body = res.getBody();
+          const item = body.data ?? body;
+
+          expect(item.type).to.equal("project");
+          expect(item.title).to.equal("[Bruno Test] Completed Project");
+        });
+
+        test("End date is set for completed project", function () {
+          const body = res.getBody();
+          const item = body.data ?? body;
+
+          expect(item.end_date).to.equal("2025-06-30");
+        });
+
+        const body = res.getBody();
+        const item = body.data ?? body;
+        bru.setVar("completedProjectItemId", String(item.id));
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

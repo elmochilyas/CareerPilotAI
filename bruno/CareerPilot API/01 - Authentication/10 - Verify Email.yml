@@ -1,0 +1,29 @@
+info:
+  name: 10 - Verify Email
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: http://careerpilot-api.test/api/v1/email/verify/2/b28aae52878fd103902b56ae722a276d5a0e1d79?expires=1784207788&signature=a6999f95207832fbec923b1161f1fc65183aca086bda33b33d9461648f7aee6c
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  params:
+    - name: expires
+      value: "1784207788"
+      type: query
+    - name: signature
+      value: a6999f95207832fbec923b1161f1fc65183aca086bda33b33d9461648f7aee6c
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

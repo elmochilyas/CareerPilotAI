@@ -1,0 +1,74 @@
+info:
+  name: 11 - Update Valid Salary Expectations
+  type: http
+  seq: 11
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/profile"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "salary_min": 12000,
+        "salary_max": 18000
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run 02 - CSRF Cookie first."
+          );
+        }
+
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+    - type: after-response
+      code: |-
+        test("Status code is 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Salary range was saved", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(Number(profile.salary_min)).to.equal(12000);
+          expect(Number(profile.salary_max)).to.equal(18000);
+        });
+
+        test("Minimum salary does not exceed maximum salary", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(Number(profile.salary_min)).to.be.at.most(
+            Number(profile.salary_max)
+          );
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
