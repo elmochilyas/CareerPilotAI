@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
@@ -28,5 +29,11 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/email/verification-notification', [AuthController::class, 'resendVerification'])
             ->middleware('throttle:3,1');
+        Route::get('/profile', [ProfileController::class, 'show']);
+        Route::patch('/profile', [ProfileController::class, 'update']);
+        Route::post('/profile/items', [ProfileController::class, 'storeItem']);
+        Route::patch('/profile/items/reorder', [ProfileController::class, 'reorderItems']);
+        Route::patch('/profile/items/{profileItem}', [ProfileController::class, 'updateItem']);
+        Route::delete('/profile/items/{profileItem}', [ProfileController::class, 'destroyItem']);
     });
 });

@@ -10,11 +10,13 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
+/** @property-read CandidateProfile|null $candidateProfile */
 #[Fillable(['full_name', 'email', 'password', 'role', 'account_status', 'timezone'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
@@ -43,5 +45,11 @@ class User extends Authenticatable implements MustVerifyEmail
     public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
     {
         $this->notify(new ResetPassword($token));
+    }
+
+    /** @return HasOne<CandidateProfile, $this> */
+    public function candidateProfile(): HasOne
+    {
+        return $this->hasOne(CandidateProfile::class);
     }
 }
