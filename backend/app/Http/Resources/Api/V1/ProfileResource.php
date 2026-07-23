@@ -39,8 +39,6 @@ class ProfileResource extends JsonResource
             'contract_types' => $this->contract_types ?? [],
             'salary_min' => $this->salary_min,
             'salary_max' => $this->salary_max,
-            'salary_currency' => $this->salary_currency,
-            'salary_period' => $this->salary_period,
             'languages' => $this->languages ?? [],
             'profile_completion' => $completion['score'],
             'completion_details' => [
