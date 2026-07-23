@@ -1,0 +1,77 @@
+info:
+  name: 01 - Create Non-expiring Certification
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/profile/items"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "type": "certification",
+        "title": "[Bruno Test] Laravel Certification",
+        "organization": "Laravel",
+        "start_date": "2026-01-15",
+        "description": "Official Laravel certification.",
+        "metadata": {
+          "issuer": "Laravel LLC",
+          "credential_id": "LARAVEL-2026-001",
+          "credential_url": "https://verify.laravel.com/cert/LARAVEL-2026-001"
+        }
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run 02 - CSRF Cookie first."
+          );
+        }
+
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+    - type: after-response
+      code: |-
+        test("Status code is 201", function () {
+          expect(res.getStatus()).to.equal(201);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Certification item was created", function () {
+          const body = res.getBody();
+          const item = body.data ?? body;
+
+          expect(item.type).to.equal("certification");
+          expect(item.title).to.equal("[Bruno Test] Laravel Certification");
+        });
+
+        const body = res.getBody();
+        const item = body.data ?? body;
+        bru.setVar("nonExpiringCertificationItemId", String(item.id));
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,0 +1,85 @@
+info:
+  name: 08 - Update Multiple Preferred Locations
+  type: http
+  seq: 8
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/profile"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "preferred_locations": [
+          "Casablanca, Morocco",
+          "Rabat, Morocco",
+          "Remote - EMEA"
+        ]
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run 02 - CSRF Cookie first."
+          );
+        }
+
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+    - type: after-response
+      code: |-
+        test("Status code is 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Preferred locations are returned as an array", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile.preferred_locations).to.be.an("array");
+        });
+
+        test("All preferred locations were saved", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile.preferred_locations).to.include("Casablanca, Morocco");
+          expect(profile.preferred_locations).to.include("Rabat, Morocco");
+          expect(profile.preferred_locations).to.include("Remote - EMEA");
+          expect(profile.preferred_locations).to.have.length(3);
+        });
+
+        test("Profile completion remains between 0 and 100", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile.profile_completion).to.be.at.least(0);
+          expect(profile.profile_completion).to.be.at.most(100);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

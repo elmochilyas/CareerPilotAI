@@ -1,0 +1,59 @@
+info:
+  name: 05 - Verify New Ordering
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/profile"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status code is 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Profile has project items", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile.items.project).to.be.an("array");
+        });
+
+        const body = res.getBody();
+        const profile = body.data ?? body;
+        const projectItems = profile.items.project;
+        var currentIds = projectItems.map(function (item) {
+          return item.id;
+        });
+        var expectedStr = bru.getVar("projectIdsAfter");
+        if (expectedStr) {
+          var expectedIds = JSON.parse(expectedStr);
+          var match = currentIds.length === expectedIds.length &&
+                      currentIds.every(function (val, idx) {
+                        return val === expectedIds[idx];
+                      });
+          test("Order matches reordered list", function () {
+            expect(match).to.equal(true);
+          });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

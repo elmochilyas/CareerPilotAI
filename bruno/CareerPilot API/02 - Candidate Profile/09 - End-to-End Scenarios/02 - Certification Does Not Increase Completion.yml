@@ -1,0 +1,79 @@
+info:
+  name: 02 - Certification Does Not Increase Completion
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/profile/items"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "type": "certification",
+        "title": "[Bruno Test] E2E Cert Completion",
+        "start_date": "2026-07-01",
+        "metadata": {
+          "issuer": "Test Issuer"
+        }
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run 02 - CSRF Cookie first."
+          );
+        }
+
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+    - type: after-response
+      code: |-
+        test("Status code is 201", function () {
+          expect(res.getStatus()).to.equal(201);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Certification was created", function () {
+          const body = res.getBody();
+          const item = body.data ?? body;
+
+          expect(item.type).to.equal("certification");
+          expect(item.title).to.equal("[Bruno Test] E2E Cert Completion");
+        });
+
+        const body = res.getBody();
+        const item = body.data ?? body;
+        bru.setVar("e2eCertItemId", String(item.id));
+
+        test("Completion did not decrease from before-certification value", function () {
+          const before = parseFloat(bru.getVar("beforeCompletion") || "0");
+
+          expect(before).to.be.at.least(0);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

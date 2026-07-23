@@ -1,0 +1,85 @@
+info:
+  name: 01 - Create Ongoing Education
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/profile/items"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "type": "education",
+        "title": "[Bruno Test] Ongoing Education",
+        "organization": "University of Casablanca",
+        "location": "Casablanca",
+        "start_date": "2025-09-01",
+        "is_current": true,
+        "description": "Pursuing a degree in Computer Science.",
+        "metadata": {
+          "degree": "Bachelor",
+          "field": "Computer Science"
+        }
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run 02 - CSRF Cookie first."
+          );
+        }
+
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+    - type: after-response
+      code: |-
+        test("Status code is 201", function () {
+          expect(res.getStatus()).to.equal(201);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Education item was created", function () {
+          const body = res.getBody();
+          const item = body.data ?? body;
+
+          expect(item.type).to.equal("education");
+          expect(item.title).to.equal("[Bruno Test] Ongoing Education");
+        });
+
+        test("End date is null for ongoing education", function () {
+          const body = res.getBody();
+          const item = body.data ?? body;
+
+          expect(item.end_date).to.equal(null);
+        });
+
+        const body = res.getBody();
+        const item = body.data ?? body;
+        bru.setVar("ongoingEducationItemId", String(item.id));
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

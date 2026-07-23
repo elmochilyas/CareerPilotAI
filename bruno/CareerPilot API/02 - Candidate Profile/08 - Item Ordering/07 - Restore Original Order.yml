@@ -1,0 +1,87 @@
+info:
+  name: 07 - Restore Original Order
+  type: http
+  seq: 7
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/profile/items/reorder"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "type": "project",
+        "item_ids": [0]
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run 02 - CSRF Cookie first."
+          );
+        }
+
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+
+        const beforeStr = bru.getVar("projectIdsBefore");
+        if (!beforeStr) {
+          throw new Error("Run 03 first to capture original project IDs.");
+        }
+
+        req.setBody(JSON.stringify({ type: "project", item_ids: JSON.parse(beforeStr) }));
+    - type: after-response
+      code: |-
+        test("Status code is 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Response is an array of items", function () {
+          const body = res.getBody();
+
+          expect(body.data).to.be.an("array");
+        });
+
+        const body = res.getBody();
+        const items = body.data ?? body;
+        var restoredIds = items.map(function (item) {
+          return item.id;
+        });
+        var expectedStr = bru.getVar("projectIdsBefore");
+        if (expectedStr) {
+          var expectedIds = JSON.parse(expectedStr);
+          var match = restoredIds.length === expectedIds.length &&
+                      restoredIds.every(function (val, idx) {
+                        return val === expectedIds[idx];
+                      });
+          test("Original order was restored", function () {
+            expect(match).to.equal(true);
+          });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

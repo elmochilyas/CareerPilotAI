@@ -1,0 +1,85 @@
+info:
+  name: 02 - Create Completed Education
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/profile/items"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "type": "education",
+        "title": "[Bruno Test] Completed Education",
+        "organization": "ENSIAS",
+        "location": "Rabat",
+        "start_date": "2020-09-01",
+        "end_date": "2024-06-30",
+        "description": "Completed Master's degree in Software Engineering.",
+        "metadata": {
+          "degree": "Master",
+          "field": "Software Engineering"
+        }
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run 02 - CSRF Cookie first."
+          );
+        }
+
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+    - type: after-response
+      code: |-
+        test("Status code is 201", function () {
+          expect(res.getStatus()).to.equal(201);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Education item was created", function () {
+          const body = res.getBody();
+          const item = body.data ?? body;
+
+          expect(item.type).to.equal("education");
+          expect(item.title).to.equal("[Bruno Test] Completed Education");
+        });
+
+        test("End date is set for completed education", function () {
+          const body = res.getBody();
+          const item = body.data ?? body;
+
+          expect(item.end_date).to.equal("2024-06-30");
+        });
+
+        const body = res.getBody();
+        const item = body.data ?? body;
+        bru.setVar("completedEducationItemId", String(item.id));
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

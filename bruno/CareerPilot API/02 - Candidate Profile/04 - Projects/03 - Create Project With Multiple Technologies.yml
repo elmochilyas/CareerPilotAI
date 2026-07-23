@@ -1,0 +1,95 @@
+info:
+  name: 03 - Create Project With Multiple Technologies
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/profile/items"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "type": "project",
+        "title": "[Bruno Test] Multi-Tech Project",
+        "start_date": "2026-05-01",
+        "is_current": true,
+        "description": "Full-stack application with multiple technologies.",
+        "metadata": {
+          "technologies": [
+            "Laravel",
+            "Vue.js",
+            "TypeScript",
+            "Tailwind CSS",
+            "MySQL",
+            "Redis"
+          ]
+        }
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run 02 - CSRF Cookie first."
+          );
+        }
+
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+    - type: after-response
+      code: |-
+        test("Status code is 201", function () {
+          expect(res.getStatus()).to.equal(201);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Project item was created", function () {
+          const body = res.getBody();
+          const item = body.data ?? body;
+
+          expect(item.type).to.equal("project");
+          expect(item.title).to.equal("[Bruno Test] Multi-Tech Project");
+        });
+
+        test("All technologies were saved", function () {
+          const body = res.getBody();
+          const item = body.data ?? body;
+
+          expect(item.metadata.technologies).to.be.an("array");
+          expect(item.metadata.technologies).to.include("Laravel");
+          expect(item.metadata.technologies).to.include("Vue.js");
+          expect(item.metadata.technologies).to.include("TypeScript");
+          expect(item.metadata.technologies).to.include("Tailwind CSS");
+          expect(item.metadata.technologies).to.include("MySQL");
+          expect(item.metadata.technologies).to.include("Redis");
+        });
+
+        const body = res.getBody();
+        const item = body.data ?? body;
+        bru.setVar("technologyProjectItemId", String(item.id));
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

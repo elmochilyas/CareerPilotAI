@@ -1,0 +1,163 @@
+info:
+  name: 01 - Completion Weights
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/profile"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status code is 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Completion is between 0 and 100", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile.profile_completion).to.be.at.least(0);
+          expect(profile.profile_completion).to.be.at.most(100);
+        });
+
+        test("Completion details has exactly 9 areas", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+
+          expect(profile.completion_details.areas).to.be.an("array");
+          expect(profile.completion_details.areas.length).to.equal(9);
+        });
+
+        test("Education item contributes 10%", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+          const educationArea = profile.completion_details.areas.find(function (a) {
+            return a.key === "education";
+          });
+
+          expect(educationArea).to.not.equal(undefined);
+          expect(educationArea.available).to.equal(10);
+        });
+
+        test("Practical background contributes 10%", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+          const practicalArea = profile.completion_details.areas.find(function (a) {
+            return a.key === "practical_background";
+          });
+
+          expect(practicalArea).to.not.equal(undefined);
+          expect(practicalArea.available).to.equal(10);
+        });
+
+        test("Basic information contributes 10% (4+3+3)", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+          const area = profile.completion_details.areas.find(function (a) {
+            return a.key === "basic_information";
+          });
+
+          expect(area).to.not.equal(undefined);
+          expect(area.available).to.equal(10);
+        });
+
+        test("Headline contributes 10%", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+          const area = profile.completion_details.areas.find(function (a) {
+            return a.key === "headline";
+          });
+
+          expect(area).to.not.equal(undefined);
+          expect(area.available).to.equal(10);
+        });
+
+        test("Professional summary contributes 15%", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+          const area = profile.completion_details.areas.find(function (a) {
+            return a.key === "professional_summary";
+          });
+
+          expect(area).to.not.equal(undefined);
+          expect(area.available).to.equal(15);
+        });
+
+        test("Professional links contributes 10%", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+          const area = profile.completion_details.areas.find(function (a) {
+            return a.key === "professional_links";
+          });
+
+          expect(area).to.not.equal(undefined);
+          expect(area.available).to.equal(10);
+        });
+
+        test("Target roles contributes 15%", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+          const area = profile.completion_details.areas.find(function (a) {
+            return a.key === "target_roles";
+          });
+
+          expect(area).to.not.equal(undefined);
+          expect(area.available).to.equal(15);
+        });
+
+        test("Career preferences contributes 10%", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+          const area = profile.completion_details.areas.find(function (a) {
+            return a.key === "career_preferences";
+          });
+
+          expect(area).to.not.equal(undefined);
+          expect(area.available).to.equal(10);
+        });
+
+        test("Languages contributes 10%", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+          const area = profile.completion_details.areas.find(function (a) {
+            return a.key === "languages";
+          });
+
+          expect(area).to.not.equal(undefined);
+          expect(area.available).to.equal(10);
+        });
+
+        test("Total available is 100", function () {
+          const body = res.getBody();
+          const profile = body.data ?? body;
+          const totalAvailable = profile.completion_details.areas.reduce(function (sum, a) {
+            return sum + a.available;
+          }, 0);
+
+          expect(totalAvailable).to.equal(100);
+        });
+
+        const body = res.getBody();
+        const profile = body.data ?? body;
+        bru.setVar("beforeCompletion", String(profile.profile_completion));
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

@@ -1,7 +1,7 @@
 info:
   name: 03 - Login
   type: http
-  seq: 3
+  seq: 1
 
 http:
   method: POST
@@ -15,8 +15,6 @@ http:
       value: "{{frontendUrl}}"
     - name: Referer
       value: "{{frontendUrl}}/"
-    - name: X-XSRF-TOKEN
-      value: eyJpdiI6IjVQdDBLdk05TmNjbVVGMzdiTTMvRnc9PSIsInZhbHVlIjoicTlFNitjWkd4NWdCVXRtbW04Sy9mNEZ3R2VYMG9aaTBERWoxc0drcnhPVEgxQzFERnRIUW9mRnhydTIrTUU3eVdEWCsvQis5WTcwdGFWSHNXeEtxTm5EaDRscDdtWUhISk5Za3BEM0dTYkNnamdWNjhma0M4b3JwVnJtbHhGUTgiLCJtYWMiOiIzOTBmNmQwNzBlNTA1MDg0NzY3ZDg2NTMzMjJhNzU1ZWFhNmQxMDVlNzFjM2VhMTc0YTdhOTlkMzQ1MTM0OGQ1IiwidGFnIjoiIn0
   body:
     type: json
     data: |-
@@ -25,6 +23,28 @@ http:
         "password": "NewPassword123!"
       }
   auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run 02 - CSRF Cookie first."
+          );
+        }
+
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+    - type: after-response
+      code: |-
+        test("Status code is 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
 
 settings:
   encodeUrl: true

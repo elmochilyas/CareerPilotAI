@@ -1,0 +1,71 @@
+info:
+  name: 03 - Reject Experience With End Date Before Start Date
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/profile/items"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "type": "experience",
+        "title": "[Bruno Test] Bad Dates",
+        "start_date": "2026-01-01",
+        "end_date": "2025-01-01"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run 02 - CSRF Cookie first."
+          );
+        }
+
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+    - type: after-response
+      code: |-
+        test("Status code is 422", function () {
+          expect(res.getStatus()).to.equal(422);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Error code is validation_error", function () {
+          const body = res.getBody();
+
+          expect(body.code).to.equal("validation_error");
+        });
+
+        test("End date error is present", function () {
+          const body = res.getBody();
+
+          expect(body.errors).to.have.property("end_date");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

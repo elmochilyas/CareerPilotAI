@@ -1,0 +1,7 @@
+info:
+  name: 07 - Ownership and Not Found
+  type: folder
+  seq: 7
+
+request:
+  auth: inherit
