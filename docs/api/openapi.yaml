@@ -2,7 +2,10 @@ openapi: 3.1.0
 info:
   title: CareerPilot AI API
   version: 0.1.0
-  description: Candidate authentication endpoints
+  description: |
+    CareerPilot AI API — candidate profile management and authentication.
+    Base URL: `/api/v1`
+    Authentication: Laravel Sanctum first-party SPA cookie auth.
 
 servers:
   - url: http://careerpilot-api.test
@@ -88,6 +91,321 @@ components:
               type: string
         request_id:
           type: string
+
+    ProfileItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [education, experience, project, certification]
+        title:
+          type: string
+        organization:
+          type: string
+          nullable: true
+        location:
+          type: string
+          nullable: true
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        metadata:
+          type: object
+          nullable: true
+        display_order:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required: [id, type, title, display_order, created_at, updated_at]
+
+    CompletionArea:
+      type: object
+      properties:
+        key:
+          type: string
+        earned:
+          type: integer
+        available:
+          type: integer
+        complete:
+          type: boolean
+        guidance:
+          type: string
+          nullable: true
+      required: [key, earned, available, complete, guidance]
+
+    CompletionDetails:
+      type: object
+      properties:
+        areas:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompletionArea'
+        missing_areas:
+          type: array
+          items:
+            type: object
+            properties:
+              key:
+                type: string
+              guidance:
+                type: string
+            required: [key, guidance]
+      required: [areas, missing_areas]
+
+    CandidateProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          nullable: true
+        full_name:
+          type: string
+        headline:
+          type: string
+          nullable: true
+        professional_summary:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        linkedin_url:
+          type: string
+          format: uri
+          nullable: true
+        github_url:
+          type: string
+          format: uri
+          nullable: true
+        portfolio_url:
+          type: string
+          format: uri
+          nullable: true
+        availability_status:
+          type: string
+          enum: [immediately, within_2_weeks, within_month, not_looking]
+          nullable: true
+        target_roles:
+          type: array
+          items:
+            type: string
+        preferred_locations:
+          type: array
+          items:
+            type: string
+        work_mode:
+          type: string
+          enum: [remote, hybrid, on_site]
+          nullable: true
+        contract_types:
+          type: array
+          items:
+            type: string
+        salary_min:
+          type: string
+          nullable: true
+        salary_max:
+          type: string
+          nullable: true
+        languages:
+          type: array
+          items:
+            type: object
+            properties:
+              language:
+                type: string
+              proficiency:
+                type: string
+                enum: [native, fluent, advanced, intermediate, basic]
+            required: [language, proficiency]
+        profile_completion:
+          type: number
+          format: float
+        completion_details:
+          $ref: '#/components/schemas/CompletionDetails'
+        items:
+          type: object
+          properties:
+            education:
+              type: array
+              items:
+                $ref: '#/components/schemas/ProfileItem'
+            experience:
+              type: array
+              items:
+                $ref: '#/components/schemas/ProfileItem'
+            project:
+              type: array
+              items:
+                $ref: '#/components/schemas/ProfileItem'
+            certification:
+              type: array
+              items:
+                $ref: '#/components/schemas/ProfileItem'
+        created_at:
+          type: string
+          format: date-time
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+      required: [full_name, profile_completion, completion_details, items]
+
+    ProfileUpdate:
+      type: object
+      properties:
+        headline:
+          type: string
+          maxLength: 255
+          nullable: true
+        professional_summary:
+          type: string
+          maxLength: 5000
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        city:
+          type: string
+          maxLength: 100
+          nullable: true
+        country:
+          type: string
+          maxLength: 100
+          nullable: true
+        linkedin_url:
+          type: string
+          format: uri
+          maxLength: 500
+          nullable: true
+        github_url:
+          type: string
+          format: uri
+          maxLength: 500
+          nullable: true
+        portfolio_url:
+          type: string
+          format: uri
+          maxLength: 500
+          nullable: true
+        availability_status:
+          type: string
+          enum: [immediately, within_2_weeks, within_month, not_looking]
+          nullable: true
+        target_roles:
+          type: array
+          items:
+            type: string
+            maxLength: 100
+          maxItems: 10
+        preferred_locations:
+          type: array
+          items:
+            type: string
+            maxLength: 100
+          maxItems: 10
+        work_mode:
+          type: string
+          enum: [remote, hybrid, on_site]
+          nullable: true
+        contract_types:
+          type: array
+          items:
+            type: string
+            enum: [full-time, part-time, contract, internship, freelance]
+          maxItems: 5
+        salary_min:
+          type: number
+          minimum: 0
+          nullable: true
+        salary_max:
+          type: number
+          minimum: 0
+          nullable: true
+        languages:
+          type: array
+          items:
+            type: object
+            properties:
+              language:
+                type: string
+                maxLength: 50
+              proficiency:
+                type: string
+                enum: [native, fluent, advanced, intermediate, basic]
+            required: [language, proficiency]
+          maxItems: 10
+        updated_at:
+          type: string
+          format: date-time
+
+    ProfileItemInput:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [education, experience, project, certification]
+        title:
+          type: string
+          maxLength: 255
+        organization:
+          type: string
+          maxLength: 255
+          nullable: true
+        location:
+          type: string
+          maxLength: 255
+          nullable: true
+        start_date:
+          type: string
+          format: date
+          nullable: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        description:
+          type: string
+          maxLength: 5000
+          nullable: true
+        metadata:
+          type: object
+          nullable: true
+      required: [type, title]
+
+    ReorderRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [education, experience, project, certification]
+        item_ids:
+          type: array
+          items:
+            type: integer
+      required: [type, item_ids]
 
 paths:
   /api/v1/auth/register:
@@ -270,6 +588,219 @@ paths:
                     type: string
         '422':
           description: Invalid token or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/v1/profile:
+    get:
+      summary: Get the authenticated candidate's profile
+      tags: [Profile]
+      security:
+        - cookie: []
+      responses:
+        '200':
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CandidateProfile'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    patch:
+      summary: Create or update the authenticated candidate's profile
+      tags: [Profile]
+      security:
+        - cookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdate'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CandidateProfile'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '409':
+          description: Conflict — stale updated_at
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/v1/profile/items:
+    post:
+      summary: Create a new profile item
+      tags: [Profile Items]
+      security:
+        - cookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileItemInput'
+      responses:
+        '201':
+          description: Item created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ProfileItem'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/v1/profile/items/reorder:
+    patch:
+      summary: Atomically reorder profile items within a type
+      tags: [Profile Items]
+      security:
+        - cookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderRequest'
+      responses:
+        '200':
+          description: Items reordered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProfileItem'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/v1/profile/items/{profileItem}:
+    patch:
+      summary: Update a profile item
+      tags: [Profile Items]
+      security:
+        - cookie: []
+      parameters:
+        - name: profileItem
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileItemInput'
+      responses:
+        '200':
+          description: Item updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ProfileItem'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Item not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '409':
+          description: Conflict — stale updated_at
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    delete:
+      summary: Delete a profile item
+      tags: [Profile Items]
+      security:
+        - cookie: []
+      parameters:
+        - name: profileItem
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Item deleted successfully
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Item not found or not owned
           content:
             application/json:
               schema:
