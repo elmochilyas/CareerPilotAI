@@ -25,8 +25,10 @@ return new class extends Migration
             $table->index(['candidate_profile_id', 'type', 'display_order']);
         });
 
-        DB::statement("ALTER TABLE profile_items ADD CONSTRAINT profile_items_type_check CHECK (type IN ('education', 'experience', 'project', 'certification'))");
-        DB::statement('ALTER TABLE profile_items ADD CONSTRAINT profile_items_date_range_check CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date)');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement("ALTER TABLE profile_items ADD CONSTRAINT profile_items_type_check CHECK (type IN ('education', 'experience', 'project', 'certification'))");
+            DB::statement('ALTER TABLE profile_items ADD CONSTRAINT profile_items_date_range_check CHECK (end_date IS NULL OR start_date IS NULL OR end_date >= start_date)');
+        }
     }
 
     public function down(): void
