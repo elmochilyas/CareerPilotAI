@@ -32,8 +32,10 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        DB::statement('ALTER TABLE candidate_profiles ADD CONSTRAINT candidate_profiles_salary_range_check CHECK (salary_max IS NULL OR salary_min IS NULL OR salary_max >= salary_min)');
-        DB::statement('ALTER TABLE candidate_profiles ADD CONSTRAINT candidate_profiles_completion_check CHECK (profile_completion BETWEEN 0 AND 100)');
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE candidate_profiles ADD CONSTRAINT candidate_profiles_salary_range_check CHECK (salary_max IS NULL OR salary_min IS NULL OR salary_max >= salary_min)');
+            DB::statement('ALTER TABLE candidate_profiles ADD CONSTRAINT candidate_profiles_completion_check CHECK (profile_completion BETWEEN 0 AND 100)');
+        }
     }
 
     public function down(): void
