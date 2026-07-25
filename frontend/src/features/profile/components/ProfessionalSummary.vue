@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { FileText, Pencil, LoaderCircle } from '@lucide/vue'
+import { FileText, LoaderCircle } from '@lucide/vue'
 import { ref, watch } from 'vue'
 import type { CandidateProfile, ProfileUpdate } from '../types'
+import Button from '@/components/ui/Button.vue'
 
 const props = defineProps<{ profile: CandidateProfile; saving: boolean }>()
 const emit = defineEmits<{ save: [value: ProfileUpdate]; dirty: [value: boolean] }>()
@@ -37,35 +38,29 @@ function save() {
 </script>
 
 <template>
-  <section
-    class="scroll-mt-28 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-all duration-300 hover:shadow-md"
-    aria-labelledby="summary-heading"
-  >
-    <header
-      class="flex items-center justify-between gap-3 border-b border-slate-100/80 bg-gradient-to-b from-slate-50/50 to-white px-5 py-4 sm:px-6"
-    >
+  <section aria-labelledby="summary-heading">
+    <header class="flex items-center justify-between gap-3 border-b border-slate-100 py-4">
       <div class="flex items-center gap-3">
         <div
-          class="flex size-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-sm"
+          class="flex size-9 items-center justify-center rounded-lg bg-primary-100 text-primary-600"
         >
-          <FileText :size="16" stroke-width="1.5" />
+          <FileText :size="16" />
         </div>
-        <h2 id="summary-heading" class="text-base font-bold text-slate-900">
+        <h2 id="summary-heading" class="text-base font-semibold text-slate-900">
           Professional summary
         </h2>
       </div>
-      <button
+      <Button
         v-if="profile.professional_summary && !editing"
-        type="button"
-        class="flex min-h-9 cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium text-slate-500 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700 active:scale-[0.97]"
+        variant="outline"
+        size="sm"
         @click="editing = true"
       >
-        <Pencil :size="13" stroke-width="1.5" />
         Edit
-      </button>
+      </Button>
     </header>
 
-    <div class="px-5 pb-5 sm:px-6 sm:pb-6">
+    <div>
       <form v-if="editing" @submit.prevent="save">
         <label for="professional-summary" class="sr-only">Professional summary</label>
         <textarea
@@ -73,59 +68,44 @@ function save() {
           v-model="summary"
           maxlength="5000"
           rows="6"
-          class="w-full rounded-xl border border-slate-300 bg-white p-4 text-sm leading-relaxed shadow-sm transition-all focus:border-primary-400 focus:ring-2 focus:ring-primary-500/30"
+          class="w-full rounded-lg border border-slate-300 bg-white p-4 text-sm leading-relaxed shadow-sm transition-all focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
           @input="emit('dirty', true)"
         />
         <div class="mt-4 flex items-center justify-between">
-          <span class="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-500"
-            >{{ summary.length }}/5000</span
-          >
+          <span class="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-500">
+            {{ summary.length }}/5000
+          </span>
           <div class="flex gap-2">
-            <button
-              type="button"
-              class="min-h-10 cursor-pointer rounded-xl border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition-all hover:bg-slate-50 active:scale-[0.97]"
-              @click="cancel"
-            >
-              Cancel
-            </button>
-            <button
-              :disabled="saving"
-              class="min-h-10 cursor-pointer rounded-xl bg-gradient-to-br from-primary-600 to-primary-500 px-5 text-sm font-semibold text-white shadow-md shadow-primary-500/20 transition-all hover:shadow-lg hover:shadow-primary-500/30 active:scale-[0.97] disabled:opacity-60"
-            >
+            <Button variant="outline" type="button" @click="cancel"> Cancel </Button>
+            <Button type="submit" :disabled="saving">
               <span v-if="saving" class="inline-flex items-center gap-1.5">
                 <LoaderCircle :size="14" class="animate-spin" />
-                Saving…
+                Saving...
               </span>
               <span v-else>Save summary</span>
-            </button>
+            </Button>
           </div>
         </div>
       </form>
 
       <div
         v-else-if="!profile.professional_summary"
-        class="flex flex-col items-center py-12 text-center"
+        class="flex flex-col items-center py-10 text-center"
       >
-        <div
-          class="flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-primary-50 to-primary-100 shadow-inner"
-        >
-          <FileText :size="26" class="text-primary-500" stroke-width="1.3" />
+        <div class="flex size-12 items-center justify-center rounded-full bg-slate-100">
+          <FileText :size="22" class="text-slate-400" />
         </div>
-        <h3 class="mt-4 text-sm font-bold text-slate-900">Tell recruiters about yourself</h3>
-        <p class="mt-1.5 max-w-xs text-xs leading-relaxed text-slate-500">
+        <h3 class="mt-3 text-sm font-semibold text-slate-900">Tell recruiters about yourself</h3>
+        <p class="mt-1 max-w-xs text-xs text-slate-500">
           Write a brief summary of your professional background, key skills, and career goals.
         </p>
-        <button
-          type="button"
-          class="mt-5 min-h-10 cursor-pointer rounded-xl bg-gradient-to-br from-primary-600 to-primary-500 px-5 text-sm font-semibold text-white shadow-md shadow-primary-500/20 transition-all hover:shadow-lg hover:shadow-primary-500/30 active:scale-[0.97]"
-          @click="editing = true"
-        >
-          Add professional summary
-        </button>
+        <div class="mt-4">
+          <Button @click="editing = true">Add professional summary</Button>
+        </div>
       </div>
 
       <div v-else class="relative">
-        <p class="whitespace-pre-line text-sm leading-7 text-slate-700">
+        <p class="whitespace-pre-line text-sm leading-relaxed text-slate-700">
           {{ profile.professional_summary }}
         </p>
       </div>

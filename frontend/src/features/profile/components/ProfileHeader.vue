@@ -2,6 +2,8 @@
 import { MapPin, CheckCircle } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 import type { CandidateProfile, ProfileUpdate } from '../types'
+import ProgressRing from '@/components/ui/ProgressRing.vue'
+import Button from '@/components/ui/Button.vue'
 
 const props = defineProps<{ profile: CandidateProfile; saving: boolean }>()
 const emit = defineEmits<{ save: [value: ProfileUpdate]; dirty: [value: boolean] }>()
@@ -40,13 +42,6 @@ const initials = computed(
       .join('')
       .slice(0, 2)
       .toUpperCase() || '?',
-)
-
-const ringRadius = 32
-const ringCircumference = 2 * Math.PI * ringRadius
-const completionOffset = computed(
-  () =>
-    ringCircumference * (1 - Math.min(100, Math.max(0, props.profile.profile_completion)) / 100),
 )
 
 const availabilityColor: Record<string, string> = {
@@ -102,35 +97,17 @@ function scrollToSection(key: string) {
 </script>
 
 <template>
-  <header
-    class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm transition-shadow duration-300 hover:shadow-md"
-  >
-    <div
-      class="relative bg-gradient-to-br from-primary-600 via-primary-500 to-violet-500 px-6 pb-6 pt-8 sm:px-8 sm:pb-8 sm:pt-10"
-    >
-      <div
-        class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]"
-      />
-      <div
-        class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(139,92,246,0.2),transparent_50%)]"
-      />
-      <div class="relative flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-        <div class="flex items-end gap-5">
-          <div class="relative shrink-0 -mb-2">
-            <div
-              class="absolute -inset-1 rounded-full bg-gradient-to-br from-white/40 to-white/10 blur-sm"
-            />
-            <div
-              class="absolute -inset-0.5 animate-glow-pulse rounded-full bg-gradient-to-br from-white/30 to-primary-300/30"
-            />
-            <div
-              class="relative flex size-20 items-center justify-center rounded-full bg-gradient-to-br from-white/95 to-white/80 text-2xl font-bold tracking-wide text-primary-700 shadow-xl ring-4 ring-white/30 backdrop-blur-sm"
-            >
-              {{ initials }}
-            </div>
+  <header class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+    <div class="bg-primary-600 px-6 pb-6 pt-8 sm:px-8 sm:pb-8 sm:pt-10">
+      <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <div class="flex items-end gap-4">
+          <div
+            class="flex size-16 shrink-0 items-center justify-center rounded-full bg-white text-lg font-bold text-primary-700 shadow-sm ring-4 ring-white/30"
+          >
+            {{ initials }}
           </div>
           <div class="min-w-0 pb-0.5">
-            <h1 class="text-2xl font-bold tracking-tight text-white drop-shadow-sm sm:text-3xl">
+            <h1 class="text-xl font-bold text-white sm:text-2xl">
               {{ profile.full_name }}
             </h1>
             <button
@@ -140,13 +117,13 @@ function scrollToSection(key: string) {
             >
               <span
                 v-if="profile.headline"
-                class="text-sm text-white/80 hover:text-white transition-colors"
+                class="text-sm text-white/80 transition-colors hover:text-white"
               >
                 {{ profile.headline }}
               </span>
               <span
                 v-else
-                class="rounded-lg border border-dashed border-white/40 px-2.5 py-1 text-xs text-white/60 transition-all hover:border-white/70 hover:text-white/90"
+                class="rounded border border-dashed border-white/40 px-2 py-0.5 text-xs text-white/60 transition-all hover:border-white/70 hover:text-white/90"
               >
                 Add a professional headline
               </span>
@@ -155,101 +132,58 @@ function scrollToSection(key: string) {
         </div>
 
         <div class="flex items-center gap-4 shrink-0">
-          <div class="flex flex-col items-center gap-1.5" aria-label="Profile completion">
-            <div class="relative flex items-center justify-center">
-              <svg width="76" height="76" viewBox="0 0 76 76" class="-rotate-90 drop-shadow-lg">
-                <defs>
-                  <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="rgba(255,255,255,0.3)" />
-                    <stop offset="100%" stop-color="rgba(255,255,255,0.8)" />
-                  </linearGradient>
-                </defs>
-                <circle
-                  cx="38"
-                  cy="38"
-                  :r="ringRadius"
-                  fill="none"
-                  stroke="rgba(255,255,255,0.15)"
-                  stroke-width="6"
-                />
-                <circle
-                  cx="38"
-                  cy="38"
-                  :r="ringRadius"
-                  fill="none"
-                  stroke="url(#ringGradient)"
-                  stroke-width="6"
-                  stroke-linecap="round"
-                  :stroke-dasharray="ringCircumference"
-                  :stroke-dashoffset="completionOffset"
-                  class="transition-[stroke-dashoffset] duration-1000 motion-reduce:transition-none"
-                />
-              </svg>
-              <span class="absolute text-lg font-bold text-white">
-                {{ Math.round(profile.profile_completion)
-                }}<span class="text-[11px] font-normal text-white/60">%</span>
-              </span>
-            </div>
-            <span class="text-[11px] font-medium tracking-wide text-white/70"
-              >Profile strength</span
-            >
+          <div class="flex flex-col items-center gap-1" aria-label="Profile completion">
+            <ProgressRing :percentage="profile.profile_completion" :size="72" :stroke-width="6" />
+            <span class="text-xs font-medium text-white/70">Profile strength</span>
           </div>
 
-          <button
+          <Button
             v-if="firstMissingAction"
-            type="button"
-            class="min-h-11 cursor-pointer rounded-xl bg-white/20 px-5 text-sm font-semibold text-white shadow-lg shadow-black/10 backdrop-blur-sm transition-all hover:bg-white/30 active:scale-[0.97]"
+            variant="secondary"
+            size="sm"
             @click="scrollToSection(firstMissingAction.key)"
           >
             {{ firstMissingAction.action }}
-          </button>
+          </Button>
           <div
             v-else
-            class="flex items-center gap-1.5 rounded-xl bg-white/20 px-4 py-2.5 text-sm font-medium text-white shadow-sm backdrop-blur-sm"
+            class="flex items-center gap-1.5 rounded-lg bg-white/20 px-3 py-2 text-sm font-medium text-white"
           >
-            <CheckCircle :size="16" stroke-width="2.5" class="text-emerald-300" />
+            <CheckCircle :size="16" class="text-emerald-300" />
             Complete
           </div>
         </div>
       </div>
 
-      <div class="relative mt-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
+      <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
         <span
           v-if="profile.city || profile.country"
-          class="flex items-center gap-1.5 rounded-lg bg-white/15 px-2.5 py-1 text-white/80 backdrop-blur-sm"
+          class="flex items-center gap-1.5 rounded bg-white/15 px-2 py-1 text-white/80"
         >
-          <MapPin :size="13" class="text-white/60" stroke-width="1.5" />
+          <MapPin :size="13" class="text-white/60" />
           {{ [profile.city, profile.country].filter(Boolean).join(', ') || 'Location not added' }}
         </span>
-        <span
-          v-else
-          class="flex items-center gap-1.5 rounded-lg bg-white/15 px-2.5 py-1 text-white/60 backdrop-blur-sm"
-        >
-          <MapPin :size="13" class="text-white/40" stroke-width="1.5" />
+        <span v-else class="flex items-center gap-1.5 rounded bg-white/15 px-2 py-1 text-white/60">
+          <MapPin :size="13" class="text-white/40" />
           Location not added
         </span>
-        <span
-          class="flex items-center gap-1.5 rounded-lg bg-white/15 px-2.5 py-1 text-white/80 backdrop-blur-sm"
-        >
+        <span class="flex items-center gap-1.5 rounded bg-white/15 px-2 py-1 text-white/80">
           <span
-            class="inline-block size-2 rounded-full animate-pulse-dot"
+            class="inline-block size-2 rounded-full"
             :class="availabilityColor[profile.availability_status ?? ''] ?? 'bg-slate-300'"
           />
           {{ availabilityLabel[profile.availability_status ?? ''] ?? 'Availability not set' }}
         </span>
         <span
           v-if="profile.target_roles?.length"
-          class="rounded-lg bg-white/20 px-2.5 py-1 font-medium text-white backdrop-blur-sm"
+          class="rounded bg-white/20 px-2 py-1 font-medium text-white"
         >
           {{ profile.target_roles[0] }}
         </span>
       </div>
     </div>
 
-    <div
-      v-if="editing"
-      class="border-t border-slate-100 bg-gradient-to-b from-slate-50/50 to-white px-6 py-4 sm:px-8"
-    >
+    <div v-if="editing" class="border-t border-slate-100 px-6 py-4 sm:px-8">
       <form class="flex max-w-xl gap-2" @submit.prevent="save">
         <label class="sr-only" for="profile-headline">Professional headline</label>
         <div class="relative flex-1">
@@ -257,28 +191,20 @@ function scrollToSection(key: string) {
             id="profile-headline"
             v-model="headline"
             maxlength="255"
-            class="min-h-11 w-full rounded-xl border border-slate-300 bg-white px-4 pr-16 text-sm shadow-sm transition-all focus:border-primary-400 focus:ring-2 focus:ring-primary-500/30"
+            class="min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 pr-14 text-sm shadow-sm transition-all focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
             placeholder="Your professional headline"
             @input="emit('dirty', true)"
           />
           <span
-            class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-400"
-            >{{ headline.length }}/255</span
+            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"
           >
+            {{ headline.length }}/255
+          </span>
         </div>
-        <button
-          :disabled="saving"
-          class="min-h-11 cursor-pointer rounded-xl bg-gradient-to-br from-primary-600 to-primary-500 px-5 text-sm font-semibold text-white shadow-md shadow-primary-500/20 transition-all hover:shadow-lg hover:shadow-primary-500/30 active:scale-[0.97] disabled:opacity-60"
-        >
-          {{ saving ? '…' : 'Save' }}
-        </button>
-        <button
-          type="button"
-          class="min-h-11 cursor-pointer rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-600 shadow-sm transition-all hover:bg-slate-50 active:scale-[0.97]"
-          @click="cancel"
-        >
-          Cancel
-        </button>
+        <Button type="submit" :disabled="saving">
+          {{ saving ? '...' : 'Save' }}
+        </Button>
+        <Button type="button" variant="outline" @click="cancel"> Cancel </Button>
       </form>
     </div>
   </header>

@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { CheckCircle, AlertCircle, User } from '@lucide/vue'
-import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
+import { AlertCircle } from '@lucide/vue'
+import { computed, ref, watch } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import type { ProfileItem, ProfileItemInput, ProfileItemType, ProfileUpdate } from '../types'
 import { useProfile } from '../composables/useProfile'
 import ProfileHeader from '../components/ProfileHeader.vue'
-import CompletionGuidance from '../components/CompletionGuidance.vue'
 import ProfessionalSummary from '../components/ProfessionalSummary.vue'
 import ExperienceTimeline from '../components/ExperienceTimeline.vue'
 import EducationSection from '../components/EducationSection.vue'
@@ -13,6 +12,9 @@ import ProjectsSection from '../components/ProjectsSection.vue'
 import CertificationsSection from '../components/CertificationsSection.vue'
 import CareerPreferences from '../components/CareerPreferences.vue'
 import ProfessionalLinks from '../components/ProfessionalLinks.vue'
+import SkillsSection from '@/features/skills/components/SkillsSection.vue'
+import Button from '@/components/ui/Button.vue'
+import Skeleton from '@/components/ui/Skeleton.vue'
 
 const state = useProfile()
 
@@ -38,20 +40,20 @@ const remove = (item: ProfileItem) => state.deleteItemMutation.mutate(item)
 const reorder = (type: ProfileItemType, ids: number[]) =>
   state.reorderMutation.mutate({ type, ids })
 
-const successMessage = ref('')
+const toastMessage = ref('')
 let successTimer: ReturnType<typeof setTimeout> | null = null
 const toastVisible = ref(false)
 watch(
   () => state.announcement.value,
   (msg) => {
     if (!msg) return
-    successMessage.value = msg
+    toastMessage.value = msg
     toastVisible.value = true
     if (successTimer) clearTimeout(successTimer)
     successTimer = setTimeout(() => {
       toastVisible.value = false
       setTimeout(() => {
-        successMessage.value = ''
+        toastMessage.value = ''
       }, 250)
     }, 3500)
   },
@@ -63,48 +65,31 @@ onBeforeRouteLeave(
     window.confirm('You have unsaved profile changes. Leave this page?'),
 )
 
-const sections = [
-  { id: 'section-summary', label: 'Overview' },
-  { id: 'section-experience', label: 'Experience' },
-  { id: 'section-education', label: 'Education' },
-  { id: 'section-projects', label: 'Projects' },
-  { id: 'section-certifications', label: 'Certifications' },
-  { id: 'section-preferences', label: 'Career preferences' },
-  { id: 'section-links', label: 'Professional links' },
+const tabs = [
+  { id: 'about', label: 'About' },
+  { id: 'experience', label: 'Experience' },
+  { id: 'projects', label: 'Projects' },
+  { id: 'certifications', label: 'Certifications' },
+  { id: 'skills', label: 'Skills' },
 ] as const
 
-const activeSection = ref('')
-const navObserver = ref<IntersectionObserver | null>(null)
+const activeTab = ref('about')
 
-function scrollToSection(id: string) {
-  const el = document.getElementById(id)
-  if (el) {
-    const navHeight = 120
-    const top = el.getBoundingClientRect().top + window.scrollY - navHeight
-    window.scrollTo({ top, behavior: 'smooth' })
-  }
-}
-
-onMounted(() => {
-  if (typeof IntersectionObserver === 'undefined') return
-  navObserver.value = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        if (entry.isIntersecting) {
-          activeSection.value = entry.target.id
-        }
-      }
-    },
-    { rootMargin: '-130px 0px -60% 0px', threshold: 0 },
-  )
-  for (const s of sections) {
-    const el = document.getElementById(s.id)
-    if (el) navObserver.value?.observe(el)
-  }
+const completionScore = computed(() => {
+  const details = state.profile.value?.completion_details
+  if (!details) return 0
+  const total = details.areas.reduce((s, a) => s + a.available, 0)
+  const earned = details.areas.reduce((s, a) => s + a.earned, 0)
+  return total > 0 ? Math.round((earned / total) * 100) : 0
 })
 
-onUnmounted(() => {
-  navObserver.value?.disconnect()
+const completedAreas = computed(() => {
+  const details = state.profile.value?.completion_details
+  if (!details) return { completed: 0, total: 0 }
+  return {
+    completed: details.areas.filter((a) => a.complete).length,
+    total: details.areas.length,
+  }
 })
 </script>
 
@@ -115,71 +100,68 @@ onUnmounted(() => {
     <Teleport to="body">
       <Transition name="toast">
         <div
-          v-if="successMessage"
-          class="fixed right-6 top-24 z-50 max-w-sm rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-emerald-500 to-emerald-600 px-5 py-4 text-sm font-medium text-white shadow-xl shadow-emerald-500/20 backdrop-blur-sm motion-reduce:transition-none"
+          v-if="toastMessage"
+          class="fixed right-4 top-16 z-50 max-w-sm rounded-lg border border-emerald-200 bg-white px-4 py-3 shadow-lg ring-1 ring-slate-900/5"
           role="status"
         >
           <div class="flex items-center gap-3">
-            <div class="flex size-7 shrink-0 items-center justify-center rounded-full bg-white/20">
-              <CheckCircle :size="14" stroke-width="3" />
+            <div
+              class="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-100"
+            >
+              <svg
+                viewBox="0 0 16 16"
+                fill="none"
+                class="size-3.5 text-emerald-600"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="3 8 6 11 13 4" />
+              </svg>
             </div>
-            <span>{{ successMessage }}</span>
+            <span class="text-sm font-medium text-slate-800">{{ toastMessage }}</span>
           </div>
         </div>
       </Transition>
     </Teleport>
 
     <div v-if="state.isPending.value" aria-label="Loading profile" class="grid gap-6">
-      <div class="h-36 animate-shimmer rounded-2xl border border-slate-200 bg-white p-6">
-        <div class="flex items-center gap-5">
-          <div class="size-16 rounded-full bg-slate-200/60" />
-          <div class="flex-1 space-y-3">
-            <div class="h-5 w-56 rounded-md bg-slate-200/60" />
-            <div class="h-4 w-40 rounded-md bg-slate-200/60" />
-            <div class="h-3 w-64 rounded-md bg-slate-200/60" />
+      <div class="rounded-lg border border-slate-200 bg-white p-6">
+        <div class="flex items-center gap-4">
+          <Skeleton class="size-14 rounded-full" />
+          <div class="flex-1 space-y-2">
+            <Skeleton class="h-5 w-56" />
+            <Skeleton class="h-4 w-40" />
+            <Skeleton class="h-3 w-64" />
           </div>
-          <div class="size-16 rounded-full bg-slate-200/60" />
         </div>
       </div>
       <div class="flex gap-2">
-        <div v-for="n in 6" :key="n" class="h-9 w-28 animate-shimmer rounded-xl bg-slate-200/60" />
+        <Skeleton v-for="n in 5" :key="n" class="h-9 w-24" />
       </div>
-      <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div class="grid gap-6">
-          <div
-            v-for="n in 4"
-            :key="n"
-            class="h-40 animate-shimmer rounded-2xl border border-slate-100 bg-white"
-          />
-        </div>
-        <div class="h-72 animate-shimmer rounded-2xl border border-slate-100 bg-white" />
-      </div>
+      <Skeleton class="h-96 rounded-lg border border-slate-200" />
     </div>
 
     <section
       v-else-if="state.isError.value"
-      class="rounded-2xl border border-red-200/60 bg-gradient-to-br from-red-50 to-red-50/50 p-8"
+      class="rounded-lg border border-red-200 bg-red-50 p-6"
       aria-labelledby="profile-error"
     >
       <div class="flex items-start gap-4">
-        <div
-          class="flex size-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-red-100 to-red-200 shadow-inner"
-        >
-          <AlertCircle :size="22" class="text-red-600" stroke-width="1.5" />
+        <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100">
+          <AlertCircle :size="20" class="text-red-600" />
         </div>
         <div>
-          <h1 id="profile-error" class="text-lg font-bold text-red-900">
+          <h1 id="profile-error" class="text-base font-semibold text-red-900">
             We couldn't load your profile
           </h1>
-          <p class="mt-1.5 text-sm leading-relaxed text-red-700">
+          <p class="mt-1 text-sm text-red-700">
             Check your connection and try again. Your entered data has not been cleared.
           </p>
-          <button
-            class="mt-4 min-h-11 cursor-pointer rounded-xl bg-gradient-to-br from-red-600 to-red-700 px-5 text-sm font-semibold text-white shadow-lg shadow-red-600/20 transition-all hover:shadow-xl hover:shadow-red-600/30 active:scale-[0.97]"
-            @click="state.refetch()"
-          >
-            Retry
-          </button>
+          <div class="mt-3">
+            <Button variant="outline" @click="state.refetch()">Retry</Button>
+          </div>
         </div>
       </div>
     </section>
@@ -192,51 +174,83 @@ onUnmounted(() => {
         @dirty="state.markDirty('header', $event)"
       />
 
-      <nav
-        class="sticky top-0 z-30 -mx-4 mt-5 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl sm:-mx-6 lg:-mx-8 lg:mt-6"
-        aria-label="Profile sections"
+      <!-- Completion progress bar -->
+      <div
+        class="mt-6 flex items-center gap-4 rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm"
       >
-        <div class="flex flex-wrap gap-x-0.5 gap-y-0.5 px-4 sm:px-6 lg:px-8">
-          <button
-            v-for="s in sections"
-            :key="s.id"
-            type="button"
-            class="relative min-h-12 whitespace-nowrap px-3.5 text-sm font-medium transition-all duration-300"
-            :class="
-              activeSection === s.id ? 'text-primary-700' : 'text-slate-400 hover:text-slate-700'
-            "
-            @click="scrollToSection(s.id)"
+        <div class="flex items-center gap-3 min-w-0 flex-1">
+          <div class="relative flex shrink-0 items-center justify-center">
+            <svg width="48" height="48" viewBox="0 0 48 48" class="-rotate-90">
+              <circle
+                cx="24"
+                cy="24"
+                r="20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="4"
+                class="text-slate-100"
+              />
+              <circle
+                cx="24"
+                cy="24"
+                r="20"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="4"
+                stroke-linecap="round"
+                :stroke-dasharray="2 * Math.PI * 20"
+                :stroke-dashoffset="2 * Math.PI * 20 * (1 - completionScore / 100)"
+                class="text-primary-500 transition-[stroke-dashoffset] duration-700 motion-reduce:transition-none"
+              />
+            </svg>
+            <span class="absolute text-xs font-bold text-slate-900">{{ completionScore }}%</span>
+          </div>
+          <div class="min-w-0">
+            <p class="text-sm font-semibold text-slate-900">Profile strength</p>
+            <p class="text-xs text-slate-500">
+              {{ completedAreas.completed }} of {{ completedAreas.total }} areas complete
+            </p>
+          </div>
+          <div
+            class="hidden h-1.5 w-full max-w-56 flex-1 overflow-hidden rounded-full bg-slate-100 sm:block"
           >
-            {{ s.label }}
+            <div
+              class="h-full rounded-full bg-primary-500 transition-all duration-500 motion-reduce:transition-none"
+              :style="{ width: completionScore + '%' }"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab bar -->
+      <nav class="mt-6 border-b border-slate-200" aria-label="Profile sections">
+        <div class="flex gap-0 -mb-px">
+          <button
+            v-for="tab in tabs"
+            :key="tab.id"
+            type="button"
+            role="tab"
+            :aria-selected="activeTab === tab.id"
+            class="relative min-h-10 whitespace-nowrap px-4 text-sm font-medium transition-colors"
+            :class="
+              activeTab === tab.id ? 'text-primary-700' : 'text-slate-500 hover:text-slate-700'
+            "
+            @click="activeTab = tab.id"
+          >
+            {{ tab.label }}
             <span
-              v-if="activeSection === s.id"
-              class="absolute bottom-0 left-1/2 h-0.5 w-4/5 -translate-x-1/2 rounded-full bg-gradient-to-r from-primary-500 to-primary-600"
+              v-if="activeTab === tab.id"
+              class="absolute bottom-0 left-1/2 h-0.5 w-4/5 -translate-x-1/2 rounded-full bg-primary-500"
             />
           </button>
         </div>
       </nav>
 
-      <div
-        v-if="!state.profile.value.id"
-        class="mt-6 animate-fade-in-up flex items-start gap-5 rounded-2xl border border-primary-100/60 bg-gradient-to-br from-primary-50 via-primary-50/80 to-white p-6 shadow-sm"
-      >
-        <div
-          class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-md"
-          aria-hidden="true"
-        >
-          <User :size="22" stroke-width="1.5" />
-        </div>
-        <div>
-          <h2 class="text-lg font-bold text-slate-950">Start building your trusted profile.</h2>
-          <p class="mt-1 text-sm leading-6 text-slate-600">
-            Choose a section below and add only information you can confidently confirm.
-          </p>
-        </div>
-      </div>
-
-      <div class="mt-6 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div class="grid min-w-0 gap-6">
-          <div id="section-summary">
+      <!-- Tab content -->
+      <div class="mt-0 rounded-b-lg border-x border-b border-slate-200 bg-white shadow-sm">
+        <!-- About tab -->
+        <div v-show="activeTab === 'about'" class="divide-y divide-slate-100">
+          <div class="px-6 py-6">
             <ProfessionalSummary
               :profile="state.profile.value"
               :saving="busy"
@@ -244,52 +258,7 @@ onUnmounted(() => {
               @dirty="state.markDirty('summary', $event)"
             />
           </div>
-
-          <div id="section-experience">
-            <ExperienceTimeline
-              v-bind="section('experience')"
-              @create="create"
-              @update="update"
-              @delete="remove"
-              @reorder="reorder('experience', $event)"
-              @dirty="state.markDirty('experience', $event)"
-            />
-          </div>
-
-          <div id="section-education">
-            <EducationSection
-              v-bind="section('education')"
-              @create="create"
-              @update="update"
-              @delete="remove"
-              @reorder="reorder('education', $event)"
-              @dirty="state.markDirty('education', $event)"
-            />
-          </div>
-
-          <div id="section-projects">
-            <ProjectsSection
-              v-bind="section('project')"
-              @create="create"
-              @update="update"
-              @delete="remove"
-              @reorder="reorder('project', $event)"
-              @dirty="state.markDirty('project', $event)"
-            />
-          </div>
-
-          <div id="section-certifications">
-            <CertificationsSection
-              v-bind="section('certification')"
-              @create="create"
-              @update="update"
-              @delete="remove"
-              @reorder="reorder('certification', $event)"
-              @dirty="state.markDirty('certification', $event)"
-            />
-          </div>
-
-          <div id="section-preferences">
+          <div class="px-6 py-6">
             <CareerPreferences
               :profile="state.profile.value"
               :saving="busy"
@@ -297,8 +266,7 @@ onUnmounted(() => {
               @dirty="state.markDirty('preferences', $event)"
             />
           </div>
-
-          <div id="section-links">
+          <div class="px-6 py-6">
             <ProfessionalLinks
               :profile="state.profile.value"
               :saving="busy"
@@ -308,12 +276,58 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <aside
-          class="order-first lg:order-last lg:sticky lg:top-[5rem]"
-          aria-label="Profile progress"
-        >
-          <CompletionGuidance :details="state.profile.value.completion_details" />
-        </aside>
+        <!-- Experience tab -->
+        <div v-show="activeTab === 'experience'" class="divide-y divide-slate-100">
+          <div class="px-6 py-6">
+            <ExperienceTimeline
+              v-bind="section('experience')"
+              @create="create"
+              @update="update"
+              @delete="remove"
+              @reorder="reorder('experience', $event)"
+              @dirty="state.markDirty('experience', $event)"
+            />
+          </div>
+          <div class="px-6 py-6">
+            <EducationSection
+              v-bind="section('education')"
+              @create="create"
+              @update="update"
+              @delete="remove"
+              @reorder="reorder('education', $event)"
+              @dirty="state.markDirty('education', $event)"
+            />
+          </div>
+        </div>
+
+        <!-- Projects tab -->
+        <div v-show="activeTab === 'projects'" class="px-6 py-6">
+          <ProjectsSection
+            v-bind="section('project')"
+            @create="create"
+            @update="update"
+            @delete="remove"
+            @reorder="reorder('project', $event)"
+            @dirty="state.markDirty('project', $event)"
+          />
+        </div>
+
+        <!-- Certifications tab -->
+        <div v-show="activeTab === 'certifications'" class="px-6 py-6">
+          <CertificationsSection
+            v-bind="section('certification')"
+            @create="create"
+            @update="update"
+            @delete="remove"
+            @reorder="reorder('certification', $event)"
+            @dirty="state.markDirty('certification', $event)"
+          />
+        </div>
+
+        <!-- Skills tab -->
+        <div v-show="activeTab === 'skills'" class="px-6 py-6">
+          <SkillsSection />
+        </div>
       </div>
     </div>
   </div>

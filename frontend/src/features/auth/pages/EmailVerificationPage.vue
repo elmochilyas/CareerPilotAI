@@ -2,8 +2,8 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { resendVerificationEmail } from '@/features/auth/api'
-import { fetchCsrfCookie } from '@/features/auth/api'
+import { resendVerificationEmail, fetchCsrfCookie } from '@/features/auth/api'
+import Button from '@/components/ui/Button.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -32,7 +32,6 @@ onMounted(() => {
 async function resend(): Promise<void> {
   resending.value = true
   resentMessage.value = ''
-
   try {
     await fetchCsrfCookie()
     await resendVerificationEmail()
@@ -51,42 +50,45 @@ async function goHome(): Promise<void> {
 
 <template>
   <div class="space-y-6 text-center">
-    <h1 class="text-xl font-semibold text-gray-900">Email Verification</h1>
+    <h1 class="text-lg font-semibold text-slate-900">Email Verification</h1>
 
     <div v-if="status === 'verifying'" class="space-y-4">
-      <p class="text-sm text-gray-600">Please check your email for a verification link.</p>
-      <div v-if="resentMessage" class="rounded-md bg-green-50 p-3 text-sm text-green-700">
+      <p class="text-sm text-slate-600">Please check your email for a verification link.</p>
+      <div
+        v-if="resentMessage"
+        class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700"
+      >
         {{ resentMessage }}
       </div>
       <button
         type="button"
         :disabled="resending"
-        @click="resend"
         class="text-sm text-primary-600 hover:text-primary-500 disabled:opacity-50"
+        @click="resend"
       >
         {{ resending ? 'Sending...' : 'Resend verification email' }}
       </button>
     </div>
 
-    <div v-if="status === 'verified'" class="rounded-md bg-green-50 p-4">
-      <p class="text-sm text-green-700">{{ message }}</p>
-      <button
-        type="button"
-        @click="goHome"
-        class="mt-4 rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-500"
-      >
-        Go to home
-      </button>
+    <div
+      v-if="status === 'verified'"
+      class="rounded-lg border border-emerald-200 bg-emerald-50 p-4"
+    >
+      <p class="text-sm text-emerald-700">{{ message }}</p>
+      <div class="mt-4">
+        <Button @click="goHome">Go to home</Button>
+      </div>
     </div>
 
-    <div v-if="status === 'error'" class="rounded-md bg-red-50 p-4">
+    <div v-if="status === 'error'" class="rounded-lg border border-red-200 bg-red-50 p-4">
       <p class="text-sm text-red-700">{{ message }}</p>
       <button
         type="button"
+        :disabled="resending"
+        class="mt-4 text-sm text-primary-600 hover:text-primary-500 disabled:opacity-50"
         @click="resend"
-        class="mt-4 text-sm text-primary-600 hover:text-primary-500"
       >
-        Resend verification email
+        {{ resending ? 'Sending...' : 'Resend verification email' }}
       </button>
     </div>
   </div>
