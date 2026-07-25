@@ -21,5 +21,7 @@ class DatabaseSeeder extends Seeder
             'full_name' => 'Admin User',
             'email' => 'admin@careerpilot.ai',
         ]);
+
+        $this->call(SkillCatalogSeeder::class);
     }
 }
