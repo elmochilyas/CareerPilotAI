@@ -56,7 +56,7 @@ function onPaste(e: ClipboardEvent) {
     <span
       v-for="(tag, i) in modelValue"
       :key="i"
-      class="inline-flex select-none items-center gap-1 rounded-lg bg-gradient-to-r from-primary-50 to-primary-100 px-2.5 py-1 text-sm font-medium text-primary-800 shadow-sm"
+      class="inline-flex select-none items-center gap-1 rounded-lg bg-primary-50 px-2.5 py-1 text-sm font-medium text-primary-800"
     >
       {{ tag }}
       <button

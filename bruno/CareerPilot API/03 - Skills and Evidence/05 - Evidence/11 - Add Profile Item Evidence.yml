@@ -1,0 +1,60 @@
+info:
+  name: 11 - Add Profile Item Evidence
+  type: http
+  seq: 11
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/candidate/skills/{{evidenceCandidateSkillId}}/evidence"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "type": "profile_item",
+        "value": "{{temporaryProfileItemId}}",
+        "label": "Bruno Test Project Evidence"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN missing.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        test("Status 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Profile item evidence was added", function () {
+          const data = res.getBody().data;
+          const ev = data.evidence[data.evidence.length - 1];
+          expect(ev.type).to.equal("profile_item");
+          expect(ev).to.have.property("profile_item_snapshot");
+          expect(ev.profile_item_snapshot.title).to.include("Bruno Skills Evidence");
+        });
+
+        const data = res.getBody().data;
+        const ev = data.evidence[data.evidence.length - 1];
+        bru.setVar("profileItemEvidenceKey", ev.key);
+        bru.setVar("evidenceSkillUpdatedAt", data.updated_at);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

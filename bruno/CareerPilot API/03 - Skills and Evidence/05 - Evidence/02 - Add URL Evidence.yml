@@ -1,0 +1,75 @@
+info:
+  name: 02 - Add URL Evidence
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/candidate/skills/{{evidenceCandidateSkillId}}/evidence"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "type": "url",
+        "value": "https://example.com/careerpilot-bruno-test",
+        "label": "Bruno Test Evidence"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN missing.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        test("Status 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Evidence was added", function () {
+          const data = res.getBody().data;
+          expect(data.evidence).to.be.an("array").that.is.not.empty;
+        });
+
+        test("Evidence type is url", function () {
+          const data = res.getBody().data;
+          const ev = data.evidence[data.evidence.length - 1];
+          expect(ev.type).to.equal("url");
+        });
+
+        test("Evidence label matches", function () {
+          const data = res.getBody().data;
+          const ev = data.evidence[data.evidence.length - 1];
+          expect(ev.label).to.equal("Bruno Test Evidence");
+        });
+
+        test("Evidence key is present", function () {
+          const data = res.getBody().data;
+          const ev = data.evidence[data.evidence.length - 1];
+          expect(ev).to.have.property("key");
+        });
+
+        const data = res.getBody().data;
+        const ev = data.evidence[data.evidence.length - 1];
+        bru.setVar("urlEvidenceKey", ev.key);
+        bru.setVar("evidenceSkillUpdatedAt", data.updated_at);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

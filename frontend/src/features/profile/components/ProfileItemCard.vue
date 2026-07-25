@@ -1,13 +1,5 @@
 <script setup lang="ts">
-import {
-  Briefcase,
-  GraduationCap,
-  Folder,
-  Award,
-  Calendar,
-  ChevronRight,
-  ExternalLink,
-} from '@lucide/vue'
+import { Briefcase, GraduationCap, Folder, Award, Calendar, ExternalLink } from '@lucide/vue'
 import { computed } from 'vue'
 import type { ProfileItem } from '../types'
 
@@ -24,7 +16,7 @@ function dateDisplay(start?: string | null, end?: string | null): string {
   }
   const s = start ? fmt(start) : null
   const e = end ? fmt(end) : 'Present'
-  return [s, e].filter(Boolean).join(' — ')
+  return [s, e].filter(Boolean).join(' \u2014 ')
 }
 
 const metadata = computed(() => {
@@ -79,10 +71,7 @@ const isTimeline = props.variant === 'timeline' || props.variant === 'academic'
 const isGrid = props.variant === 'grid'
 const isAchievement = props.variant === 'achievement'
 
-const timelineDotGradient =
-  props.variant === 'academic'
-    ? 'from-indigo-400 to-indigo-500 ring-indigo-100'
-    : 'from-blue-400 to-blue-500 ring-blue-100'
+const timelineDotColor = 'bg-primary-500'
 
 const typeIcon: Record<string, object> = {
   experience: Briefcase,
@@ -91,33 +80,30 @@ const typeIcon: Record<string, object> = {
   certification: Award,
 }
 
-const iconGradient: Record<string, string> = {
-  experience: 'from-blue-500 to-blue-600',
-  education: 'from-indigo-500 to-indigo-600',
-  project: 'from-violet-500 to-violet-600',
-  certification: 'from-amber-500 to-amber-600',
+const iconColor: Record<string, string> = {
+  experience: 'bg-primary-100 text-primary-600',
+  education: 'bg-primary-100 text-primary-600',
+  project: 'bg-primary-100 text-primary-600',
+  certification: 'bg-primary-100 text-primary-600',
 }
 </script>
 
 <template>
   <!-- Timeline variant -->
-  <article v-if="isTimeline" class="relative flex gap-5">
+  <article v-if="isTimeline" class="relative flex gap-4">
     <div class="relative flex shrink-0 flex-col items-center pt-2">
-      <div
-        class="size-3 shrink-0 rounded-full bg-gradient-to-br ring-4 ring-white"
-        :class="timelineDotGradient"
-      />
+      <div class="size-3 shrink-0 rounded-full ring-4 ring-white" :class="timelineDotColor" />
     </div>
 
-    <div
-      class="min-w-0 flex-1 rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:border-slate-300 hover:shadow-lg hover:-translate-y-0.5"
-    >
+    <div class="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
       <div class="flex items-start justify-between gap-3">
         <div class="min-w-0">
-          <h3 class="text-sm font-bold text-slate-900">{{ item.title }}</h3>
+          <h3 class="text-sm font-semibold text-slate-900">{{ item.title }}</h3>
           <p class="mt-0.5 text-sm text-slate-600">
             {{ item.organization }}
-            <span v-if="item.organization && item.location" class="mx-1 text-slate-300">·</span>
+            <span v-if="item.organization && item.location" class="mx-1 text-slate-300"
+              >\u00b7</span
+            >
             <span v-if="item.location">{{ item.location }}</span>
           </p>
         </div>
@@ -129,14 +115,14 @@ const iconGradient: Record<string, string> = {
       <div class="mt-3 flex flex-wrap items-center gap-2">
         <span
           v-if="dateDisplay(item.start_date, item.end_date)"
-          class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700"
+          class="inline-flex items-center gap-1.5 rounded bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700"
         >
-          <Calendar :size="12" class="text-emerald-500" stroke-width="1.5" />
+          <Calendar :size="12" />
           {{ dateDisplay(item.start_date, item.end_date) }}
         </span>
         <span
           v-if="isCurrent"
-          class="inline-flex items-center rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-2.5 py-0.5 text-xs font-semibold text-white shadow-sm"
+          class="inline-flex items-center rounded bg-primary-500 px-2 py-0.5 text-xs font-semibold text-white"
         >
           Current
         </span>
@@ -154,9 +140,10 @@ const iconGradient: Record<string, string> = {
             :href="line.url"
             target="_blank"
             rel="noopener noreferrer"
-            class="ml-1 inline-flex items-center gap-0.5 text-primary-600 transition-colors hover:text-primary-700"
-            >{{ line.value }} <ExternalLink :size="10" stroke-width="2"
-          /></a>
+            class="ml-1 inline-flex items-center gap-0.5 text-primary-600 hover:text-primary-700"
+          >
+            {{ line.value }} <ExternalLink :size="10" />
+          </a>
           <span v-else class="ml-1">{{ line.value }}</span>
         </p>
       </div>
@@ -166,35 +153,33 @@ const iconGradient: Record<string, string> = {
   <!-- Grid variant (projects) -->
   <article
     v-else-if="isGrid"
-    class="group overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary-200 hover:shadow-xl"
+    class="overflow-hidden rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
   >
     <div class="flex items-start justify-between gap-2">
       <div class="flex items-start gap-3 min-w-0">
         <div
-          class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white shadow-sm"
-          :class="iconGradient[item.type] ?? 'from-slate-500 to-slate-600'"
+          class="flex size-10 shrink-0 items-center justify-center rounded-lg shadow-sm"
+          :class="iconColor[item.type] ?? 'bg-slate-100 text-slate-600'"
         >
-          <component :is="typeIcon[item.type]" :size="18" stroke-width="1.5" />
+          <component :is="typeIcon[item.type]" :size="18" />
         </div>
         <div class="min-w-0">
-          <h3 class="text-sm font-bold text-slate-900 truncate">{{ item.title }}</h3>
-          <p v-if="item.organization" class="text-xs text-slate-500 mt-0.5">
+          <h3 class="truncate text-sm font-semibold text-slate-900">{{ item.title }}</h3>
+          <p v-if="item.organization" class="mt-0.5 text-xs text-slate-500">
             {{ item.organization }}
           </p>
         </div>
       </div>
-      <div
-        class="flex items-center gap-1 shrink-0 opacity-80 group-hover:opacity-100 transition-opacity"
-      >
+      <div class="flex items-center gap-1 shrink-0">
         <slot name="actions" />
       </div>
     </div>
 
     <div v-if="dateDisplay(item.start_date, item.end_date)" class="mt-3">
       <span
-        class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600"
+        class="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600"
       >
-        <Calendar :size="11" class="text-slate-400" stroke-width="1.5" />
+        <Calendar :size="11" />
         {{ dateDisplay(item.start_date, item.end_date) }}
       </span>
     </div>
@@ -210,9 +195,8 @@ const iconGradient: Record<string, string> = {
           :href="line.url"
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm transition-all hover:bg-primary-50 hover:text-primary-700 hover:shadow"
+          class="inline-flex items-center gap-1 rounded bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 transition-all hover:bg-primary-50 hover:text-primary-700"
         >
-          <ChevronRight :size="12" stroke-width="2" />
           {{ line.label === 'Project URL' ? 'Live demo' : 'Repository' }}
         </a>
       </template>
@@ -222,23 +206,23 @@ const iconGradient: Record<string, string> = {
   <!-- Achievement variant (certifications) -->
   <article
     v-else-if="isAchievement"
-    class="flex items-start gap-4 overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:border-amber-200 hover:shadow-lg hover:-translate-y-0.5"
+    class="flex items-start gap-4 overflow-hidden rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
   >
     <div
-      class="flex size-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-amber-500 text-white shadow-md"
+      class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600"
     >
-      <Award :size="20" stroke-width="1.5" />
+      <Award :size="18" />
     </div>
     <div class="min-w-0 flex-1">
       <div class="flex items-start justify-between gap-3">
         <div>
-          <h3 class="text-sm font-bold text-slate-900">{{ item.title }}</h3>
-          <p class="text-xs text-slate-500 mt-0.5">
+          <h3 class="text-sm font-semibold text-slate-900">{{ item.title }}</h3>
+          <p class="mt-0.5 text-xs text-slate-500">
             {{ item.organization }}
             <span
               v-if="item.organization && metadata.find((m) => m.label === 'Issuer')"
               class="mx-1"
-              >·</span
+              >\u00b7</span
             >
             <span
               v-if="metadata.find((m) => m.label === 'Issuer')"
@@ -254,7 +238,7 @@ const iconGradient: Record<string, string> = {
       </div>
       <div v-if="dateDisplay(item.start_date, null)" class="mt-2">
         <span class="inline-flex items-center gap-1 text-xs text-slate-500">
-          <Calendar :size="12" class="text-slate-400" stroke-width="1.5" />
+          <Calendar :size="12" />
           Issued {{ dateDisplay(item.start_date, null) }}
         </span>
       </div>
@@ -265,9 +249,9 @@ const iconGradient: Record<string, string> = {
           :href="line.url"
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-primary-50 to-primary-100 px-3 py-1.5 text-xs font-semibold text-primary-700 shadow-sm transition-all hover:from-primary-100 hover:to-primary-200 hover:shadow"
+          class="inline-flex items-center gap-1.5 rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700 transition-all hover:bg-primary-100"
         >
-          <ExternalLink :size="12" stroke-width="2" />
+          <ExternalLink :size="12" />
           View credential
         </a>
       </div>
@@ -275,9 +259,9 @@ const iconGradient: Record<string, string> = {
         <p
           v-for="(line, i) in metadata.filter((m) => m.label === 'Expires')"
           :key="i"
-          class="inline-flex items-center gap-1 text-xs text-amber-600"
+          class="inline-flex items-center gap-1 text-xs text-primary-600"
         >
-          <Calendar :size="11" stroke-width="1.5" />
+          <Calendar :size="11" />
           {{ line.label }}: {{ line.value }}
         </p>
       </div>
@@ -285,24 +269,21 @@ const iconGradient: Record<string, string> = {
   </article>
 
   <!-- Default card variant -->
-  <article
-    v-else
-    class="overflow-hidden rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg"
-  >
+  <article v-else class="overflow-hidden rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
     <div class="flex items-start gap-3">
       <div
-        class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-white shadow-sm"
-        :class="iconGradient[item.type] ?? 'from-slate-500 to-slate-600'"
+        class="flex size-10 shrink-0 items-center justify-center rounded-lg shadow-sm"
+        :class="iconColor[item.type] ?? 'bg-slate-100 text-slate-600'"
       >
-        <component :is="typeIcon[item.type]" :size="18" stroke-width="1.5" />
+        <component :is="typeIcon[item.type]" :size="18" />
       </div>
 
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-start justify-between gap-2">
           <div>
-            <h3 class="text-sm font-bold text-slate-900">{{ item.title }}</h3>
-            <p class="text-xs text-slate-500 mt-0.5">
-              {{ [item.organization, item.location].filter(Boolean).join(' · ') }}
+            <h3 class="text-sm font-semibold text-slate-900">{{ item.title }}</h3>
+            <p class="mt-0.5 text-xs text-slate-500">
+              {{ [item.organization, item.location].filter(Boolean).join(' \u00b7 ') }}
             </p>
           </div>
           <div class="flex items-center gap-1"><slot name="actions" /></div>
@@ -310,9 +291,9 @@ const iconGradient: Record<string, string> = {
 
         <p v-if="dateDisplay(item.start_date, item.end_date)" class="mt-2">
           <span
-            class="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600"
+            class="inline-flex items-center gap-1.5 rounded bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600"
           >
-            <Calendar :size="11" class="text-slate-400" stroke-width="1.5" />
+            <Calendar :size="11" />
             {{ dateDisplay(item.start_date, item.end_date) }}
           </span>
         </p>
@@ -325,9 +306,10 @@ const iconGradient: Record<string, string> = {
               :href="line.url"
               target="_blank"
               rel="noopener noreferrer"
-              class="ml-1 inline-flex items-center gap-0.5 text-primary-600 transition-colors hover:text-primary-700"
-              >{{ line.value }} <ExternalLink :size="10" stroke-width="2"
-            /></a>
+              class="ml-1 inline-flex items-center gap-0.5 text-primary-600 hover:text-primary-700"
+            >
+              {{ line.value }} <ExternalLink :size="10" />
+            </a>
             <span v-else class="ml-1">{{ line.value }}</span>
           </p>
         </div>

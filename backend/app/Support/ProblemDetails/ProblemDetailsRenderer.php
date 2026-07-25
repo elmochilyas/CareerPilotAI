@@ -61,7 +61,7 @@ class ProblemDetailsRenderer
             return $this->buildResponse(
                 $e->getStatusCode(),
                 class_basename($e),
-                $e->getMessage() ?: $e->getMessage(),
+                $e->getMessage() ?: class_basename($e),
                 $e->getErrorCode(),
                 $e->getErrorBag(),
                 $debug,

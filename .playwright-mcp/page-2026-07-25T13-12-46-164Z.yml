@@ -1,0 +1,22 @@
+- generic [active] [ref=f3e1]:
+  - generic [ref=f3e4]:
+    - link "CareerPilot" [ref=f3e6] [cursor=pointer]:
+      - /url: /
+    - generic [ref=f3e8]:
+      - heading "Sign in to your account" [level=1] [ref=f3e9]
+      - generic [ref=f3e10]:
+        - generic [ref=f3e11]: Email
+        - textbox "Email" [ref=f3e12]
+      - generic [ref=f3e13]:
+        - generic [ref=f3e14]: Password
+        - textbox "Password" [ref=f3e15]
+      - link "Forgot password?" [ref=f3e17] [cursor=pointer]:
+        - /url: /forgot-password
+      - button "Sign in" [ref=f3e18]
+      - paragraph [ref=f3e19]:
+        - text: Don't have an account?
+        - link "Register" [ref=f3e20] [cursor=pointer]:
+          - /url: /register
+  - generic [ref=f3e21]:
+    - generic "Toggle devtools panel" [ref=f3e22] [cursor=pointer]
+    - generic "Toggle Component Inspector" [ref=f3e28] [cursor=pointer]

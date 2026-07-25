@@ -1,0 +1,57 @@
+info:
+  name: 07 - Reject Unsafe URL Evidence
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/candidate/skills/{{evidenceCandidateSkillId}}/evidence"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "type": "url",
+        "value": "javascript:alert(1)"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN missing.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        test("Status 422", function () {
+          expect(res.getStatus()).to.equal(422);
+        });
+
+        test("Error code is skill_evidence_invalid", function () {
+          expect(res.getBody().code).to.equal("skill_evidence_invalid");
+        });
+
+        test("Problem details exist", function () {
+          const body = res.getBody();
+          expect(body).to.have.property("status");
+          expect(body.status).to.equal(422);
+          expect(body).to.have.property("detail");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

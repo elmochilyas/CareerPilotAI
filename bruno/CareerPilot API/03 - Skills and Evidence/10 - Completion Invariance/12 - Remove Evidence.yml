@@ -1,0 +1,48 @@
+info:
+  name: 12 - Remove Evidence
+  type: http
+  seq: 12
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/api/v1/candidate/skills/{{completionCandidateSkillId}}/evidence/{{completionEvidenceKey}}"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "updated_at": "{{completionSkillUpdatedAt}}"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN missing.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        test("Status 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        const item = res.getBody().data;
+        bru.setVar("completionSkillUpdatedAt", item.updated_at);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

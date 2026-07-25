@@ -1,0 +1,39 @@
+info:
+  name: 01 - Capture Initial Completion
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/profile"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Profile completion is present", function () {
+          const profile = res.getBody().data;
+          expect(profile).to.have.property("profile_completion");
+          expect(profile.profile_completion).to.be.at.least(0);
+        });
+
+        const profile = res.getBody().data;
+        bru.setVar("profileCompletionBefore", String(profile.profile_completion));
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

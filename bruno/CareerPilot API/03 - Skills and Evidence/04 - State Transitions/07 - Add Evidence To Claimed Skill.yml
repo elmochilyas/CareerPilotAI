@@ -1,0 +1,55 @@
+info:
+  name: 07 - Add Evidence To Claimed Skill
+  type: http
+  seq: 7
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/candidate/skills/{{transitionSkillId_claimed}}/evidence"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "type": "url",
+        "value": "https://example.com/careerpilot-transition-test",
+        "label": "Transition test evidence"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN missing.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        test("Status 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Evidence was added", function () {
+          const body = res.getBody().data;
+          expect(body.evidence).to.be.an("array").that.is.not.empty;
+        });
+
+        const item = res.getBody().data;
+        bru.setVar("transitionSkillUpdatedAt", item.updated_at);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

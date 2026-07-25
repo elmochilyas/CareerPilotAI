@@ -1,0 +1,59 @@
+info:
+  name: 10 - Create Temp Profile Item
+  type: http
+  seq: 10
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/profile/items"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "type": "project",
+        "title": "Bruno Skills Evidence Test Project",
+        "organization": "Bruno Test Suite",
+        "start_date": "2026-01-01",
+        "is_current": true,
+        "description": "Temporary project for testing profile-item evidence."
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN missing.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        test("Status 201", function () {
+          expect(res.getStatus()).to.equal(201);
+        });
+
+        test("Profile item created", function () {
+          const item = res.getBody().data;
+          expect(item).to.have.property("id");
+          expect(item.type).to.equal("project");
+        });
+
+        const item = res.getBody().data;
+        bru.setVar("temporaryProfileItemId", String(item.id));
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

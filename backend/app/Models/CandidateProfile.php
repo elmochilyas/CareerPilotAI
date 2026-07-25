@@ -37,6 +37,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read User $user
  * @property-read Collection<int, ProfileItem> $items
+ * @property-read Collection<int, CandidateSkill> $candidateSkills
  */
 #[Fillable([
     'user_id', 'headline', 'professional_summary', 'phone', 'city', 'country',
@@ -76,5 +77,11 @@ class CandidateProfile extends Model
     public function items(): HasMany
     {
         return $this->hasMany(ProfileItem::class)->orderBy('display_order');
+    }
+
+    /** @return HasMany<CandidateSkill, $this> */
+    public function candidateSkills(): HasMany
+    {
+        return $this->hasMany(CandidateSkill::class);
     }
 }

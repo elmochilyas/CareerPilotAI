@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { createRouter, createWebHistory } from 'vue-router'
 import { createPinia, setActivePinia } from 'pinia'
 import { RouterLinkStub } from '@vue/test-utils'
+import { VueQueryPlugin } from '@tanstack/vue-query'
 import ProfilePage from '@/features/profile/pages/ProfilePage.vue'
 import type { CandidateProfile } from '@/features/profile/types'
 
@@ -25,6 +26,26 @@ const mockComposable = vi.hoisted(() => ({
 
 vi.mock('@/features/profile/composables/useProfile', () => ({
   useProfile: () => mockComposable,
+}))
+
+vi.mock('@/features/skills/composables/useSkills', () => ({
+  useSkills: () => ({
+    skills: { value: [] },
+    isPending: { value: false },
+    isError: { value: false },
+    announcement: { value: '' },
+    conflictCount: { value: 0 },
+    refreshCandidate: vi.fn<() => void>(),
+    handleError: vi.fn<(error: unknown, fallbackMessage: string) => boolean>(),
+    createMutation: { mutate: vi.fn<() => void>(), isPending: { value: false } },
+    updateMutation: { mutate: vi.fn<() => void>(), isPending: { value: false } },
+    archiveMutation: { mutate: vi.fn<() => void>(), isPending: { value: false } },
+    restoreMutation: { mutate: vi.fn<() => void>(), isPending: { value: false } },
+    deleteMutation: { mutate: vi.fn<() => void>(), isPending: { value: false } },
+    addEvidenceMutation: { mutate: vi.fn<() => void>(), isPending: { value: false } },
+    updateEvidenceMutation: { mutate: vi.fn<() => void>(), isPending: { value: false } },
+    removeEvidenceMutation: { mutate: vi.fn<() => void>(), isPending: { value: false } },
+  }),
 }))
 
 function makeProfile(): CandidateProfile {
@@ -88,7 +109,10 @@ describe('ProfilePage', () => {
   it('shows loading skeleton while profile is loading', () => {
     mockComposable.isPending.value = true
     const wrapper = mount(ProfilePage, {
-      global: { plugins: [router, createPinia()], stubs: { RouterLink: RouterLinkStub } },
+      global: {
+        plugins: [router, createPinia(), VueQueryPlugin],
+        stubs: { RouterLink: RouterLinkStub },
+      },
     })
     expect(wrapper.find('[aria-label="Loading profile"]').exists()).toBe(true)
   })
@@ -97,7 +121,10 @@ describe('ProfilePage', () => {
     mockComposable.isPending.value = false
     mockComposable.isError.value = true
     const wrapper = mount(ProfilePage, {
-      global: { plugins: [router, createPinia()], stubs: { RouterLink: RouterLinkStub } },
+      global: {
+        plugins: [router, createPinia(), VueQueryPlugin],
+        stubs: { RouterLink: RouterLinkStub },
+      },
     })
     expect(wrapper.text()).toContain("We couldn't load your profile")
     expect(wrapper.find('button').text()).toContain('Retry')
@@ -107,26 +134,37 @@ describe('ProfilePage', () => {
     mockComposable.isPending.value = false
     mockComposable.profile.value = makeProfile()
     const wrapper = mount(ProfilePage, {
-      global: { plugins: [router, createPinia()], stubs: { RouterLink: RouterLinkStub } },
+      global: {
+        plugins: [router, createPinia(), VueQueryPlugin],
+        stubs: { RouterLink: RouterLinkStub },
+      },
     })
     expect(wrapper.text()).toContain('Jane Doe')
     expect(wrapper.text()).toContain('Profile strength')
   })
 
-  it('renders empty state when profile has no id', () => {
+  it('renders profile tabs when profile has no id', () => {
     mockComposable.isPending.value = false
     mockComposable.profile.value = { ...makeProfile(), id: null }
     const wrapper = mount(ProfilePage, {
-      global: { plugins: [router, createPinia()], stubs: { RouterLink: RouterLinkStub } },
+      global: {
+        plugins: [router, createPinia(), VueQueryPlugin],
+        stubs: { RouterLink: RouterLinkStub },
+      },
     })
-    expect(wrapper.text()).toContain('Start building your trusted profile.')
+    expect(wrapper.text()).toContain('Jane Doe')
+    expect(wrapper.text()).toContain('About')
+    expect(wrapper.text()).toContain('Skills')
   })
 
   it('triggers retry on error button click', async () => {
     mockComposable.isPending.value = false
     mockComposable.isError.value = true
     const wrapper = mount(ProfilePage, {
-      global: { plugins: [router, createPinia()], stubs: { RouterLink: RouterLinkStub } },
+      global: {
+        plugins: [router, createPinia(), VueQueryPlugin],
+        stubs: { RouterLink: RouterLinkStub },
+      },
     })
     await wrapper.find('button').trigger('click')
     expect(mockComposable.refetch).toHaveBeenCalled()

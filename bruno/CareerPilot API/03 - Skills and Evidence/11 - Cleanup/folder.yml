@@ -1,0 +1,7 @@
+info:
+  name: 11 - Cleanup
+  type: folder
+  seq: 11
+
+request:
+  auth: inherit

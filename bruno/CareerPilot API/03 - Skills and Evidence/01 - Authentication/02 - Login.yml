@@ -1,0 +1,63 @@
+info:
+  name: 02 - Login
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/auth/login"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "email": "bruno.test@example.com",
+        "password": "NewPassword123!"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run CSRF Cookie first."
+          );
+        }
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+    - type: after-response
+      code: |-
+        test("Status code is 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("User data is returned", function () {
+          const body = res.getBody();
+          expect(body).to.have.property("data");
+          expect(body.data).to.have.property("email");
+        });
+
+        bru.setVar("testRunId", "Bruno Skills Test " + Date.now());
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

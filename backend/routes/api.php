@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CandidateSkillController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\ProfileController;
+use App\Http\Controllers\Api\V1\SkillController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
@@ -35,5 +37,19 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('/profile/items/reorder', [ProfileController::class, 'reorderItems']);
         Route::patch('/profile/items/{profileItem}', [ProfileController::class, 'updateItem']);
         Route::delete('/profile/items/{profileItem}', [ProfileController::class, 'destroyItem']);
+
+        Route::get('/skills', [SkillController::class, 'index']);
+        Route::get('/skills/{skill}', [SkillController::class, 'show']);
+
+        Route::get('/candidate/skills', [CandidateSkillController::class, 'index']);
+        Route::post('/candidate/skills', [CandidateSkillController::class, 'store']);
+        Route::get('/candidate/skills/{candidateSkill}', [CandidateSkillController::class, 'show']);
+        Route::patch('/candidate/skills/{candidateSkill}', [CandidateSkillController::class, 'update']);
+        Route::post('/candidate/skills/{candidateSkill}/archive', [CandidateSkillController::class, 'archive']);
+        Route::post('/candidate/skills/{candidateSkill}/restore', [CandidateSkillController::class, 'restore']);
+        Route::delete('/candidate/skills/{candidateSkill}', [CandidateSkillController::class, 'destroy']);
+        Route::post('/candidate/skills/{candidateSkill}/evidence', [CandidateSkillController::class, 'storeEvidence']);
+        Route::patch('/candidate/skills/{candidateSkill}/evidence/{evidenceKey}', [CandidateSkillController::class, 'updateEvidence']);
+        Route::delete('/candidate/skills/{candidateSkill}/evidence/{evidenceKey}', [CandidateSkillController::class, 'destroyEvidence']);
     });
 });

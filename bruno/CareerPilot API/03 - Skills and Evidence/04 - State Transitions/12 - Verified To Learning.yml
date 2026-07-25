@@ -1,0 +1,54 @@
+info:
+  name: 12 - Verified To Learning
+  type: http
+  seq: 12
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/candidate/skills/{{transitionSkillId_claimed}}"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "state": "learning",
+        "updated_at": "{{transitionSkillUpdatedAt}}"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN missing.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        test("Status 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("State is learning", function () {
+          expect(res.getBody().data.state).to.equal("learning");
+        });
+
+        const item = res.getBody().data;
+        bru.setVar("transitionSkillUpdatedAt", item.updated_at);
+        bru.setVar("transitionSkillId_learning", String(item.id));
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

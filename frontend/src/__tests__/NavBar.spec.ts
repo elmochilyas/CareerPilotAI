@@ -90,8 +90,9 @@ describe('NavBar', () => {
     auth.loading = true
     await wrapper.vm.$nextTick()
 
-    const button = wrapper.find('button')
-    expect(button.attributes('disabled')).toBeDefined()
-    expect(button.text()).toContain('Logging out...')
+    const logoutBtn = wrapper.findComponent({ name: 'Button' })
+    expect(logoutBtn.exists()).toBe(true)
+    expect(logoutBtn.attributes('disabled')).toBeDefined()
+    expect(logoutBtn.text()).toContain('Logging out...')
   })
 })
