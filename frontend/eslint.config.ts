@@ -19,6 +19,14 @@ export default defineConfigWithVueTs(
   globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
 
   ...pluginVue.configs['flat/essential'],
+
+  {
+    name: 'app/ui-components',
+    files: ['src/components/ui/*.vue'],
+    rules: {
+      'vue/multi-word-component-names': 'off',
+    },
+  },
   vueTsConfigs.recommended,
 
   {
