@@ -1,0 +1,48 @@
+info:
+  name: 05 - Get Skills After Update
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/candidate/skills"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status code is 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Created skill is in the list", function () {
+          const body = res.getBody();
+          const skills = body.data;
+          const found = skills.some(function (s) {
+            return String(s.id) === bru.getVar("claimedCandidateSkillId");
+          });
+          expect(found).to.equal(true);
+        });
+
+        test("Updated proficiency persists in list", function () {
+          const body = res.getBody();
+          const skills = body.data;
+          const found = skills.find(function (s) {
+            return String(s.id) === bru.getVar("claimedCandidateSkillId");
+          });
+          expect(found.proficiency_level).to.equal("advanced");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

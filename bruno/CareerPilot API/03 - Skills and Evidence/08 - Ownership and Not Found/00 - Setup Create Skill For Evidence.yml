@@ -1,0 +1,49 @@
+info:
+  name: 00 - Setup Create Skill For Evidence
+  type: http
+  seq: 0
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/candidate/skills"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "skill_id": 3,
+        "state": "claimed",
+        "proficiency_level": "intermediate"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN missing.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        test("Status 201", function () {
+          expect(res.getStatus()).to.equal(201);
+        });
+        const body = res.getBody();
+        bru.setVar("claimedCandidateSkillId", String(body.data.id));
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

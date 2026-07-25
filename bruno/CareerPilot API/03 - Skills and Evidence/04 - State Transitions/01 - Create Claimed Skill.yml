@@ -1,0 +1,55 @@
+info:
+  name: 01 - Create Claimed Skill
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/candidate/skills"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "skill_id": {{transitionSkillId}},
+        "state": "claimed",
+        "proficiency_level": "intermediate"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN missing. Run CSRF and Login first.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        test("Status 201", function () {
+          expect(res.getStatus()).to.equal(201);
+        });
+
+        test("State is claimed", function () {
+          expect(res.getBody().data.state).to.equal("claimed");
+        });
+
+        const item = res.getBody().data;
+        bru.setVar("transitionSkillId_claimed", String(item.id));
+        bru.setVar("transitionSkillUpdatedAt", item.updated_at);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

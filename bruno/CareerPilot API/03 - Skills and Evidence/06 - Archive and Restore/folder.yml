@@ -1,0 +1,7 @@
+info:
+  name: 06 - Archive and Restore
+  type: folder
+  seq: 6
+
+request:
+  auth: inherit

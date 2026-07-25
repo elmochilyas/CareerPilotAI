@@ -1,0 +1,53 @@
+info:
+  name: 02 - Invalid Proficiency Level
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/candidate/skills"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "skill_id": 1,
+        "state": "claimed",
+        "proficiency_level": "super-advanced"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN missing.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        test("Status 422", function () {
+          expect(res.getStatus()).to.equal(422);
+        });
+
+        test("Validation error for proficiency_level", function () {
+          const body = res.getBody();
+          expect(body).to.have.property("errors");
+          expect(body.errors).to.have.property("proficiency_level");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

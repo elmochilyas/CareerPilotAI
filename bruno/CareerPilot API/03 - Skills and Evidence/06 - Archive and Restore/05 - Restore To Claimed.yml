@@ -1,0 +1,57 @@
+info:
+  name: 05 - Restore To Claimed
+  type: http
+  seq: 5
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/candidate/skills/{{archiveCandidateSkillId}}/restore"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "state": "claimed",
+        "updated_at": "{{archiveSkillUpdatedAt}}"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN missing.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        test("Status 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("State is claimed after restore", function () {
+          expect(res.getBody().data.state).to.equal("claimed");
+        });
+
+        test("Proficiency preserved after restore", function () {
+          expect(res.getBody().data.proficiency_level).to.equal("advanced");
+        });
+
+        const item = res.getBody().data;
+        bru.setVar("archiveSkillUpdatedAt", item.updated_at);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

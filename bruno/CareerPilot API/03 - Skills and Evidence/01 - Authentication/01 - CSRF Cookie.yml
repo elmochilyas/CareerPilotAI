@@ -1,0 +1,35 @@
+info:
+  name: 01 - CSRF Cookie
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/sanctum/csrf-cookie"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status code is 204", function () {
+          expect(res.getStatus()).to.equal(204);
+        });
+
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN cookie not set by CSRF endpoint");
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

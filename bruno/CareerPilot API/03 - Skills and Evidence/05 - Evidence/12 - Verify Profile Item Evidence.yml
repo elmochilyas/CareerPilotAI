@@ -1,0 +1,43 @@
+info:
+  name: 12 - Verify Profile Item Evidence
+  type: http
+  seq: 12
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/candidate/skills/{{evidenceCandidateSkillId}}"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Profile item evidence persists", function () {
+          const data = res.getBody().data;
+          const found = data.evidence.some(function (e) {
+            return e.key === bru.getVar("profileItemEvidenceKey");
+          });
+          expect(found).to.equal(true);
+        });
+
+        test("Evidence count is 1", function () {
+          const data = res.getBody().data;
+          expect(data.evidence).to.have.lengthOf(1);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

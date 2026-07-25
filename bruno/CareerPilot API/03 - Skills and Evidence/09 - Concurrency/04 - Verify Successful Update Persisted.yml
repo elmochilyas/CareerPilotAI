@@ -1,0 +1,34 @@
+info:
+  name: 04 - Verify Successful Update Persisted
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/candidate/skills/{{concurrencyCandidateSkillId}}"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Proficiency is advanced (stale expert was rejected)", function () {
+          expect(res.getBody().data.proficiency_level).to.equal("advanced");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

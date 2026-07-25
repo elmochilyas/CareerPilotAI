@@ -1,0 +1,73 @@
+info:
+  name: 04 - Update Proficiency
+  type: http
+  seq: 4
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/candidate/skills/{{claimedCandidateSkillId}}"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "proficiency_level": "advanced",
+        "updated_at": "{{currentCandidateSkillUpdatedAt}}"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run CSRF Cookie and Login first."
+          );
+        }
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+    - type: after-response
+      code: |-
+        test("Status code is 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Proficiency level updated", function () {
+          const body = res.getBody();
+          const item = body.data ?? body;
+          expect(item.proficiency_level).to.equal("advanced");
+        });
+
+        test("Concurrency value changed", function () {
+          const body = res.getBody();
+          const item = body.data ?? body;
+          expect(item.updated_at).to.not.equal(bru.getVar("currentCandidateSkillUpdatedAt"));
+        });
+
+        test("State unchanged", function () {
+          const body = res.getBody();
+          const item = body.data ?? body;
+          expect(item.state).to.equal("claimed");
+        });
+
+        const body = res.getBody();
+        const item = body.data ?? body;
+        bru.setVar("currentCandidateSkillUpdatedAt", item.updated_at);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

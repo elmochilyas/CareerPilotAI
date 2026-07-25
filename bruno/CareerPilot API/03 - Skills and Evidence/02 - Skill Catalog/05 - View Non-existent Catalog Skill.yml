@@ -1,0 +1,42 @@
+info:
+  name: 05 - View Non-existent Catalog Skill
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/skills/99999999"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status code is 404", function () {
+          expect(res.getStatus()).to.equal(404);
+        });
+
+        test("Response is JSON problem details", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Problem details structure", function () {
+          const body = res.getBody();
+          expect(body).to.have.property("status");
+          expect(body.status).to.equal(404);
+          expect(body).to.have.property("code");
+          expect(body).to.have.property("detail");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

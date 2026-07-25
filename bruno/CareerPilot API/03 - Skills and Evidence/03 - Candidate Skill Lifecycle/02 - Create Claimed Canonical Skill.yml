@@ -1,0 +1,87 @@
+info:
+  name: 02 - Create Claimed Canonical Skill
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/candidate/skills"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "skill_id": {{catalogSkillId}},
+        "state": "claimed",
+        "proficiency_level": "intermediate",
+        "years_experience": 3
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error(
+            "XSRF-TOKEN cookie is missing. Run CSRF Cookie and Login first."
+          );
+        }
+        req.setHeader(
+          "X-XSRF-TOKEN",
+          decodeURIComponent(xsrfToken)
+        );
+    - type: after-response
+      code: |-
+        test("Status code is 201", function () {
+          expect(res.getStatus()).to.equal(201);
+        });
+
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        test("Candidate skill created with correct data", function () {
+          const body = res.getBody();
+          const item = body.data ?? body;
+          expect(item).to.have.property("id");
+          expect(item.state).to.equal("claimed");
+          expect(item.proficiency_level).to.equal("intermediate");
+          expect(Number(item.years_experience)).to.equal(3);
+          expect(item.is_custom).to.equal(false);
+          expect(item.skill).to.not.equal(null);
+          expect(item.skill.name).to.equal("JavaScript");
+        });
+
+        test("Evidence is null or empty initially", function () {
+          const body = res.getBody();
+          const item = body.data ?? body;
+          expect(item.evidence === null || item.evidence.length === 0).to.equal(true);
+        });
+
+        test("Has concurrency value", function () {
+          const body = res.getBody();
+          const item = body.data ?? body;
+          expect(item).to.have.property("updated_at");
+          expect(item.updated_at).to.not.equal(null);
+        });
+
+        const body = res.getBody();
+        const item = body.data ?? body;
+        bru.setVar("claimedCandidateSkillId", String(item.id));
+        bru.setVar("currentCandidateSkillUpdatedAt", item.updated_at);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

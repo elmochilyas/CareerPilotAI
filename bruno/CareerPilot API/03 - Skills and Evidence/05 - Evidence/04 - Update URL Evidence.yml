@@ -1,0 +1,57 @@
+info:
+  name: 04 - Update URL Evidence
+  type: http
+  seq: 4
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/candidate/skills/{{evidenceCandidateSkillId}}/evidence/{{urlEvidenceKey}}"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "label": "Updated Bruno Test Evidence",
+        "updated_at": "{{evidenceSkillUpdatedAt}}"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN missing.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        test("Status 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Evidence label was updated", function () {
+          const data = res.getBody().data;
+          const ev = data.evidence.find(function (e) {
+            return e.key === bru.getVar("urlEvidenceKey");
+          });
+          expect(ev.label).to.equal("Updated Bruno Test Evidence");
+        });
+
+        const data = res.getBody().data;
+        bru.setVar("evidenceSkillUpdatedAt", data.updated_at);
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
