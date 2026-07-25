@@ -546,7 +546,52 @@ Before declaring a change complete, report:
 
 ---
 
-## 16. Laravel Boost managed guidelines
+## 16. Frontend Design and Verification
+
+- Use Vue 3 Composition API unless the project clearly uses Options API.
+- Follow the project's existing TypeScript or JavaScript choice.
+- Reuse existing components before creating new ones.
+- Follow the existing component and CSS architecture.
+- Never generate React or Next.js code.
+- Do not use React JSX in Vue components.
+- Use semantic HTML.
+- Maintain keyboard accessibility.
+- Provide visible focus states.
+- Respect `prefers-reduced-motion`.
+- Check mobile, tablet and desktop layouts.
+- Implement loading, empty, error, disabled, hover, focus and success states.
+- Keep typography, spacing, colors, radii and elevation consistent.
+- Avoid generic AI-generated dashboard aesthetics.
+- Avoid unnecessary gradients, excessive glassmorphism, excessive shadows and a card around every section.
+- Do not add a dependency when existing project tools can solve the problem.
+- Use Context7 when APIs or documentation may have changed.
+- Use shadcn-vue MCP only for Vue-compatible components.
+- Use Playwright after meaningful UI changes.
+- Use Chrome DevTools for console, network, CSS, rendering and performance problems.
+- Run the web-design-guidelines skill before declaring UI work complete.
+- Use the frontend-design skill to define one intentional visual direction before major redesign work.
+- Use Vue-specific skills for component architecture and reactivity decisions.
+
+### Standard UI workflow
+
+1. Inspect the existing page and reusable components.
+2. Identify its primary user and primary action.
+3. Define one intentional visual direction.
+4. Plan component boundaries.
+5. Implement the smallest maintainable change.
+6. Run formatting, linting, type checking and tests.
+7. Start the Vue development server.
+8. Inspect the page with Playwright.
+9. Test mobile, tablet and desktop viewports.
+10. Inspect console and network activity.
+11. Check accessibility and web-design guidelines.
+12. Fix high-impact findings.
+13. Repeat browser verification.
+14. Report completed changes and remaining limitations.
+
+---
+
+## 17. Laravel Boost managed guidelines
 
 The following block is preserved from Laravel Boost. Do not remove, shorten, or rewrite it manually.
 
