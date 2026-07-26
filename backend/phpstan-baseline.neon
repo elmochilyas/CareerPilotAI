@@ -1,6 +1,12 @@
 parameters:
 	ignoreErrors:
 		-
+			message: '#^Method Illuminate\\Http\\Testing\\FileFactory\:\:createWithContent\(\) invoked with 3 parameters, 2 required\.$#'
+			identifier: arguments.count
+			count: 5
+			path: tests/Feature/Api/V1/CvIngestion/UploadCvTest.php
+
+		-
 			message: '#^Call to method PHPUnit\\Framework\\Assert\:\:assertTrue\(\) with true will always evaluate to true\.$#'
 			identifier: method.alreadyNarrowedType
 			count: 1
