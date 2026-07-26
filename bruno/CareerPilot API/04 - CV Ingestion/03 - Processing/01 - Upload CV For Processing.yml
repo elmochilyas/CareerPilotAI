@@ -1,0 +1,72 @@
+info:
+  name: 01 - Upload CV For Processing
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/cv"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: multipart-form
+    data:
+      - name: file
+        type: file
+        value: ["04 - CV Ingestion/fixtures/valid-test.pdf"]
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN cookie is missing. Run CSRF Cookie and Login first.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        const status = res.getStatus();
+
+        if (status === 201) {
+          test("Status 201", function () { expect(true).to.be.true; });
+
+          test("Initial status is queued", function () {
+            expect(res.getBody().data.status).to.equal("queued");
+          });
+
+          test("Latest run is present with processing status", function () {
+            const run = res.getBody().data.latest_run;
+            expect(run).to.not.equal(null);
+            expect(run.status).to.equal("processing");
+          });
+
+          const doc = res.getBody().data;
+          bru.setVar("cvDocumentForProcessing", String(doc.id));
+          bru.setVar("cvProcessingComplete", "false");
+        }
+
+        if (status === 409) {
+          test("Status 409 duplicate", function () { expect(true).to.be.true; });
+          // Reuse the document from Upload Valid PDF
+          var existingId = bru.getVar("cvDocumentId");
+          if (existingId) {
+            bru.setVar("cvDocumentForProcessing", existingId);
+            bru.setVar("cvProcessingComplete", "false");
+          }
+        }
+
+        if (status === 429) {
+          test("Status 429 rate limited", function () { expect(true).to.be.true; });
+        }
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

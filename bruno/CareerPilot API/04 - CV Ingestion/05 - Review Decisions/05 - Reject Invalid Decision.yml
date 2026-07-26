@@ -1,0 +1,53 @@
+info:
+  name: 05 - Reject Invalid Decision
+  type: http
+  seq: 5
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/cv/{{cvDocumentForProcessing}}/suggestions/{{suggestionId}}"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "decision": "invalid_decision_value"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN missing.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        test("Status 422", function () {
+          expect(res.getStatus()).to.equal(422);
+        });
+
+        test("Error mentions decision in validation", function () {
+          const body = res.getBody();
+          const hasDecision = body.code === "invalid_decision" ||
+            !!(body.errors && body.errors.decision) ||
+            /decision/i.test(JSON.stringify(body.errors));
+          expect(hasDecision).to.equal(true);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

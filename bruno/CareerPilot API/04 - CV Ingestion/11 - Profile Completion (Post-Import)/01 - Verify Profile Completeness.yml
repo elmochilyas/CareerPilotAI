@@ -1,0 +1,44 @@
+info:
+  name: 01 - Verify Profile Completeness
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/profile"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        const profile = res.getBody().data;
+
+        test("Has headline or professional_summary", function () {
+          const hasHeadline = profile.headline && profile.headline.length > 0;
+          const hasSummary = profile.professional_summary && profile.professional_summary.length > 0;
+          expect(hasHeadline || hasSummary).to.equal(true);
+        });
+
+        test("Profile has items or skills", function () {
+          var hasItems = profile.items && Object.keys(profile.items).length > 0;
+          var newItems = JSON.parse(bru.getVar("temporaryProfileItemIds") || "[]");
+          expect(hasItems || newItems.length > 0).to.equal(true);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

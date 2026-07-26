@@ -1,0 +1,7 @@
+info:
+  name: 10 - Concurrency and Idempotency
+  type: folder
+  seq: 10
+
+request:
+  auth: inherit

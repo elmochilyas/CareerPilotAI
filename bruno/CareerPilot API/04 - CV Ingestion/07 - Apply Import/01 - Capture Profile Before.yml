@@ -1,0 +1,52 @@
+info:
+  name: 01 - Capture Profile Before
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/profile"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        const profile = res.getBody().data;
+
+        bru.setVar("profileBeforeUpdatedAt", profile.updated_at || "");
+
+        // Profile items are grouped by type in data.items
+        var allItems = [];
+        if (profile.items) {
+          for (var key in profile.items) {
+            if (profile.items.hasOwnProperty(key) && Array.isArray(profile.items[key])) {
+              allItems = allItems.concat(profile.items[key]);
+            }
+          }
+        }
+        var itemIds = allItems.map(function(item) { return item.id; });
+        bru.setVar("profileItemIdsBefore", JSON.stringify(itemIds));
+
+        // Skills are separate endpoint - store empty for now
+        bru.setVar("skillIdsBefore", "[]");
+
+        bru.setVar("profileHeadlineBefore", profile.headline || "");
+        bru.setVar("profileSummaryBefore", profile.professional_summary || "");
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

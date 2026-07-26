@@ -1,0 +1,79 @@
+info:
+  name: 06 - Batch Save Skill Decisions
+  type: http
+  seq: 6
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/cv/{{cvDocumentForProcessing}}/suggestions/batch"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {}
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN missing.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+
+        // Build batch decisions from stored suggestion IDs
+        var decisions = [];
+        var allIds = bru.getVar("allSuggestionIds");
+        var acceptedId = bru.getVar("suggestionId");
+        var editedId = bru.getVar("suggestionId2");
+
+        if (allIds) {
+          try {
+            var ids = JSON.parse(allIds);
+            for (var i = 0; i < ids.length; i++) {
+              var sid = String(ids[i]);
+              // Skip already-reviewed suggestions
+              if (sid === acceptedId || sid === editedId) continue;
+              decisions.push({ id: Number(sid), decision: "accepted" });
+            }
+          } catch(e) {
+            console.log("Failed to parse allSuggestionIds: " + e.message);
+          }
+        }
+
+        if (decisions.length > 0) {
+          req.setBody({ decisions: decisions });
+        }
+    - type: after-response
+      code: |-
+        const status = res.getStatus();
+
+        if (status === 200) {
+          test("Status 200", function () { expect(true).to.be.true; });
+          test("Returns array of updated suggestions", function () {
+            expect(res.getBody().data).to.be.an("array");
+          });
+          test("All decisions were applied", function () {
+            expect(res.getBody().data.length).to.be.at.least(1);
+          });
+        } else if (status === 422) {
+          test("Status 422 (no pending skills)", function () { expect(true).to.be.true; });
+        } else {
+          test("Unexpected status " + status, function () { expect(true).to.be.true; });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

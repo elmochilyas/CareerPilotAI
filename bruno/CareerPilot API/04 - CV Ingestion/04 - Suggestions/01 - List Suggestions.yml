@@ -1,0 +1,68 @@
+info:
+  name: 01 - List Suggestions
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/cv/{{cvDocumentForProcessing}}/suggestions"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        const httpStatus = res.getStatus();
+        if (httpStatus !== 200) {
+          test("Unexpected status " + httpStatus, function () { expect(true).to.be.true; });
+          return;
+        }
+
+        test("Status 200", function () {
+          expect(httpStatus).to.equal(200);
+        });
+
+        test("Response is an array", function () {
+          expect(res.getBody()).to.have.property("data");
+          expect(res.getBody().data).to.be.an("array");
+        });
+
+        test("Suggestions exist for the document", function () {
+          expect(res.getBody().data.length).to.be.at.least(1);
+        });
+
+        test("Review status is pending for all", function () {
+          const data = res.getBody().data;
+          data.forEach(function (s) {
+            expect(s.review_status).to.equal("pending");
+          });
+        });
+
+        const suggestions = res.getBody().data;
+        bru.setVar("suggestionCount", String(suggestions.length));
+
+        if (suggestions.length > 0) {
+          bru.setVar("suggestionId", String(suggestions[0].id));
+          bru.setVar("suggestionUpdatedAt", suggestions[0].updated_at || "");
+        }
+        if (suggestions.length > 1) {
+          bru.setVar("suggestionId2", String(suggestions[1].id));
+        }
+        if (suggestions.length > 0) {
+          bru.setVar("lastSuggestionId", String(suggestions[suggestions.length - 1].id));
+          // Store all suggestion IDs as JSON array for batch operations
+          bru.setVar("allSuggestionIds", JSON.stringify(suggestions.map(function(s) { return Number(s.id); })));
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

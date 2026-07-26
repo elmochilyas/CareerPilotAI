@@ -1,0 +1,67 @@
+info:
+  name: 06 - Delete Imported Profile Items
+  type: http
+  seq: 6
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/cv"
+  headers:
+    - name: Accept
+      value: application/json
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const itemIds = JSON.parse(bru.getVar("temporaryProfileItemIds") || "[]");
+        const skillIds = JSON.parse(bru.getVar("temporarySkillIds") || "[]");
+        if (itemIds.length === 0 && skillIds.length === 0) { return; }
+
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) { console.log("No XSRF token, skipping item cleanup"); return; }
+
+        const token = decodeURIComponent(xsrfToken);
+        const baseUrl = bru.getVar("baseUrl") || "http://careerpilot-api.test";
+        const headers = {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "X-XSRF-TOKEN": token
+        };
+
+        for (var i = 0; i < itemIds.length; i++) {
+          try {
+            await bru.sendRequest({
+              method: "DELETE",
+              url: baseUrl + "/api/v1/profile/items/" + itemIds[i],
+              headers: headers
+            });
+            console.log("Deleted profile item " + itemIds[i]);
+          } catch(e) {
+            console.log("Cleanup item " + itemIds[i] + " failed: " + e.message);
+          }
+        }
+        for (var j = 0; j < skillIds.length; j++) {
+          try {
+            await bru.sendRequest({
+              method: "DELETE",
+              url: baseUrl + "/api/v1/candidate/skills/" + skillIds[j],
+              headers: headers
+            });
+            console.log("Deleted skill " + skillIds[j]);
+          } catch(e) {
+            console.log("Cleanup skill " + skillIds[j] + " failed: " + e.message);
+          }
+        }
+    - type: after-response
+      code: |-
+        test("Profile/skill cleanup attempted", function () {
+          expect(true).to.be.true;
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

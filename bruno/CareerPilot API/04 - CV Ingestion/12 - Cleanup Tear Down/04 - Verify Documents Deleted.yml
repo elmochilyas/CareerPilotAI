@@ -1,0 +1,50 @@
+info:
+  name: 04 - Verify Documents Deleted
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/cv"
+  query:
+    page: "1"
+    per_page: "50"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        const docs = res.getBody().data || [];
+        var found = 0;
+        var pendingId = bru.getVar("cvDocumentForProcessing");
+        docs.forEach(function (doc) {
+          if (String(doc.id) === pendingId) {
+            found++;
+          }
+        });
+
+        test("Processed document no longer listed", function () {
+          expect(found).to.equal(0);
+        });
+
+        if (found > 0) {
+          console.log("WARNING: Document " + pendingId + " still visible after delete (soft delete).");
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

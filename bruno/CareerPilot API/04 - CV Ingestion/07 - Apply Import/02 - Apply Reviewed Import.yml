@@ -1,0 +1,78 @@
+info:
+  name: 02 - Apply Reviewed Import
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/cv/{{cvDocumentForProcessing}}/apply"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+    - name: Idempotency-Key
+      value: "{{importIdempotencyKey}}"
+  body:
+    type: json
+    data: |-
+      {}
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN missing.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+
+        // Generate a unique idempotency key for this run
+        var key = bru.getVar("importIdempotencyKey");
+        if (!key) {
+          var now = Date.now().toString();
+          var key = "bruno-cv-import-" + now;
+          bru.setVar("importIdempotencyKey", key);
+        }
+    - type: after-response
+      code: |-
+        test("Status 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Returns import batch resource", function () {
+          const body = res.getBody();
+          expect(body).to.have.property("data");
+          expect(body.data).to.have.property("id");
+          expect(body.data).to.have.property("status");
+          expect(body.data).to.have.property("cv_document_id");
+        });
+
+        test("Batch status is applied", function () {
+          expect(res.getBody().data.status).to.equal("applied");
+        });
+
+        test("Batch has import summary", function () {
+          expect(res.getBody().data.summary).to.have.property("fields_updated");
+          expect(res.getBody().data.summary).to.have.property("items_created");
+          expect(res.getBody().data.summary).to.have.property("skills_added");
+        });
+
+        test("Imported at timestamp is set", function () {
+          expect(res.getBody().data.imported_at).to.match(/^\d{4}-\d{2}-\d{2}T/);
+        });
+
+        const batch = res.getBody().data;
+        bru.setVar("importBatchId", String(batch.id));
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

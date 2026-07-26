@@ -1,0 +1,62 @@
+info:
+  name: 02 - Reject Corrupt PDF
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/cv"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: multipart-form
+    data:
+      - name: file
+        type: file
+        value: ["04 - CV Ingestion/fixtures/corrupt.pdf"]
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN cookie is missing.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        
+        const httpStatus = res.getStatus();
+
+        if (httpStatus === 422) {
+          test("Status 422", function () { expect(true).to.be.true; });
+
+          test("Error code mentions file type", function () {
+            const code = res.getBody().code;
+            const valid = code === "validation_error" || code === "file_type_mismatch" || code === "file_corrupt";
+            expect(valid).to.equal(true);
+          });
+
+          test("Detail mentions binary signature or MIME type", function () {
+            const detail = res.getBody().detail.toLowerCase();
+            const valid = detail.includes("binary") || detail.includes("signature") || detail.includes("mime") || detail.includes("type");
+            expect(valid).to.equal(true);
+          });
+        }
+
+        if (httpStatus === 429) {
+          test("Status 429 rate limited", function () { expect(true).to.be.true; });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

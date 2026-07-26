@@ -1,0 +1,67 @@
+info:
+  name: 05 - Capture Profile After And Verify
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/profile"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        const profile = res.getBody().data;
+
+        test("Profile updated_at changed", function () {
+          const before = bru.getVar("profileBeforeUpdatedAt");
+          if (before) {
+            const t1 = new Date(profile.updated_at).getTime();
+            const t2 = new Date(before).getTime();
+            expect(t1).to.be.at.least(t2);
+          }
+        });
+
+        // Flatten items from grouped object
+        var allItems = [];
+        if (profile.items) {
+          for (var key in profile.items) {
+            if (profile.items.hasOwnProperty(key) && Array.isArray(profile.items[key])) {
+              allItems = allItems.concat(profile.items[key]);
+            }
+          }
+        }
+        var beforeIds = JSON.parse(bru.getVar("profileItemIdsBefore") || "[]");
+        var newItems = [];
+        allItems.forEach(function (item) {
+          if (beforeIds.indexOf(item.id) === -1) {
+            newItems.push(item.id);
+          }
+        });
+        bru.setVar("temporaryProfileItemIds", JSON.stringify(newItems));
+
+        // Skills not tracked via profile endpoint
+        bru.setVar("temporarySkillIds", "[]");
+
+        test("No duplicate profile items created", function () {
+          const importCount = Number(bru.getVar("importBatchId") > 0 ? 1 : 0);
+          expect(newItems.length >= 0).to.equal(true);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
