@@ -5,7 +5,7 @@ import CvUploadZone from '@/features/cv-ingestion/components/CvUploadZone.vue'
 describe('CvUploadZone', () => {
   it('renders upload prompt text', () => {
     const wrapper = mount(CvUploadZone)
-    expect(wrapper.text()).toContain('Drop your CV here or click to browse')
+    expect(wrapper.text()).toContain('Click to upload or drag and drop')
   })
 
   it('shows accepted file types', () => {

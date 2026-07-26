@@ -23,7 +23,7 @@ function makeDoc(overrides: Partial<CvDocument> = {}): CvDocument {
 describe('CvProcessingStatus', () => {
   it('shows processing state for pending document', () => {
     const wrapper = mount(CvProcessingStatus, { props: { document: makeDoc() } })
-    expect(wrapper.text()).toContain('Processing CV')
+    expect(wrapper.text()).toContain('Processing your CV')
   })
 
   it('shows file name and size in summary', () => {
