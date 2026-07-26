@@ -24,6 +24,7 @@ async function handleLogout(): Promise<void> {
 const navLinks = [
   { name: 'home', label: 'Home' },
   { name: 'profile', label: 'Profile' },
+  { name: 'cv-ingestion', label: 'Import CV' },
 ]
 </script>
 
