@@ -20,16 +20,16 @@ const emit = defineEmits<{
 <template>
   <div
     :class="[
-      'group inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-sm transition-all',
+      'group inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-all duration-200',
       removed
         ? 'border-red-200 bg-red-50 text-red-400 line-through'
         : accepted
-          ? 'border-green-300 bg-green-50 text-green-800'
+          ? 'border-emerald-300 bg-emerald-50 text-emerald-800 shadow-sm'
           : existing
-            ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+            ? 'border-emerald-200 bg-emerald-50/50 text-emerald-700'
             : archived
               ? 'border-amber-200 bg-amber-50 text-amber-700'
-              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:shadow-sm',
+              : 'border-slate-200 bg-white text-slate-700 hover:border-primary-300 hover:bg-primary-50 hover:shadow-sm',
     ]"
   >
     <span class="max-w-[140px] truncate">
@@ -37,20 +37,20 @@ const emit = defineEmits<{
     </span>
     <span
       v-if="accepted && !removed"
-      class="ml-0.5 inline-flex items-center gap-0.5 rounded bg-green-100/60 px-1 text-[10px] font-medium text-green-600"
+      class="ml-0.5 inline-flex items-center gap-0.5 rounded-full bg-emerald-100 px-1.5 text-[10px] font-medium text-emerald-600"
     >
       <Check class="h-3 w-3" aria-hidden="true" />
       Accepted
     </span>
     <span
       v-else-if="existing && !removed"
-      class="ml-0.5 rounded bg-emerald-100/60 px-1 text-[10px] font-medium text-emerald-600"
+      class="ml-0.5 rounded-full bg-emerald-100/60 px-1.5 text-[10px] font-medium text-emerald-600"
     >
       In profile
     </span>
     <span
       v-else-if="archived && !removed"
-      class="ml-0.5 rounded bg-amber-100/60 px-1 text-[10px] font-medium text-amber-600"
+      class="ml-0.5 rounded-full bg-amber-100/60 px-1.5 text-[10px] font-medium text-amber-600"
     >
       Archived
     </span>
@@ -64,7 +64,7 @@ const emit = defineEmits<{
     </button>
     <button
       v-if="removed"
-      class="text-xs font-medium text-red-600 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-primary-500/40 rounded px-1"
+      class="text-xs font-semibold text-red-600 hover:text-red-800 focus:outline-none focus:ring-2 focus:ring-primary-500/40 rounded px-1"
       @click="emit('undo', suggestion.id)"
     >
       Undo

@@ -129,9 +129,7 @@ function isRemoved(id: number): boolean {
 }
 
 function isAccepted(s: CvSuggestion<'skill'>): boolean {
-  return (
-    pendingAcceptIds.value.has(s.id) || s.review_status === 'accepted'
-  )
+  return pendingAcceptIds.value.has(s.id) || s.review_status === 'accepted'
 }
 
 function hasCategoryPending(category: string): boolean {
@@ -183,35 +181,37 @@ function languageProficiencyLabel(p: string | null): string {
   <div class="space-y-6">
     <!-- Technical skills section -->
     <section aria-labelledby="skills-heading">
-      <div class="flex items-center gap-2 border-b border-slate-200 pb-2 mb-4">
+      <div class="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
         <h3 id="skills-heading" class="text-sm font-semibold text-slate-700">Technical skills</h3>
-        <span class="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">
+        <span
+          class="inline-flex items-center justify-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500"
+        >
           {{ skillSuggestions.length }}
         </span>
       </div>
 
-      <p class="text-sm text-slate-500 mb-4">
-        Click <strong>&times;</strong> to exclude a skill from import. Removed skills can be
-        restored before saving.
+      <p class="text-sm text-slate-500 mb-5">
+        Click <strong class="text-slate-700">&times;</strong> to exclude a skill. Removed skills can
+        be restored before saving.
       </p>
 
-      <div v-for="cat in categoryKeys" :key="cat" class="mb-4">
-        <div class="flex items-center justify-between mb-2">
-          <h4 class="text-xs font-medium uppercase tracking-wide text-slate-500">{{ cat }}</h4>
+      <div v-for="cat in categoryKeys" :key="cat" class="mb-5 last:mb-0">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="text-xs font-semibold uppercase tracking-wider text-slate-500">{{ cat }}</h4>
           <div
             v-if="(groupedSkills[cat]?.length ?? 0) > 1 && !readonly && hasCategoryPending(cat)"
             class="flex gap-2"
           >
             <button
               type="button"
-              class="text-xs text-primary-600 hover:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500/40 rounded px-1.5 py-0.5"
+              class="text-xs font-medium text-primary-600 hover:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500/40 rounded px-1.5 py-0.5"
               @click="keepAll(cat)"
             >
               Keep all
             </button>
             <button
               type="button"
-              class="text-xs text-red-600 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-primary-500/40 rounded px-1.5 py-0.5"
+              class="text-xs font-medium text-red-600 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-primary-500/40 rounded px-1.5 py-0.5"
               @click="removeAll(cat)"
             >
               Remove all
@@ -234,17 +234,22 @@ function languageProficiencyLabel(p: string | null): string {
         </div>
       </div>
 
-      <div v-if="categoryKeys.length === 0" class="text-sm text-slate-400 italic">
-        No technical skills extracted from this CV.
+      <div
+        v-if="categoryKeys.length === 0"
+        class="rounded-lg border border-dashed border-slate-200 p-6 text-center"
+      >
+        <p class="text-sm text-slate-400 italic">No technical skills extracted from this CV.</p>
       </div>
     </section>
 
     <!-- Languages section -->
     <section v-if="languageSuggestions.length > 0" aria-labelledby="languages-heading">
-      <div class="flex items-center gap-2 border-b border-slate-200 pb-2 mb-4">
+      <div class="flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
         <Globe class="h-4 w-4 text-slate-500" aria-hidden="true" />
         <h3 id="languages-heading" class="text-sm font-semibold text-slate-700">Languages</h3>
-        <span class="rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">
+        <span
+          class="inline-flex items-center justify-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500"
+        >
           {{ languageSuggestions.length }}
         </span>
       </div>
@@ -254,26 +259,28 @@ function languageProficiencyLabel(p: string | null): string {
           v-for="s in languageSuggestions"
           :key="s.id"
           :class="[
-            'flex items-center justify-between gap-3 rounded-lg border p-3 transition-colors',
-            isLanguageReviewed(s) ? 'border-green-200 bg-green-50/50' : 'border-slate-200 bg-white',
+            'flex items-center justify-between gap-3 rounded-xl border p-4 transition-all duration-200',
+            isLanguageReviewed(s)
+              ? 'border-emerald-200 bg-emerald-50/50'
+              : 'border-slate-200 bg-white shadow-sm hover:border-slate-300',
           ]"
         >
           <div class="flex items-center gap-3">
-            <span class="font-medium text-slate-800">{{
+            <span class="font-semibold text-slate-800">{{
               (s.suggested_value as LanguageValue).language
             }}</span>
-            <span class="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
+            <span class="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
               {{ languageProficiencyLabel((s.suggested_value as LanguageValue).proficiency) }}
             </span>
           </div>
           <div class="flex items-center gap-2">
             <span
               v-if="isLanguageReviewed(s) && !readonly"
-              class="rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600"
+              class="inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-medium bg-emerald-50 text-emerald-700 border-emerald-200"
             >
               {{ decisionLabel(s) }}
             </span>
-            <div v-if="!readonly && !isLanguageReviewed(s)" class="flex gap-1">
+            <div v-if="!readonly && !isLanguageReviewed(s)" class="flex gap-1.5">
               <Button size="sm" @click="emit('decision', s.id, { decision: 'accepted' })">
                 <Check class="mr-0.5 h-3.5 w-3.5" aria-hidden="true" /> Keep
               </Button>
@@ -294,7 +301,7 @@ function languageProficiencyLabel(p: string | null): string {
     <!-- Undo toast -->
     <div
       v-if="undoToast && !readonly"
-      class="fixed bottom-20 left-1/2 z-20 -translate-x-1/2 rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-lg"
+      class="fixed bottom-24 left-1/2 z-30 -translate-x-1/2 rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-xl"
       role="alert"
     >
       <div class="flex items-center gap-3">
@@ -303,18 +310,18 @@ function languageProficiencyLabel(p: string | null): string {
         </p>
         <button
           type="button"
-          class="inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500/40 rounded px-2 py-1"
+          class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-sm font-medium text-primary-600 hover:bg-primary-50 hover:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500/40"
           @click="undoRemove(undoToast.suggestionId)"
         >
           <Undo2 class="h-3.5 w-3.5" aria-hidden="true" /> Undo
         </button>
         <button
           type="button"
-          class="text-slate-400 hover:text-slate-600 focus:outline-none"
+          class="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 focus:outline-none"
           aria-label="Dismiss"
           @click="dismissUndo()"
         >
-          &times;
+          <span class="text-lg leading-none">&times;</span>
         </button>
       </div>
     </div>

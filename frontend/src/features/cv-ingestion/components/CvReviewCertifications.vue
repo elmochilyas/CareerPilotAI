@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, X, FileText, ExternalLink } from '@lucide/vue'
+import { Check, X, FileText, ExternalLink, Award, Building2, Calendar } from '@lucide/vue'
 import type { CvSuggestion, CertificationValue, ReviewDecision } from '../types'
 import Button from '@/components/ui/Button.vue'
 
@@ -21,80 +21,139 @@ function isReviewed(s: CvSuggestion): boolean {
 }
 
 function decisionLabel(s: CvSuggestion): string {
-  const labels: Record<string, string> = {
+  const map: Record<string, string> = {
     accepted: 'Accepted',
     edited: 'Edited',
     rejected: 'Skipped',
     keep_existing: 'Kept existing',
   }
-  return labels[s.review_status] ?? s.review_status
+  return map[s.review_status] ?? s.review_status
+}
+
+const decisionBadgeClasses = (s: CvSuggestion): string => {
+  const map: Record<string, string> = {
+    accepted: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    edited: 'bg-blue-100 text-blue-700 border-blue-200',
+    rejected: 'bg-red-100 text-red-600 border-red-200',
+    keep_existing: 'bg-slate-100 text-slate-600 border-slate-200',
+  }
+  return map[s.review_status] ?? 'bg-slate-100 text-slate-600 border-slate-200'
 }
 </script>
 
 <template>
   <div class="space-y-4">
-    <p class="text-sm text-slate-500">
-      We found {{ suggestions.length }} certification{{ suggestions.length !== 1 ? 's' : '' }}.
-      Review each one before continuing.
-    </p>
-
-    <div v-for="s in suggestions as CvSuggestion<'certification'>[]" :key="s.id" class="space-y-3">
-      <div
-        :class="[
-          'rounded-lg border p-4 transition-colors',
-          isReviewed(s) ? 'border-green-200 bg-green-50/50' : 'border-slate-200 bg-white',
-        ]"
-      >
-        <div class="flex items-start justify-between gap-3">
-          <div class="flex-1 space-y-2">
-            <p class="font-semibold text-slate-900">{{ val(s).name }}</p>
-            <p v-if="val(s).issuer" class="text-sm text-slate-600">{{ val(s).issuer }}</p>
-
-            <div v-if="val(s).date" class="text-xs text-slate-500">
-              {{ val(s).date }}
-            </div>
-
-            <p v-if="val(s).description" class="text-sm text-slate-600">
-              {{ val(s).description }}
-            </p>
-
-            <a
-              v-if="val(s).url"
-              :href="val(s).url ?? undefined"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="inline-flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700"
+    <div
+      v-for="s in suggestions as CvSuggestion<'certification'>[]"
+      :key="s.id"
+      class="rounded-2xl bg-white border border-slate-200 shadow-lg hover:shadow-xl transition-all duration-200"
+    >
+      <div class="p-6">
+        <!-- Header row -->
+        <div class="flex items-start justify-between gap-3 mb-4">
+          <div class="flex items-center gap-3 min-w-0">
+            <div
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+              :class="
+                isReviewed(s) ? 'bg-white shadow-sm border border-slate-200' : 'bg-primary-50'
+              "
             >
-              <ExternalLink class="h-3 w-3" aria-hidden="true" /> View certification
-            </a>
+              <Award
+                class="h-5 w-5"
+                :class="isReviewed(s) ? 'text-slate-500' : 'text-primary-600'"
+                aria-hidden="true"
+              />
+            </div>
+            <div class="min-w-0">
+              <p class="font-semibold text-slate-900 truncate">{{ val(s).name }}</p>
+              <p v-if="val(s).issuer" class="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                <Building2 class="h-3 w-3" aria-hidden="true" />
+                {{ val(s).issuer }}
+              </p>
+            </div>
           </div>
 
           <span
             v-if="isReviewed(s) && !readonly"
-            class="shrink-0 rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600"
+            class="shrink-0 inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-semibold"
+            :class="decisionBadgeClasses(s)"
           >
             {{ decisionLabel(s) }}
           </span>
+          <span
+            v-else-if="!isReviewed(s) && !readonly"
+            class="shrink-0 inline-flex items-center rounded-full border border-primary-200 bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-600"
+          >
+            Pending
+          </span>
         </div>
 
-        <div v-if="!readonly && !isReviewed(s)" class="mt-3 flex flex-wrap gap-2">
-          <Button size="sm" @click="emit('decision', s.id, { decision: 'accepted' })">
-            <Check class="mr-1 h-3.5 w-3.5" aria-hidden="true" /> Accept
+        <!-- Meta strip -->
+        <div
+          v-if="val(s).date || val(s).url"
+          class="mb-4 flex flex-wrap items-center gap-1.5 rounded-xl bg-gradient-to-r from-slate-50 to-white border border-slate-100 px-3 py-2 text-xs text-slate-500"
+        >
+          <span v-if="val(s).date" class="inline-flex items-center gap-1">
+            <Calendar class="h-3 w-3" aria-hidden="true" /> {{ val(s).date }}
+          </span>
+          <span v-if="val(s).date && val(s).url" class="text-slate-300" aria-hidden="true">|</span>
+          <a
+            v-if="val(s).url"
+            :href="val(s).url ?? undefined"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-1 font-medium text-primary-600 hover:text-primary-700"
+          >
+            <ExternalLink class="h-3 w-3" aria-hidden="true" /> View certification
+          </a>
+        </div>
+
+        <!-- Description -->
+        <p
+          v-if="val(s).description"
+          class="mb-4 text-sm text-slate-600 whitespace-pre-wrap leading-relaxed"
+        >
+          {{ val(s).description }}
+        </p>
+
+        <!-- Source text -->
+        <p
+          v-if="s.source_text"
+          class="pl-3 border-l-2 border-slate-200 text-xs text-slate-400 italic"
+        >
+          Source: &ldquo;{{ s.source_text.substring(0, 100)
+          }}{{ s.source_text.length > 100 ? '...' : '' }}&rdquo;
+        </p>
+      </div>
+
+      <!-- Action panel -->
+      <div
+        v-if="!readonly && !isReviewed(s)"
+        class="border-t border-slate-200/50 bg-slate-50/80 rounded-b-2xl px-6 py-4"
+      >
+        <div class="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            class="shadow-md"
+            @click="emit('decision', s.id, { decision: 'accepted' })"
+          >
+            <Check class="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Accept
           </Button>
           <Button
             size="sm"
             variant="outline"
+            class="shadow-sm border-slate-300"
             @click="emit('decision', s.id, { decision: 'keep_existing' })"
           >
-            <FileText class="mr-1 h-3.5 w-3.5" aria-hidden="true" /> Keep existing
+            <FileText class="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Keep existing
           </Button>
           <Button
             size="sm"
             variant="ghost"
-            class="text-red-600 hover:text-red-700"
+            class="hover:bg-red-50 hover:text-red-700 text-red-600"
             @click="emit('decision', s.id, { decision: 'rejected' })"
           >
-            <X class="mr-1 h-3.5 w-3.5" aria-hidden="true" /> Reject
+            <X class="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Reject
           </Button>
         </div>
       </div>

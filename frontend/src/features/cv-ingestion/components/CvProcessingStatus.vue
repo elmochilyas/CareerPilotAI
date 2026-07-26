@@ -51,34 +51,23 @@ const stepStatus = (index: number): 'pending' | 'active' | 'done' | 'error' => {
   return 'pending'
 }
 
-const stepIcon = (status: ReturnType<typeof stepStatus>) => {
-  if (status === 'done') return CheckCircle2
-  if (status === 'error') return AlertCircle
-  if (status === 'active') return Loader2
-  return undefined
+const stepLabel = (index: number): string => {
+  const status = stepStatus(index)
+  if (status === 'done') return 'Complete'
+  if (status === 'active') return 'In progress'
+  if (status === 'error') return 'Failed'
+  return 'Pending'
 }
 
-const stepDotClass = (status: ReturnType<typeof stepStatus>) => {
-  if (status === 'done') return 'bg-green-500'
-  if (status === 'error') return 'bg-red-500'
-  if (status === 'active') return 'bg-blue-500 ring-4 ring-blue-100'
-  return 'bg-slate-300'
-}
-
-const stepLabelClass = (status: ReturnType<typeof stepStatus>) => {
-  if (status === 'done') return 'text-green-700'
-  if (status === 'error') return 'text-red-700'
-  if (status === 'active') return 'text-blue-700 font-medium'
-  return 'text-slate-400'
-}
-
-const connectorClass = (index: number) => {
-  if (props.document.status === 'failed') {
-    return index === 0 ? 'bg-red-300' : 'bg-slate-200'
-  }
-  if (index < currentStepIndex.value) return 'bg-green-400'
-  return 'bg-slate-200'
-}
+const stepMessage = computed(() => {
+  const status = props.document.status
+  if (status === 'pending' || status === 'queued')
+    return 'Your CV is queued and will start processing shortly.'
+  if (status === 'validating') return 'Checking file integrity and format...'
+  if (status === 'extracting') return 'Reading text content from your document...'
+  if (status === 'analyzing') return 'AI is analyzing your experience, skills, and qualifications.'
+  return ''
+})
 
 const failureMessage = computed(() => {
   const code = props.document.failure_code
@@ -109,15 +98,32 @@ const fileTypeLabel = computed(() => {
 <template>
   <div role="status" aria-live="polite">
     <div class="space-y-6">
-      <h2 class="text-lg font-semibold text-slate-900">
-        <template v-if="isProcessing">Processing CV</template>
-        <template v-else-if="document.status === 'failed'">Processing failed</template>
-        <template v-else>CV ready for review</template>
-      </h2>
+      <!-- Status header -->
+      <div class="text-center">
+        <div
+          v-if="isProcessing"
+          class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-50"
+        >
+          <Loader2 class="h-7 w-7 animate-spin text-primary-600" aria-hidden="true" />
+        </div>
+        <h2 class="text-lg font-semibold text-slate-900">
+          <template v-if="isProcessing">Processing your CV</template>
+          <template v-else-if="document.status === 'failed'">Processing failed</template>
+          <template v-else>CV ready for review</template>
+        </h2>
+        <p v-if="isProcessing" class="mt-1 text-sm text-slate-500">
+          {{ stepMessage }}
+        </p>
+      </div>
 
+      <!-- File info -->
       <div class="rounded-lg border border-slate-200 bg-slate-50 p-4">
-        <div class="flex items-start gap-3">
-          <FileText class="mt-0.5 h-5 w-5 shrink-0 text-slate-500" aria-hidden="true" />
+        <div class="flex items-center gap-3">
+          <div
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white shadow-sm"
+          >
+            <FileText class="h-5 w-5 text-slate-500" aria-hidden="true" />
+          </div>
           <div class="min-w-0 flex-1">
             <p class="truncate text-sm font-medium text-slate-900" :title="fileName">
               {{ fileName }}
@@ -131,6 +137,7 @@ const fileTypeLabel = computed(() => {
         </div>
       </div>
 
+      <!-- Processing steps -->
       <nav aria-label="Processing steps" class="space-y-0">
         <div
           v-for="(step, i) in steps"
@@ -139,59 +146,104 @@ const fileTypeLabel = computed(() => {
         >
           <div
             v-if="i < steps.length - 1"
-            class="absolute left-[11px] top-6 h-full w-0.5"
-            :class="connectorClass(i)"
+            class="absolute left-[15px] top-8 h-full w-0.5"
+            :class="[stepStatus(i) === 'done' ? 'bg-emerald-300' : 'bg-slate-200']"
             aria-hidden="true"
           />
           <div
-            class="z-10 flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
-            :class="stepDotClass(stepStatus(i))"
+            class="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all duration-500"
+            :class="{
+              'bg-emerald-500 shadow-sm shadow-emerald-200': stepStatus(i) === 'done',
+              'bg-primary-500 shadow-lg shadow-primary-200/50': stepStatus(i) === 'active',
+              'bg-red-500': stepStatus(i) === 'error',
+              'bg-slate-200': stepStatus(i) === 'pending',
+            }"
             aria-hidden="true"
           >
-            <component
-              :is="stepIcon(stepStatus(i))"
-              v-if="stepIcon(stepStatus(i))"
-              :class="['h-3.5 w-3.5 text-white', stepStatus(i) === 'active' ? 'animate-spin' : '']"
+            <CheckCircle2 v-if="stepStatus(i) === 'done'" class="h-4 w-4 text-white" />
+            <div
+              v-else-if="stepStatus(i) === 'active'"
+              class="h-3 w-3 rounded-full bg-white animate-pulse"
             />
+            <AlertCircle v-else-if="stepStatus(i) === 'error'" class="h-4 w-4 text-white" />
+            <div v-else class="h-2.5 w-2.5 rounded-full bg-slate-400" />
           </div>
-          <div class="flex min-h-6 items-center pt-px">
-            <span :class="['text-sm', stepLabelClass(stepStatus(i))]">
+          <div class="flex flex-col justify-center pt-1">
+            <span
+              class="text-sm font-medium"
+              :class="{
+                'text-emerald-700': stepStatus(i) === 'done',
+                'text-slate-900': stepStatus(i) === 'active',
+                'text-red-700': stepStatus(i) === 'error',
+                'text-slate-400': stepStatus(i) === 'pending',
+              }"
+            >
               {{ step.label }}
+            </span>
+            <span class="text-xs text-slate-400">
+              {{ stepLabel(i) }}
             </span>
           </div>
         </div>
       </nav>
 
-      <div v-if="isProcessing" class="flex items-start gap-2 rounded-md bg-blue-50 p-3">
-        <Loader2 class="mt-0.5 h-4 w-4 shrink-0 animate-spin text-blue-600" aria-hidden="true" />
-        <p class="text-sm text-blue-800">
-          Analysing your CV content. This usually takes a few seconds.
-        </p>
+      <!-- Processing info -->
+      <div v-if="isProcessing" class="rounded-lg border border-primary-100 bg-primary-50/50 p-4">
+        <div class="flex items-start gap-3">
+          <Loader2
+            class="mt-0.5 h-4 w-4 shrink-0 animate-spin text-primary-600"
+            aria-hidden="true"
+          />
+          <div>
+            <p class="text-sm font-medium text-primary-800">Analysing your CV content</p>
+            <p class="mt-0.5 text-sm text-primary-600">
+              This usually takes a few seconds. We'll notify you when it's ready.
+            </p>
+          </div>
+        </div>
       </div>
 
+      <!-- Failure -->
       <div
         v-else-if="document.status === 'failed'"
-        class="rounded-lg border border-red-200 bg-red-50 p-4"
+        class="rounded-xl border border-red-200 bg-red-50 p-5"
         role="alert"
       >
         <div class="flex items-start gap-3">
-          <AlertCircle class="mt-0.5 h-5 w-5 shrink-0 text-red-600" aria-hidden="true" />
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-100">
+            <AlertCircle class="h-5 w-5 text-red-600" aria-hidden="true" />
+          </div>
           <div class="flex-1">
-            <p class="text-sm font-medium text-red-800">Something went wrong</p>
-            <p class="mt-1 text-sm text-red-700">
+            <p class="text-sm font-semibold text-red-800">Something went wrong</p>
+            <p class="mt-1 text-sm leading-relaxed text-red-700">
               {{ failureMessage }}
             </p>
           </div>
         </div>
       </div>
 
-      <div v-else class="flex items-start gap-2 rounded-md bg-green-50 p-3">
-        <CheckCircle2 class="mt-0.5 h-4 w-4 shrink-0 text-green-600" aria-hidden="true" />
-        <p class="text-sm text-green-800">
-          Your CV has been processed successfully. Review the suggested changes before importing.
-        </p>
+      <!-- Ready -->
+      <div
+        v-else-if="document.status === 'ready_for_review'"
+        class="rounded-xl border border-emerald-200 bg-emerald-50 p-5"
+      >
+        <div class="flex items-start gap-3">
+          <div
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100"
+          >
+            <CheckCircle2 class="h-5 w-5 text-emerald-600" aria-hidden="true" />
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-semibold text-emerald-800">Extraction complete</p>
+            <p class="mt-0.5 text-sm leading-relaxed text-emerald-700">
+              Your CV has been processed successfully. Review the suggested changes before
+              importing.
+            </p>
+          </div>
+        </div>
       </div>
 
+      <!-- Actions -->
       <div class="flex flex-wrap gap-3">
         <Button
           v-if="document.status === 'failed'"
@@ -214,6 +266,10 @@ const fileTypeLabel = computed(() => {
           v-if="document.status === 'ready_for_review'"
           variant="primary"
           size="sm"
+          :class="[
+            'relative overflow-hidden',
+            'after:absolute after:inset-0 after:rounded-lg after:bg-white/20 after:opacity-0 hover:after:opacity-100 after:transition-opacity',
+          ]"
           @click="emit('proceedToReview')"
         >
           <CheckCircle2 class="h-4 w-4" aria-hidden="true" />

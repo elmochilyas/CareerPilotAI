@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue'
-import { Eye, CheckCircle2 } from '@lucide/vue'
+import { Eye, CheckCircle2, ArrowRight, FileText } from '@lucide/vue'
 import type { CvSuggestion, ImportPreview, ReviewDecision, SuggestionType } from '../types'
 import CvReviewStepper from './CvReviewStepper.vue'
 import type { StepDef, StepStatus } from './CvReviewStepper.vue'
@@ -67,6 +67,17 @@ const STEP_LABELS: Record<string, string> = {
   certifications: 'Certifications',
   skills: 'Skills & Languages',
   links: 'Links',
+}
+
+const STEP_DESCRIPTIONS: Record<string, string> = {
+  personal: 'Review your name, contact details, and location.',
+  profile: 'Review your professional headline and summary.',
+  experience: 'Review work experiences extracted from your CV.',
+  education: 'Review your educational background.',
+  projects: 'Review your projects.',
+  certifications: 'Review your certifications and licenses.',
+  skills: 'Review technical skills and languages found in your CV.',
+  links: 'Review social links and online profiles.',
 }
 
 const STEPS_ORDER = [
@@ -138,7 +149,6 @@ onMounted(() => {
   emit('stepChange', activeStepIndex.value)
 })
 
-// Re-derive when suggestions change or readonly toggles
 watch(
   () => [props.suggestions, props.readonly] as const,
   ([, readonly]) => {
@@ -303,7 +313,6 @@ const finalSummary = computed<FinalStepSummary>(() => {
     }
   }
 
-  // Skills that are still pending (not reviewed) — show as ignored
   const pendingSkills = props.suggestions.filter(
     (s) => s.type === 'skill' && s.review_status === 'pending',
   )
@@ -352,160 +361,199 @@ const conflictCount = computed(() => props.preview?.conflicts?.length ?? 0)
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
     <!-- Readonly banner -->
     <div
       v-if="readonly"
-      class="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-4"
+      class="flex items-start gap-3 bg-gradient-to-r from-blue-50 to-blue-50/50 border-b border-blue-100 px-8 py-4"
     >
       <Eye class="mt-0.5 h-5 w-5 shrink-0 text-blue-600" aria-hidden="true" />
       <div>
-        <p class="text-sm font-medium text-blue-800">Viewing imported CV</p>
-        <p class="text-xs text-blue-700">
-          This CV has already been imported. The information below shows what was extracted &mdash;
-          no changes can be made.
+        <p class="text-sm font-semibold text-blue-800">Viewing imported CV</p>
+        <p class="text-xs text-blue-600">
+          This CV has already been imported &mdash; no changes can be made.
         </p>
       </div>
     </div>
 
     <!-- Header -->
-    <div class="flex items-start justify-between">
-      <div>
-        <h2 class="text-lg font-semibold text-slate-900">
-          {{ readonly ? 'Extracted information' : 'Review extracted information' }}
-        </h2>
-        <p class="text-sm text-slate-500">
-          {{
-            readonly
-              ? 'View the data that was extracted from this CV.'
-              : 'Review each area one step at a time.'
-          }}
-        </p>
+    <div
+      class="flex items-start justify-between border-b border-slate-100 bg-gradient-to-b from-white to-slate-50/50 px-8 py-5"
+    >
+      <div class="flex items-start gap-4">
+        <div
+          class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 shadow-sm"
+        >
+          <FileText class="h-5 w-5 text-primary-600" aria-hidden="true" />
+        </div>
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">
+            {{ readonly ? 'Extracted information' : 'Review extracted information' }}
+          </h2>
+          <p class="mt-0.5 text-sm text-slate-500">
+            {{
+              currentStep?.key && currentStep.key !== 'final'
+                ? STEP_DESCRIPTIONS[currentStep.key]
+                : ''
+            }}
+            <template v-if="!currentStep?.key || currentStep.key === 'final'">
+              {{
+                readonly
+                  ? 'View the data that was extracted from this CV.'
+                  : 'Review each area one step at a time.'
+              }}
+            </template>
+          </p>
+        </div>
       </div>
-      <Button v-if="!readonly" variant="outline" size="sm" @click="emit('uploadNew')"
-        >Upload different CV</Button
+      <Button
+        v-if="!readonly"
+        variant="outline"
+        size="sm"
+        class="shrink-0"
+        @click="emit('uploadNew')"
       >
+        <ArrowRight class="mr-1 h-3.5 w-3.5 rotate-180" aria-hidden="true" />
+        Upload different CV
+      </Button>
     </div>
 
     <!-- Stepper -->
-    <CvReviewStepper
-      :steps="steps"
-      :active-index="activeStepIndex"
-      :step-statuses="stepStatuses"
-      :readonly="readonly"
-      v:mobile-dropdown-open="mobileDropdownOpen"
-      @navigate="goToStep"
-    />
-
-    <!-- No suggestions -->
-    <div
-      v-if="!readonly && !currentStep"
-      class="rounded-lg border border-slate-200 bg-white p-8 text-center"
-    >
-      <CheckCircle2 class="mx-auto h-8 w-8 text-green-500" aria-hidden="true" />
-      <p class="mt-2 text-sm font-medium text-slate-700">No suggestions to review</p>
-      <p class="mt-1 text-xs text-slate-500">No new information was extracted from this CV.</p>
-      <div class="mt-4">
-        <Button size="sm" @click="emit('proceedToImport')">Continue to import</Button>
-      </div>
+    <div class="border-b border-slate-100 bg-slate-50/30 px-8 py-5">
+      <CvReviewStepper
+        :steps="steps"
+        :active-index="activeStepIndex"
+        :step-statuses="stepStatuses"
+        :reviewed="reviewedCount"
+        :total="totalCount"
+        :readonly="readonly"
+        v:mobile-dropdown-open="mobileDropdownOpen"
+        @navigate="goToStep"
+      />
     </div>
 
-    <!-- Step content -->
-    <div v-if="currentStep" class="min-h-[200px]">
-      <!-- Personal info -->
-      <CvReviewPersonalInfo
-        v-if="currentStep.key === 'personal'"
-        :suggestions="normalSuggestions"
-        :readonly="readonly"
-        @decision="(id, d) => emit('decision', id, d)"
-      />
-
-      <!-- Profile -->
-      <CvReviewProfileStep
-        v-else-if="currentStep.key === 'profile'"
-        :suggestions="normalSuggestions"
-        :readonly="readonly"
-        @decision="(id, d) => emit('decision', id, d)"
-      />
-
-      <!-- Experience -->
-      <CvReviewExperience
-        v-else-if="currentStep.key === 'experience'"
-        :suggestions="normalSuggestions"
-        :readonly="readonly"
-        @decision="(id, d) => emit('decision', id, d)"
-      />
-
-      <!-- Education -->
-      <CvReviewEducation
-        v-else-if="currentStep.key === 'education'"
-        :suggestions="normalSuggestions"
-        :readonly="readonly"
-        @decision="(id, d) => emit('decision', id, d)"
-      />
-
-      <!-- Projects -->
-      <CvReviewProjects
-        v-else-if="currentStep.key === 'projects'"
-        :suggestions="normalSuggestions"
-        :readonly="readonly"
-        @decision="(id, d) => emit('decision', id, d)"
-      />
-
-      <!-- Certifications -->
-      <CvReviewCertifications
-        v-else-if="currentStep.key === 'certifications'"
-        :suggestions="normalSuggestions"
-        :readonly="readonly"
-        @decision="(id, d) => emit('decision', id, d)"
-      />
-
-      <!-- Skills & Languages -->
-      <CvReviewSkills
-        v-else-if="currentStep.key === 'skills'"
-        :suggestions="normalSuggestions"
-        :readonly="readonly"
-        @decision="(id, d) => emit('decision', id, d)"
-        @save-batch="handleSkillSave"
-        @unsaved-change="handleSkillsUnsaved"
-      />
-
-      <!-- Links -->
-      <CvReviewLinks
-        v-else-if="currentStep.key === 'links'"
-        :suggestions="normalSuggestions"
-        :readonly="readonly"
-        @decision="(id, d) => emit('decision', id, d)"
-      />
-
-      <!-- Final review -->
-      <CvReviewFinal
-        v-else-if="currentStep.key === 'final'"
-        :suggestions="suggestions"
-        :preview="preview"
-        :summary="finalSummary"
-        :steps="steps"
-        :step-statuses="stepStatuses"
-        :apply-disabled-reason="applyDisabledReason"
-        :apply-pending="applyPending"
-        :readonly="readonly"
-        @navigate-to-step="goToStep"
-        @apply="emit('proceedToImport')"
-      />
-
-      <!-- Unsupported suggestions -->
-      <div v-if="unsupportedSuggestions.length > 0" class="mt-4 space-y-3">
-        <p class="text-xs font-medium text-slate-400">
-          {{ unsupportedSuggestions.length }} item{{ unsupportedSuggestions.length > 1 ? 's' : '' }}
-          could not be reviewed
+    <!-- Step content area -->
+    <div class="bg-slate-50/50 px-8 py-6">
+      <!-- No suggestions -->
+      <div v-if="!readonly && !currentStep" class="flex flex-col items-center py-14 text-center">
+        <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 shadow-sm">
+          <CheckCircle2 class="h-8 w-8 text-emerald-500" aria-hidden="true" />
+        </div>
+        <h3 class="mt-4 text-lg font-semibold text-slate-900">All clear!</h3>
+        <p class="mt-1 text-sm text-slate-500 max-w-sm">
+          No suggestions to review. Your CV didn't extract any new information.
         </p>
-        <CvUnsupportedSuggestion
-          v-for="s in unsupportedSuggestions"
-          :key="s.id"
-          :suggestion="s"
-          @decision="(id, d) => emit('decision', id, d)"
-        />
+        <div class="mt-6">
+          <Button size="sm" @click="emit('proceedToImport')">
+            Continue to import
+            <ArrowRight class="ml-1 h-4 w-4" aria-hidden="true" />
+          </Button>
+        </div>
       </div>
+
+      <!-- Step content with transitions -->
+      <Transition name="review-step" mode="out-in">
+        <div :key="activeStepIndex" class="min-h-[280px]">
+          <!-- Personal info -->
+          <CvReviewPersonalInfo
+            v-if="currentStep?.key === 'personal'"
+            :suggestions="normalSuggestions"
+            :readonly="readonly"
+            @decision="(id, d) => emit('decision', id, d)"
+          />
+
+          <!-- Profile -->
+          <CvReviewProfileStep
+            v-else-if="currentStep?.key === 'profile'"
+            :suggestions="normalSuggestions"
+            :readonly="readonly"
+            @decision="(id, d) => emit('decision', id, d)"
+          />
+
+          <!-- Experience -->
+          <CvReviewExperience
+            v-else-if="currentStep?.key === 'experience'"
+            :suggestions="normalSuggestions"
+            :readonly="readonly"
+            @decision="(id, d) => emit('decision', id, d)"
+          />
+
+          <!-- Education -->
+          <CvReviewEducation
+            v-else-if="currentStep?.key === 'education'"
+            :suggestions="normalSuggestions"
+            :readonly="readonly"
+            @decision="(id, d) => emit('decision', id, d)"
+          />
+
+          <!-- Projects -->
+          <CvReviewProjects
+            v-else-if="currentStep?.key === 'projects'"
+            :suggestions="normalSuggestions"
+            :readonly="readonly"
+            @decision="(id, d) => emit('decision', id, d)"
+          />
+
+          <!-- Certifications -->
+          <CvReviewCertifications
+            v-else-if="currentStep?.key === 'certifications'"
+            :suggestions="normalSuggestions"
+            :readonly="readonly"
+            @decision="(id, d) => emit('decision', id, d)"
+          />
+
+          <!-- Skills & Languages -->
+          <CvReviewSkills
+            v-else-if="currentStep?.key === 'skills'"
+            :suggestions="normalSuggestions"
+            :readonly="readonly"
+            @decision="(id, d) => emit('decision', id, d)"
+            @save-batch="handleSkillSave"
+            @unsaved-change="handleSkillsUnsaved"
+          />
+
+          <!-- Links -->
+          <CvReviewLinks
+            v-else-if="currentStep?.key === 'links'"
+            :suggestions="normalSuggestions"
+            :readonly="readonly"
+            @decision="(id, d) => emit('decision', id, d)"
+          />
+
+          <!-- Final review -->
+          <CvReviewFinal
+            v-else-if="currentStep?.key === 'final'"
+            :suggestions="suggestions"
+            :preview="preview"
+            :summary="finalSummary"
+            :steps="steps"
+            :step-statuses="stepStatuses"
+            :apply-disabled-reason="applyDisabledReason"
+            :apply-pending="applyPending"
+            :readonly="readonly"
+            @navigate-to-step="goToStep"
+            @apply="emit('proceedToImport')"
+          />
+
+          <!-- Unsupported suggestions -->
+          <div v-if="unsupportedSuggestions.length > 0" class="mt-6 space-y-3">
+            <div class="flex items-center gap-2 border-b border-slate-100 pb-2">
+              <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                {{ unsupportedSuggestions.length }} item{{
+                  unsupportedSuggestions.length > 1 ? 's' : ''
+                }}
+                could not be reviewed
+              </p>
+            </div>
+            <CvUnsupportedSuggestion
+              v-for="s in unsupportedSuggestions"
+              :key="s.id"
+              :suggestion="s"
+              @decision="(id, d) => emit('decision', id, d)"
+            />
+          </div>
+        </div>
+      </Transition>
     </div>
 
     <!-- Footer -->
@@ -528,3 +576,20 @@ const conflictCount = computed(() => props.preview?.conflicts?.length ?? 0)
     />
   </div>
 </template>
+
+<style scoped>
+.review-step-enter-active {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.review-step-leave-active {
+  transition: all 0.18s cubic-bezier(0.55, 0, 1, 0.45);
+}
+.review-step-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
+}
+.review-step-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+</style>

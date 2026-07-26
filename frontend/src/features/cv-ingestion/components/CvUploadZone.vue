@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Upload, FileText, AlertCircle } from '@lucide/vue'
+import { Upload, FileText, AlertCircle, CheckCircle2 } from '@lucide/vue'
 import Button from '@/components/ui/Button.vue'
 
 const ALLOWED_TYPES = [
@@ -80,18 +80,26 @@ const sizeLabel = (bytes: number): string => {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
+
+const fileExtension = (name: string): string => {
+  const ext = name.split('.').pop()?.toUpperCase()
+  return ext ?? ''
+}
 </script>
 
 <template>
   <div class="space-y-4">
+    <!-- Drop zone -->
     <div
       role="button"
       tabindex="0"
       :class="[
-        'relative flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors',
+        'group relative flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 transition-all duration-300',
         dropActive
-          ? 'border-blue-500 bg-blue-50'
-          : 'border-slate-300 bg-slate-50 hover:border-slate-400',
+          ? 'border-primary-400 bg-primary-50/80 shadow-lg shadow-primary-200/30'
+          : selectedFile
+            ? 'border-emerald-300 bg-emerald-50/50'
+            : 'border-slate-300 bg-slate-50 hover:border-primary-300 hover:bg-primary-50/30 hover:shadow-md',
       ]"
       @click="openFilePicker"
       @keydown.enter="openFilePicker"
@@ -109,40 +117,91 @@ const sizeLabel = (bytes: number): string => {
         @change="onFilePick"
         aria-hidden="true"
       />
-      <Upload class="mb-3 h-10 w-10 text-slate-400" aria-hidden="true" />
-      <p class="text-sm font-medium text-slate-700">Drop your CV here or click to browse</p>
-      <p class="mt-1 text-xs text-slate-500">PDF or DOCX up to 20 MB</p>
+
+      <div
+        :class="[
+          'mb-4 flex h-14 w-14 items-center justify-center rounded-xl transition-all duration-300',
+          dropActive
+            ? 'bg-primary-100 text-primary-600 scale-110'
+            : selectedFile
+              ? 'bg-emerald-100 text-emerald-600'
+              : 'bg-slate-100 text-slate-400 group-hover:bg-primary-50 group-hover:text-primary-500',
+        ]"
+      >
+        <Upload
+          v-if="!selectedFile"
+          class="h-7 w-7 transition-transform duration-300 group-hover:scale-110"
+          aria-hidden="true"
+        />
+        <CheckCircle2 v-else class="h-7 w-7 text-emerald-600" aria-hidden="true" />
+      </div>
+
+      <p v-if="!selectedFile" class="text-sm font-medium text-slate-700">
+        <span class="text-primary-600">Click to upload</span>
+        or drag and drop
+      </p>
+      <p v-else class="text-sm font-medium text-emerald-800">File selected — ready to upload</p>
+      <p class="mt-1 text-xs text-slate-400">PDF or DOCX up to 20 MB</p>
+
+      <div class="mt-4 flex items-center gap-2">
+        <span
+          class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500"
+        >
+          <FileText class="h-3 w-3" aria-hidden="true" /> PDF
+        </span>
+        <span
+          class="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500"
+        >
+          <FileText class="h-3 w-3" aria-hidden="true" /> DOCX
+        </span>
+      </div>
     </div>
 
+    <!-- Error message -->
     <div
       v-if="error"
       role="alert"
-      class="flex items-start gap-2 rounded-md bg-red-50 p-3 text-sm text-red-700"
+      class="flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
     >
       <AlertCircle class="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
       <span>{{ error }}</span>
     </div>
 
-    <div v-if="selectedFile" class="rounded-lg border border-slate-200 bg-white p-4">
-      <div class="flex items-start justify-between">
-        <div class="flex items-start gap-3">
-          <FileText class="mt-0.5 h-5 w-5 text-slate-500" aria-hidden="true" />
-          <div>
-            <p class="text-sm font-medium text-slate-900">{{ selectedFile.name }}</p>
-            <p class="text-xs text-slate-500">{{ sizeLabel(selectedFile.size) }}</p>
+    <!-- Selected file preview -->
+    <div
+      v-if="selectedFile"
+      class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all"
+    >
+      <div class="flex items-start gap-4">
+        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary-50">
+          <FileText class="h-6 w-6 text-primary-600" aria-hidden="true" />
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="truncate text-sm font-semibold text-slate-900" :title="selectedFile.name">
+            {{ selectedFile.name }}
+          </p>
+          <div class="mt-1 flex items-center gap-2 text-xs text-slate-500">
+            <span>{{ sizeLabel(selectedFile.size) }}</span>
+            <span aria-hidden="true">&middot;</span>
+            <span class="rounded bg-slate-100 px-1.5 py-0.5 font-medium text-slate-600">
+              {{ fileExtension(selectedFile.name) }}
+            </span>
           </div>
         </div>
         <button
           type="button"
-          class="text-sm text-slate-400 hover:text-slate-600"
+          class="shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
           @click="clearSelection"
           aria-label="Remove selected file"
         >
-          &times;
+          <span class="text-lg leading-none">&times;</span>
         </button>
       </div>
-      <div class="mt-3 flex justify-end">
-        <Button size="sm" @click="confirm">Upload CV</Button>
+      <div class="mt-4 flex justify-end border-t border-slate-100 pt-4">
+        <Button size="sm" @click="confirm">
+          <Upload class="mr-1.5 h-4 w-4" aria-hidden="true" />
+          Upload CV
+        </Button>
       </div>
     </div>
   </div>

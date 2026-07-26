@@ -1,15 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { Check, X, FileText, MapPin, Calendar } from '@lucide/vue'
+import { Check, X, FileText, MapPin, Calendar, Briefcase, Building2 } from '@lucide/vue'
 import type { CvSuggestion, ExperienceValue, ReviewDecision } from '../types'
 import Button from '@/components/ui/Button.vue'
 
-interface SuggestionWithOpen {
-  suggestion: CvSuggestion<'experience'>
-  expanded: boolean
-}
-
-const props = defineProps<{
+defineProps<{
   suggestions: CvSuggestion[]
   readonly?: boolean
 }>()
@@ -17,10 +11,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   decision: [suggestionId: number, decision: ReviewDecision]
 }>()
-
-const items = computed<SuggestionWithOpen[]>(() =>
-  props.suggestions.map((s) => ({ suggestion: s as CvSuggestion<'experience'>, expanded: false })),
-)
 
 function val(s: CvSuggestion<'experience'>): ExperienceValue {
   return s.suggested_value as ExperienceValue
@@ -40,112 +30,164 @@ function isReviewed(s: CvSuggestion): boolean {
 }
 
 function decisionLabel(s: CvSuggestion): string {
-  const labels: Record<string, string> = {
+  const map: Record<string, string> = {
     accepted: 'Accepted',
     edited: 'Edited',
     rejected: 'Skipped',
     keep_existing: 'Kept existing',
   }
-  return labels[s.review_status] ?? s.review_status
+  return map[s.review_status] ?? s.review_status
+}
+
+const decisionBadgeClasses = (s: CvSuggestion): string => {
+  const map: Record<string, string> = {
+    accepted: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+    edited: 'bg-blue-100 text-blue-700 border-blue-200',
+    rejected: 'bg-red-100 text-red-600 border-red-200',
+    keep_existing: 'bg-slate-100 text-slate-600 border-slate-200',
+  }
+  return map[s.review_status] ?? 'bg-slate-100 text-slate-600 border-slate-200'
 }
 </script>
 
 <template>
   <div class="space-y-4">
-    <p class="text-sm text-slate-500">
-      We found {{ suggestions.length }} professional experience{{
-        suggestions.length !== 1 ? 's' : ''
-      }}. Review each one before continuing.
-    </p>
-
-    <div v-for="{ suggestion: s } in items" :key="s.id" class="space-y-3">
-      <div
-        :class="[
-          'rounded-lg border p-4 transition-colors',
-          isReviewed(s) ? 'border-green-200 bg-green-50/50' : 'border-slate-200 bg-white',
-        ]"
-      >
-        <div class="flex items-start justify-between gap-3">
-          <div class="flex-1 space-y-2">
-            <p class="font-semibold text-slate-900">{{ val(s).title }}</p>
-            <p class="text-sm text-slate-600">{{ val(s).organization }}</p>
-
+    <div
+      v-for="s in suggestions as CvSuggestion<'experience'>[]"
+      :key="s.id"
+      class="rounded-2xl bg-white border border-slate-200 shadow-lg hover:shadow-xl transition-all duration-200"
+    >
+      <div class="p-6">
+        <!-- Header row -->
+        <div class="flex items-start justify-between gap-3 mb-4">
+          <div class="flex items-center gap-3 min-w-0">
             <div
-              v-if="val(s).location || val(s).start_date"
-              class="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500"
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+              :class="
+                isReviewed(s) ? 'bg-white shadow-sm border border-slate-200' : 'bg-primary-50'
+              "
             >
-              <span v-if="val(s).location" class="inline-flex items-center gap-1">
-                <MapPin class="h-3 w-3" aria-hidden="true" /> {{ val(s).location }}
-              </span>
-              <span v-if="val(s).start_date" class="inline-flex items-center gap-1">
-                <Calendar class="h-3 w-3" aria-hidden="true" />
-                {{ val(s).start_date }}
-                <template v-if="val(s).is_current"> – Present</template>
-                <template v-else-if="val(s).end_date"> – {{ val(s).end_date }}</template>
-              </span>
+              <Briefcase
+                class="h-5 w-5"
+                :class="isReviewed(s) ? 'text-slate-500' : 'text-primary-600'"
+                aria-hidden="true"
+              />
             </div>
-
-            <p v-if="val(s).description" class="text-sm text-slate-600 whitespace-pre-wrap">
-              {{ val(s).description!.substring(0, 300)
-              }}{{ val(s).description!.length > 300 ? '...' : '' }}
-            </p>
-
-            <div v-if="val(s).technologies?.length" class="flex flex-wrap gap-1.5">
-              <span
-                v-for="tech in val(s).technologies"
-                :key="tech"
-                class="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600"
-              >
-                {{ tech }}
-              </span>
+            <div class="min-w-0">
+              <p class="font-semibold text-slate-900 truncate">{{ val(s).title }}</p>
+              <p class="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                <Building2 class="h-3 w-3" aria-hidden="true" />
+                {{ val(s).organization }}
+              </p>
             </div>
-
-            <p
-              v-if="s.source_text && val(s).description && val(s).description!.length > 300"
-              class="text-xs text-slate-400 italic"
-            >
-              Source: &ldquo;{{ s.source_text.substring(0, 100)
-              }}{{ s.source_text.length > 100 ? '...' : '' }}&rdquo;
-            </p>
           </div>
 
           <span
             v-if="isReviewed(s) && !readonly"
-            class="shrink-0 rounded bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600"
+            class="shrink-0 inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-semibold"
+            :class="decisionBadgeClasses(s)"
           >
             {{ decisionLabel(s) }}
           </span>
+          <span
+            v-else-if="!isReviewed(s) && !readonly"
+            class="shrink-0 inline-flex items-center rounded-full border border-primary-200 bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-600"
+          >
+            Pending
+          </span>
         </div>
 
-        <!-- Current vs extracted when match detected -->
+        <!-- Meta strip -->
+        <div
+          v-if="val(s).location || val(s).start_date"
+          class="mb-4 flex flex-wrap items-center gap-1.5 rounded-xl bg-gradient-to-r from-slate-50 to-white border border-slate-100 px-3 py-2 text-xs text-slate-500"
+        >
+          <span v-if="val(s).location" class="inline-flex items-center gap-1">
+            <MapPin class="h-3 w-3" aria-hidden="true" /> {{ val(s).location }}
+          </span>
+          <span
+            v-if="val(s).location && val(s).start_date"
+            class="text-slate-300"
+            aria-hidden="true"
+            >|</span
+          >
+          <span v-if="val(s).start_date" class="inline-flex items-center gap-1">
+            <Calendar class="h-3 w-3" aria-hidden="true" />
+            {{ val(s).start_date }}
+            <template v-if="val(s).is_current">&ndash; Present</template>
+            <template v-else-if="val(s).end_date">&ndash; {{ val(s).end_date }}</template>
+          </span>
+        </div>
+
+        <!-- Description -->
+        <p
+          v-if="val(s).description"
+          class="mb-4 text-sm text-slate-600 whitespace-pre-wrap leading-relaxed"
+        >
+          {{ val(s).description!.substring(0, 300)
+          }}{{ val(s).description!.length > 300 ? '...' : '' }}
+        </p>
+
+        <!-- Technologies -->
+        <div v-if="val(s).technologies?.length" class="flex flex-wrap gap-1.5 mb-4">
+          <span
+            v-for="tech in val(s).technologies"
+            :key="tech"
+            class="rounded-lg border border-slate-100 bg-slate-100/80 px-2.5 py-0.5 text-xs font-medium text-slate-600"
+          >
+            {{ tech }}
+          </span>
+        </div>
+
+        <!-- Source text -->
+        <p
+          v-if="s.source_text"
+          class="pl-3 border-l-2 border-slate-200 text-xs text-slate-400 italic"
+        >
+          Source: &ldquo;{{ s.source_text.substring(0, 100)
+          }}{{ s.source_text.length > 100 ? '...' : '' }}&rdquo;
+        </p>
+
+        <!-- Existing entry notice -->
         <div
           v-if="hasCurrent(s) && !isReviewed(s) && currentVal(s)?.title"
-          class="mt-3 rounded bg-amber-50 border border-amber-200 p-3"
+          class="mt-4 border-l-4 border-amber-400 bg-amber-50/70 rounded-r-xl p-3"
         >
-          <p class="text-xs font-medium text-amber-700">Existing profile entry:</p>
-          <p class="mt-1 text-sm text-amber-800">
+          <p class="text-xs font-semibold text-amber-700">Existing profile entry:</p>
+          <p class="mt-0.5 text-sm text-amber-800">
             {{ currentVal(s)?.title }} at {{ currentVal(s)?.organization }}
           </p>
         </div>
+      </div>
 
-        <div v-if="!readonly && !isReviewed(s)" class="mt-3 flex flex-wrap gap-2">
-          <Button size="sm" @click="emit('decision', s.id, { decision: 'accepted' })">
-            <Check class="mr-1 h-3.5 w-3.5" aria-hidden="true" /> Accept
+      <!-- Action panel -->
+      <div
+        v-if="!readonly && !isReviewed(s)"
+        class="border-t border-slate-200/50 bg-slate-50/80 rounded-b-2xl px-6 py-4"
+      >
+        <div class="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            class="shadow-md"
+            @click="emit('decision', s.id, { decision: 'accepted' })"
+          >
+            <Check class="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Accept
           </Button>
           <Button
             size="sm"
             variant="outline"
+            class="shadow-sm border-slate-300"
             @click="emit('decision', s.id, { decision: 'keep_existing' })"
           >
-            <FileText class="mr-1 h-3.5 w-3.5" aria-hidden="true" /> Keep existing
+            <FileText class="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Keep existing
           </Button>
           <Button
             size="sm"
             variant="ghost"
-            class="text-red-600 hover:text-red-700"
+            class="hover:bg-red-50 hover:text-red-700 text-red-600"
             @click="emit('decision', s.id, { decision: 'rejected' })"
           >
-            <X class="mr-1 h-3.5 w-3.5" aria-hidden="true" /> Reject
+            <X class="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Reject
           </Button>
         </div>
       </div>
