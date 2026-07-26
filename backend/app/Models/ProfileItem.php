@@ -25,6 +25,26 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read CandidateProfile $candidateProfile
+ *
+ * @method static \Database\Factories\ProfileItemFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProfileItem newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProfileItem newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProfileItem query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProfileItem whereCandidateProfileId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProfileItem whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProfileItem whereDescription($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProfileItem whereDisplayOrder($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProfileItem whereEndDate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProfileItem whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProfileItem whereLocation($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProfileItem whereMetadata($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProfileItem whereOrganization($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProfileItem whereStartDate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProfileItem whereTitle($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProfileItem whereType($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|ProfileItem whereUpdatedAt($value)
+ *
+ * @mixin \Eloquent
  */
 #[Fillable([
     'candidate_profile_id', 'type', 'title', 'organization', 'location',

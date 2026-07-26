@@ -1,0 +1,54 @@
+info:
+  name: 03 - Reject Duplicate
+  type: http
+  seq: 3
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/cv/{{cvDocumentForProcessing}}/suggestions/{{suggestionId}}"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "decision": "rejected"
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN missing.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        test("Status 409 - already reviewed", function () {
+          expect(res.getStatus()).to.equal(409);
+        });
+
+        test("Error code is already_reviewed", function () {
+          expect(res.getBody().code).to.equal("already_reviewed");
+        });
+
+        test("Detail mentions already reviewed", function () {
+          const detail = res.getBody().detail.toLowerCase();
+          expect(detail).to.include("already");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

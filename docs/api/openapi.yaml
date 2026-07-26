@@ -92,6 +92,192 @@ components:
         request_id:
           type: string
 
+    CvDocument:
+      type: object
+      properties:
+        id:
+          type: integer
+        original_name:
+          type: string
+        mime_type:
+          type: string
+        size:
+          type: integer
+        status:
+          type: string
+          enum: [pending, queued, validating, extracting, analyzing, ready_for_review, importing, imported, failed, deleted]
+        failure_reason:
+          type: string
+          nullable: true
+        failure_code:
+          type: string
+          nullable: true
+        latest_run:
+          $ref: '#/components/schemas/CvProcessingRun'
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CvProcessingRun:
+      type: object
+      properties:
+        id:
+          type: integer
+        cv_document_id:
+          type: integer
+        status:
+          type: string
+        pipeline_version:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        failure_reason:
+          type: string
+          nullable: true
+        failure_code:
+          type: string
+          nullable: true
+        ai_provider:
+          type: string
+          nullable: true
+        ai_model:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    CvSuggestion:
+      type: object
+      properties:
+        id:
+          type: integer
+        cv_document_id:
+          type: integer
+        type:
+          type: string
+          enum: [headline, summary, social_link, experience, education, project, certification, language, skill]
+        category:
+          type: string
+          nullable: true
+        field_name:
+          type: string
+          nullable: true
+        current_value:
+          type: object
+          nullable: true
+        suggested_value:
+          type: object
+        extraction_method:
+          type: string
+          enum: [deterministic_parser, ai_extraction]
+        confidence:
+          type: number
+          format: float
+          nullable: true
+        review_status:
+          type: string
+          enum: [pending, accepted, edited, rejected, keep_existing, imported, import_failed]
+        reviewed_decision:
+          type: object
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    CvImportBatch:
+      type: object
+      properties:
+        id:
+          type: integer
+        cv_document_id:
+          type: integer
+        status:
+          type: string
+          enum: [pending, applied, failed, partially_applied]
+        idempotency_key:
+          type: string
+          nullable: true
+        imported_at:
+          type: string
+          format: date-time
+          nullable: true
+        failure_reason:
+          type: string
+          nullable: true
+        failure_code:
+          type: string
+          nullable: true
+        summary:
+          type: object
+          nullable: true
+          properties:
+            total:
+              type: integer
+            accepted:
+              type: integer
+            rejected:
+              type: integer
+            skipped:
+              type: integer
+            errors:
+              type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    ImportPreview:
+      type: object
+      properties:
+        summary:
+          type: object
+          properties:
+            total:
+              type: integer
+            accepted:
+              type: integer
+            rejected:
+              type: integer
+            keep_existing:
+              type: integer
+            edited:
+              type: integer
+        conflicts:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              field:
+                type: string
+              current: {}
+              suggested: {}
+              message:
+                type: string
+
+    ReviewDecision:
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          type: string
+          enum: [accept, edit, reject, keep_existing]
+        edited_value:
+          type: object
+
     ProfileItem:
       type: object
       properties:
@@ -408,6 +594,321 @@ components:
       required: [type, item_ids]
 
 paths:
+  /api/v1/cv:
+    get:
+      summary: List CV documents
+      tags: [CV Ingestion]
+      security:
+        - cookie: []
+      responses:
+        '200':
+          description: List of user's CV documents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CvDocument'
+    post:
+      summary: Upload a CV document
+      tags: [CV Ingestion]
+      security:
+        - cookie: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: PDF or DOCX file (max 10 MB)
+      responses:
+        '201':
+          description: Document uploaded and queued for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CvDocument'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '429':
+          description: Rate limit exceeded (10 uploads per minute)
+
+  /api/v1/cv/{cvDocument}:
+    get:
+      summary: Show CV document details and processing status
+      tags: [CV Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - name: cvDocument
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: CV document details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CvDocument'
+        '404':
+          description: Not found
+    delete:
+      summary: Delete a CV document
+      tags: [CV Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - name: cvDocument
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Document deleted
+        '409':
+          description: Cannot delete while importing
+        '404':
+          description: Not found
+
+  /api/v1/cv/{cvDocument}/download:
+    get:
+      summary: Download the original CV file
+      tags: [CV Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - name: cvDocument
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: File download
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Not found
+
+  /api/v1/cv/{cvDocument}/retry:
+    post:
+      summary: Retry processing a failed document
+      tags: [CV Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - name: cvDocument
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Processing restarted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CvDocument'
+        '409':
+          description: Document is not in failed state
+        '404':
+          description: Not found
+
+  /api/v1/cv/{cvDocument}/suggestions:
+    get:
+      summary: List extracted suggestions for review
+      tags: [CV Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - name: cvDocument
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of suggestions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CvSuggestion'
+        '404':
+          description: Not found
+
+  /api/v1/cv/{cvDocument}/suggestions/batch:
+    patch:
+      summary: Batch save review decisions for suggestions
+      tags: [CV Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - name: cvDocument
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                decisions:
+                  type: object
+                  additionalProperties:
+                    $ref: '#/components/schemas/ReviewDecision'
+      responses:
+        '200':
+          description: All decisions saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CvSuggestion'
+        '404':
+          description: Not found
+
+  /api/v1/cv/{cvDocument}/suggestions/{cvSuggestion}:
+    patch:
+      summary: Save a review decision for a single suggestion
+      tags: [CV Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - name: cvDocument
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: cvSuggestion
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewDecision'
+      responses:
+        '200':
+          description: Decision saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CvSuggestion'
+        '404':
+          description: Not found
+
+  /api/v1/cv/{cvDocument}/import/preview:
+    get:
+      summary: Preview import summary and detect conflicts
+      tags: [CV Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - name: cvDocument
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Import preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportPreview'
+        '404':
+          description: Not found
+
+  /api/v1/cv/{cvDocument}/import:
+    post:
+      summary: Apply accepted suggestions to the candidate profile
+      tags: [CV Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - name: cvDocument
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Import completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CvImportBatch'
+        '409':
+          description: Profile changed since review, or concurrent operation
+        '404':
+          description: Not found
+        '429':
+          description: Rate limit exceeded (5 imports per minute)
+
+  /api/v1/cv/{cvDocument}/import/{cvImportBatch}:
+    get:
+      summary: Get import result details
+      tags: [CV Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - name: cvDocument
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: cvImportBatch
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Import batch details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CvImportBatch'
+        '404':
+          description: Not found
   /api/v1/auth/register:
     post:
       summary: Register a new candidate account

@@ -1,0 +1,45 @@
+info:
+  name: 07 - Verify Decisions Persist
+  type: http
+  seq: 7
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/cv/{{cvDocumentForProcessing}}/suggestions?review_status=accepted"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Filtered results have accepted status", function () {
+          const data = res.getBody().data;
+          data.forEach(function (s) {
+            expect(s.review_status).to.equal("accepted");
+          });
+        });
+
+        test("Previously accepted suggestion still accepted", function () {
+          const data = res.getBody().data;
+          const found = data.some(function (s) {
+            return s.id === Number(bru.getVar("suggestionId"));
+          });
+          expect(found).to.equal(true);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

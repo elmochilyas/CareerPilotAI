@@ -1,0 +1,63 @@
+info:
+  name: 02 - Edit And Accept Summary
+  type: http
+  seq: 2
+
+http:
+  method: PATCH
+  url: "{{baseUrl}}/api/v1/cv/{{cvDocumentForProcessing}}/suggestions/{{suggestionId2}}"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: json
+    data: |-
+      {
+        "decision": "edited",
+        "edited_value": {
+          "value": "Professional full stack developer with extensive experience in Laravel and Vue.js [Bruno CV Test edited]"
+        }
+      }
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN missing.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+        var sid2 = bru.getVar("suggestionId2");
+        if (!sid2) { throw new Error("SKIP: No suggestionId2 available (only 1 suggestion generated)"); }
+    - type: after-response
+      code: |-
+        test("Status 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        test("Review status is edited", function () {
+          expect(res.getBody().data.review_status).to.equal("edited");
+        });
+
+        test("Reviewed decision stores edited value", function () {
+          expect(res.getBody().data.reviewed_decision).to.have.property("value");
+        });
+
+        test("Edited value contains our marker", function () {
+          const text = res.getBody().data.reviewed_decision.value;
+          expect(text).to.include("[Bruno CV Test edited]");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

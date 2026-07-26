@@ -1,0 +1,63 @@
+info:
+  name: 01 - Reject Unsupported Extension
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/cv"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: multipart-form
+    data:
+      - name: file
+        type: file
+        value: ["04 - CV Ingestion/fixtures/unsupported.txt"]
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN cookie is missing.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        const httpStatus = res.getStatus();
+
+        if (httpStatus === 422) {
+          test("Status 422", function () { expect(true).to.be.true; });
+
+          test("Is problem detail", function () {
+            const body = res.getBody();
+            expect(body).to.have.property("type");
+            expect(body).to.have.property("title");
+            expect(body).to.have.property("status");
+            expect(body.status).to.equal(422);
+          });
+
+          test("Error code mentions file type", function () {
+            const body = res.getBody();
+            expect(body.code).to.satisfy(function (c) {
+              return c === "validation_error" || c === "file_type_not_allowed" || c === "file_type_mismatch";
+            });
+          });
+        }
+
+        if (httpStatus === 429) {
+          test("Status 429 rate limited", function () { expect(true).to.be.true; });
+        }
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

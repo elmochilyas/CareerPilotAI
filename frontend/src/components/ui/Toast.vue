@@ -7,32 +7,35 @@ const props = withDefaults(
     message: string
     variant?: 'success' | 'error'
     duration?: number
+    visible?: boolean
   }>(),
-  { variant: 'success', duration: 3500 },
+  { variant: 'success', duration: 3500, visible: true },
 )
 
 const emit = defineEmits<{
   dismiss: []
+  close: []
 }>()
 
-const visible = ref(false)
+const _visible = ref(false)
 let timer: ReturnType<typeof setTimeout> | null = null
 
 watch(
   () => props.message,
   (msg) => {
     if (!msg) return
-    visible.value = true
+    _visible.value = true
     if (timer) clearTimeout(timer)
     timer = setTimeout(() => {
-      visible.value = false
+      _visible.value = false
       setTimeout(() => emit('dismiss'), 250)
     }, props.duration)
   },
 )
 
 function dismiss() {
-  visible.value = false
+  _visible.value = false
+  emit('close')
   setTimeout(() => emit('dismiss'), 250)
 }
 </script>
@@ -41,7 +44,7 @@ function dismiss() {
   <Teleport to="body">
     <Transition name="toast">
       <div
-        v-if="visible && message"
+        v-if="(_visible || visible) && message"
         class="fixed right-4 top-20 z-50 max-w-sm rounded-lg border bg-white px-4 py-3 shadow-lg ring-1 ring-slate-900/5"
         role="status"
       >

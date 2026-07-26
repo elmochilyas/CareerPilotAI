@@ -15,6 +15,18 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Skill $skill
+ *
+ * @method static \Database\Factories\SkillAliasFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SkillAlias newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SkillAlias newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SkillAlias query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SkillAlias whereAlias($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SkillAlias whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SkillAlias whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SkillAlias whereSkillId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|SkillAlias whereUpdatedAt($value)
+ *
+ * @mixin \Eloquent
  */
 class SkillAlias extends Model
 {

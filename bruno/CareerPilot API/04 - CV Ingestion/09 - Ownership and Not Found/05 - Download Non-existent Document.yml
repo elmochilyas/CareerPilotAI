@@ -1,0 +1,30 @@
+info:
+  name: 05 - Download Non-existent Document
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/cv/99999999/download"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status 404", function () {
+          expect(res.getStatus()).to.equal(404);
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

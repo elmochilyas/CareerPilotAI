@@ -31,7 +31,7 @@ export function serverFieldErrors(error: unknown): Record<string, string> {
   return Object.fromEntries(
     Object.entries(problem?.errors ?? {}).map(([field, messages]) => [
       field,
-      messages[0] ?? 'Invalid value.',
+      (messages as string[])[0] ?? 'Invalid value.',
     ]),
   )
 }

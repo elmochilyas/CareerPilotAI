@@ -1,0 +1,54 @@
+info:
+  name: 04 - Repeat Apply With Same Key
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/cv/{{cvDocumentForProcessing}}/apply"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Content-Type
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+    - name: Idempotency-Key
+      value: "{{importIdempotencyKey}}"
+  body:
+    type: json
+    data: |-
+      {}
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN missing.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        test("Status 409", function () {
+          expect(res.getStatus()).to.equal(409);
+        });
+
+        test("Error code is import_already_applied", function () {
+          expect(res.getBody().code).to.equal("import_already_applied");
+        });
+
+        test("Detail mentions already applied", function () {
+          const detail = res.getBody().detail.toLowerCase();
+          expect(detail).to.include("already");
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

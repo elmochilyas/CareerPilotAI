@@ -38,7 +38,293 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthSuccess'
+  /cv/upload:
+    post:
+      operationId: uploadCv
+      summary: Upload a CV document
+      tags:
+        - CV Ingestion
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CV file (PDF or DOCX, max 10MB)
+                mode:
+                  type: string
+                  enum: [create_new, update_existing]
+                  default: create_new
+                  description: Upload mode
+              required:
+                - file
+      responses:
+        '202':
+          description: CV uploaded and processing started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadSuccess'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+  /cv/uploaded:
+    get:
+      operationId: listUploadedDocuments
+      summary: List uploaded CV documents
+      tags:
+        - CV Ingestion
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: List of uploaded CV documents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CvDocument'
+  /cv/{cv}/status:
+    get:
+      operationId: getCvProcessingStatus
+      summary: Get processing status for a CV document
+      tags:
+        - CV Ingestion
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - name: cv
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Processing status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CvProcessingStatus'
+        '404':
+          description: CV document not found
+  /cv/{cv}/review-queue:
+    get:
+      operationId: getReviewQueue
+      summary: Get review queue for a CV document
+      tags:
+        - CV Ingestion
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - name: cv
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Review queue with suggestions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      status:
+                        type: string
+                      suggestions:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CvSuggestion'
+        '409':
+          description: Not all suggestions reviewed or not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+  /cv/{cv}/review-decisions:
+    post:
+      operationId: submitReviewDecisions
+      summary: Submit review decisions for CV suggestions
+      tags:
+        - CV Ingestion
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - name: cv
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchReviewRequest'
+      responses:
+        '200':
+          description: Review decisions saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadSuccess'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '409':
+          description: Review already completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+  /cv/{cv}/import-preview:
+    get:
+      operationId: previewImport
+      summary: Preview what will be imported
+      tags:
+        - CV Ingestion
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - name: cv
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Import preview
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ImportPreview'
+        '409':
+          description: Not ready for import
+  /cv/{cv}/apply:
+    post:
+      operationId: applyImport
+      summary: Apply reviewed suggestions to profile
+      tags:
+        - CV Ingestion
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - name: cv
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                profile_updated_at:
+                  type: string
+                  format: date-time
+                  description: Profile timestamp for optimistic concurrency
+      responses:
+        '200':
+          description: Import applied successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ImportResult'
+        '409':
+          description: Import already applied, not ready, or profile changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+  /cv/{cv}/import-result:
+    get:
+      operationId: getImportResult
+      summary: Get the result of a completed import
+      tags:
+        - CV Ingestion
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - name: cv
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Import result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ImportResult'
+        '404':
+          description: Import result not found
 components:
+  parameters:
+    RequestId:
+      name: X-Request-ID
+      in: header
+      schema:
+        type: string
+        format: uuid
+      required: false
+      description: Client-provided request ID. A UUID is generated when omitted.
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      schema:
+        type: string
+        maxLength: 64
+      required: true
+      description: Idempotency key to prevent duplicate processing.
   schemas:
     HealthSuccess:
       type: object
@@ -124,3 +410,163 @@ components:
                 type: array
                 items:
                   type: string
+    UploadSuccess:
+      type: object
+      description: Successful upload or save response.
+      properties:
+        data:
+          type: object
+          properties:
+            id:
+              type: integer
+            status:
+              type: string
+          required:
+            - id
+            - status
+      required:
+        - data
+    CvDocument:
+      type: object
+      properties:
+        id:
+          type: integer
+        original_name:
+          type: string
+        mime_type:
+          type: string
+        file_size:
+          type: integer
+        status:
+          type: string
+        latest_run:
+          $ref: '#/components/schemas/CvProcessingRun'
+      required:
+        - id
+        - original_name
+        - status
+    CvProcessingRun:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        error_message:
+          type: string
+          nullable: true
+    CvProcessingStatus:
+      type: object
+      properties:
+        id:
+          type: integer
+        original_name:
+          type: string
+        status:
+          type: string
+        runs:
+          type: array
+          items:
+            $ref: '#/components/schemas/CvProcessingRun'
+    CvSuggestion:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        suggested_value:
+          type: object
+        confidence:
+          type: number
+          format: float
+        reason:
+          type: string
+          nullable: true
+        review_status:
+          type: string
+          nullable: true
+        reviewed_decision:
+          type: object
+          nullable: true
+    BatchReviewRequest:
+      type: object
+      properties:
+        decisions:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                description: Suggestion ID
+              action:
+                type: string
+                enum: [accept, reject]
+              value:
+                type: object
+                description: Edited value when action is accept
+      required:
+        - decisions
+    ImportPreview:
+      type: object
+      properties:
+        id:
+          type: integer
+        ready:
+          type: boolean
+        profile_updated_at:
+          type: string
+          format: date-time
+        summary:
+          type: object
+          properties:
+            headline:
+              type: string
+              nullable: true
+            summary:
+              type: string
+              nullable: true
+            skills_count:
+              type: integer
+            experiences_count:
+              type: integer
+            educations_count:
+              type: integer
+            projects_count:
+              type: integer
+            certifications_count:
+              type: integer
+            languages_count:
+              type: integer
+            social_links_count:
+              type: integer
+    ImportResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+          enum: [applied, failed]
+        summary:
+          type: object
+          properties:
+            fields_updated:
+              type: integer
+            items_created:
+              type: integer
+            items_updated:
+              type: integer
+            skills_added:
+              type: integer
+            skipped:
+              type: integer

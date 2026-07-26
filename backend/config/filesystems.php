@@ -38,6 +38,13 @@ return [
             'report' => false,
         ],
 
+        'cv-ingestion' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/cv-ingestion'),
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

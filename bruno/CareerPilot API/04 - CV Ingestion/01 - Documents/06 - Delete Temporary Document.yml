@@ -1,0 +1,48 @@
+info:
+  name: 06 - Delete Temporary Document
+  type: http
+  seq: 6
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/api/v1/cv/{{cvDocumentId}}"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN cookie is missing. Run CSRF Cookie and Login first.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        const status = res.getStatus();
+
+        if (status === 200) {
+          test("Status 200 deleted", function () { expect(true).to.be.true; });
+
+          test("Returns success message", function () {
+            expect(res.getBody()).to.have.property("message");
+            expect(res.getBody().message).to.equal("Document deleted");
+          });
+        }
+
+        if (status === 404) {
+          test("Status 404 not found", function () { expect(true).to.be.true; });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

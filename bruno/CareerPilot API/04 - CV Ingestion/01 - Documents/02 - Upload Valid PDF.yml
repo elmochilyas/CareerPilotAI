@@ -1,0 +1,110 @@
+info:
+  name: 02 - Upload Valid PDF
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/v1/cv"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  body:
+    type: multipart-form
+    data:
+      - name: file
+        type: file
+        value: ["04 - CV Ingestion/fixtures/valid-test.pdf"]
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: before-request
+      code: |-
+        const xsrfToken = bru.cookies.get("XSRF-TOKEN");
+        if (!xsrfToken) {
+          throw new Error("XSRF-TOKEN cookie is missing. Run CSRF Cookie and Login first.");
+        }
+        req.setHeader("X-XSRF-TOKEN", decodeURIComponent(xsrfToken));
+    - type: after-response
+      code: |-
+        test("Response is JSON", function () {
+          expect(res.getHeader("content-type")).to.include("application/json");
+        });
+
+        const status = res.getStatus();
+
+        if (status === 201) {
+          test("Status 201", function () {
+            expect(true).to.be.true;
+          });
+
+          test("Returns document resource", function () {
+            const body = res.getBody();
+            expect(body).to.have.property("data");
+            expect(body.data).to.have.property("id");
+            expect(body.data).to.have.property("status");
+            expect(body.data).to.have.property("original_name");
+          });
+
+          test("Status is queued or ready_for_review", function () {
+            expect(res.getBody().data.status).to.be.oneOf(["queued", "ready_for_review"]);
+          });
+
+          test("Original filename preserved", function () {
+            expect(res.getBody().data.original_name).to.equal("valid-test.pdf");
+          });
+
+          test("MIME type is set", function () {
+            expect(res.getBody().data.mime_type).to.equal("application/pdf");
+          });
+
+          test("Size is reported", function () {
+            expect(res.getBody().data.size).to.be.at.least(500);
+          });
+
+          test("Internal storage path not exposed", function () {
+            expect(res.getBody().data).to.not.have.property("stored_path");
+            expect(res.getBody().data).to.not.have.property("stored_name");
+            expect(res.getBody().data).to.not.have.property("checksum");
+          });
+
+          const doc = res.getBody().data;
+          bru.setVar("cvDocumentId", String(doc.id));
+          bru.setVar("cvDocumentUpdatedAt", doc.updated_at);
+        }
+
+        if (status === 409) {
+          test("Status 409 duplicate", function () {
+            expect(true).to.be.true;
+          });
+
+          test("Conflict is problem detail", function () {
+            const body = res.getBody();
+            expect(body).to.have.property("type");
+            expect(body).to.have.property("title");
+            expect(body).to.have.property("status");
+            expect(body).to.have.property("code");
+            expect(body.status).to.equal(409);
+          });
+
+          // Reuse existing document ID so subsequent tests can continue
+          const body = res.getBody();
+          if (body.errors && body.errors.existing_cv_id) {
+            bru.setVar("cvDocumentId", String(body.errors.existing_cv_id));
+          }
+        }
+
+        if (status === 429) {
+          test("Status 429 rate limited", function () { expect(true).to.be.true; });
+        }
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

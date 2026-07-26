@@ -1,0 +1,86 @@
+info:
+  name: 02 - Verify Suggestion Structure
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{baseUrl}}/api/v1/cv/{{cvDocumentForProcessing}}/suggestions"
+  headers:
+    - name: Accept
+      value: application/json
+    - name: Origin
+      value: "{{frontendUrl}}"
+    - name: Referer
+      value: "{{frontendUrl}}/"
+  auth: inherit
+
+runtime:
+  scripts:
+    - type: after-response
+      code: |-
+        test("Status 200", function () {
+          expect(res.getStatus()).to.equal(200);
+        });
+
+        const data = res.getBody().data;
+
+        test("All suggestions have required fields", function () {
+          data.forEach(function (s) {
+            expect(s).to.have.property("id");
+            expect(s).to.have.property("cv_document_id");
+            expect(s).to.have.property("type");
+            expect(s).to.have.property("suggested_value");
+            expect(s).to.have.property("extraction_method");
+            expect(s).to.have.property("review_status");
+            expect(s).to.have.property("created_at");
+          });
+        });
+
+        test("All suggestions have valid types", function () {
+          const validTypes = [
+            "basic_information", "headline", "summary", "social_link",
+            "experience", "education", "project", "certification",
+            "language", "skill"
+          ];
+          data.forEach(function (s) {
+            expect(validTypes).to.include(s.type);
+          });
+        });
+
+        test("Extraction method is ai_extraction", function () {
+          data.forEach(function (s) {
+            expect(s.extraction_method).to.equal("ai_extraction");
+          });
+        });
+
+        test("Review status is pending", function () {
+          data.forEach(function (s) {
+            expect(s.review_status).to.equal("pending");
+          });
+        });
+
+        test("Skills are not marked verified", function () {
+          data.filter(function (s) { return s.type === "skill"; }).forEach(function (s) {
+            expect(s.review_status).to.equal("pending");
+          });
+        });
+
+        test("Schema version is present", function () {
+          data.forEach(function (s) {
+            expect(s.schema_version).to.be.a("string");
+          });
+        });
+
+        test("Confidence is present when available", function () {
+          data.filter(function (s) { return s.confidence !== null; }).forEach(function (s) {
+            expect(s.confidence).to.be.at.least(0);
+            expect(s.confidence).to.be.at.most(100);
+          });
+        });
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
