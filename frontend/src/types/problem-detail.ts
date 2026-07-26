@@ -5,7 +5,7 @@ export interface ProblemDetail {
   detail: string
   instance: string
   code: string
-  errors: Record<string, string[]>
+  errors: Record<string, unknown>
   request_id: string
   debug?: {
     exception: string
