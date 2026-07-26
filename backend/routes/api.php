@@ -67,7 +67,7 @@ Route::prefix('v1')->group(function (): void {
             Route::post('/{cvDocument}/suggestions/batch', [CvDocumentController::class, 'batchUpdateSuggestions']);
             Route::get('/{cvDocument}/import-preview', [CvDocumentController::class, 'importPreview']);
             Route::post('/{cvDocument}/apply', [CvDocumentController::class, 'apply'])
-                ->middleware('throttle:5,1');
+                ->middleware('throttle:5,1,cv_apply');
             Route::get('/{cvDocument}/import-result', [CvDocumentController::class, 'importResult']);
         });
     });
