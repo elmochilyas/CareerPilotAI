@@ -27,7 +27,6 @@ it('uploads a valid PDF', function () {
     $file = UploadedFile::fake()->createWithContent(
         'cv.pdf',
         '%PDF-1.4'.str_repeat("\n1 0 obj\n<< /Type /Catalog >>\nendobj", 20),
-        'application/pdf',
     );
 
     $response = $this->actingAs($this->user)
@@ -48,7 +47,6 @@ it('uploads a valid DOCX', function () {
     $file = UploadedFile::fake()->createWithContent(
         'cv.docx',
         'PK'.str_repeat("\x03\x04\x00\x00\x00\x00", 300),
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     );
 
     $response = $this->actingAs($this->user)
@@ -79,11 +77,11 @@ it('rejects file that is too large', function () {
 
 it('returns file_duplicate for identical upload', function () {
     $content = '%PDF-1.4 test content '.str_repeat('x', 300);
-    $file1 = UploadedFile::fake()->createWithContent('cv.pdf', $content, 'application/pdf');
+    $file1 = UploadedFile::fake()->createWithContent('cv.pdf', $content);
 
     $this->actingAs($this->user)->postJson('/api/v1/cv', ['file' => $file1]);
 
-    $file2 = UploadedFile::fake()->createWithContent('cv2.pdf', $content, 'application/pdf');
+    $file2 = UploadedFile::fake()->createWithContent('cv2.pdf', $content);
 
     $response = $this->actingAs($this->user)
         ->postJson('/api/v1/cv', ['file' => $file2]);
@@ -95,7 +93,7 @@ it('returns file_duplicate for identical upload', function () {
 
 it('restores soft-deleted document on re-upload of same content', function () {
     $content = '%PDF-1.4 test content '.str_repeat('w', 300);
-    $file = UploadedFile::fake()->createWithContent('cv.pdf', $content, 'application/pdf');
+    $file = UploadedFile::fake()->createWithContent('cv.pdf', $content);
     $checksum = hash_file('sha256', $file->getRealPath());
 
     $document = CvDocument::factory()->create([
@@ -119,7 +117,6 @@ it('lists uploaded documents', function () {
     $file = UploadedFile::fake()->createWithContent(
         'cv.pdf',
         '%PDF-1.4'.str_repeat("\n1 0 obj\n<< /Type /Catalog >>\nendobj", 20),
-        'application/pdf',
     );
     $this->actingAs($this->user)->postJson('/api/v1/cv', ['file' => $file]);
 
