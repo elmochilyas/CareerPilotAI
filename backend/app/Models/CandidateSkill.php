@@ -24,6 +24,24 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read CandidateProfile $candidateProfile
  * @property-read Skill|null $skill
+ *
+ * @method static \Database\Factories\CandidateSkillFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateSkill newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateSkill newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateSkill query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateSkill whereCandidateProfileId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateSkill whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateSkill whereCustomSkillName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateSkill whereEvidence($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateSkill whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateSkill whereLastUsedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateSkill whereProficiencyLevel($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateSkill whereSkillId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateSkill whereState($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateSkill whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateSkill whereYearsExperience($value)
+ *
+ * @mixin \Eloquent
  */
 class CandidateSkill extends Model
 {

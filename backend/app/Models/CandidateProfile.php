@@ -38,6 +38,39 @@ use Illuminate\Support\Carbon;
  * @property-read User $user
  * @property-read Collection<int, ProfileItem> $items
  * @property-read Collection<int, CandidateSkill> $candidateSkills
+ * @property string|null $work_mode
+ * @property-read int|null $candidate_skills_count
+ * @property-read int|null $items_count
+ *
+ * @method static \Database\Factories\CandidateProfileFactory factory($count = null, $state = [])
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereAvailabilityDate($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereAvailabilityStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereCity($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereContractTypes($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereCountry($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereGithubUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereHeadline($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereLanguages($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereLinkedinUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile wherePhone($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile wherePortfolioUrl($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile wherePreferredLocations($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereProfessionalSummary($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereProfileCompletion($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereSalaryMax($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereSalaryMin($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereTargetRoles($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereUpdatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereUserId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereWorkMode($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CandidateProfile whereWorkModes($value)
+ *
+ * @mixin \Eloquent
  */
 #[Fillable([
     'user_id', 'headline', 'professional_summary', 'phone', 'city', 'country',
