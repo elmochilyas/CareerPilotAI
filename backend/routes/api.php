@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CandidateSkillController;
+use App\Http\Controllers\Api\V1\CvIngestion\CvDocumentController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\SkillController;
@@ -51,5 +52,23 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/candidate/skills/{candidateSkill}/evidence', [CandidateSkillController::class, 'storeEvidence']);
         Route::patch('/candidate/skills/{candidateSkill}/evidence/{evidenceKey}', [CandidateSkillController::class, 'updateEvidence']);
         Route::delete('/candidate/skills/{candidateSkill}/evidence/{evidenceKey}', [CandidateSkillController::class, 'destroyEvidence']);
+
+        Route::prefix('cv')->group(function (): void {
+            Route::get('/', [CvDocumentController::class, 'index']);
+            Route::post('/', [CvDocumentController::class, 'store'])
+                ->middleware('throttle:10,1');
+            Route::get('/{cvDocument}', [CvDocumentController::class, 'show']);
+            Route::get('/{cvDocument}/download', [CvDocumentController::class, 'download'])
+                ->middleware('throttle:60,1');
+            Route::post('/{cvDocument}/retry', [CvDocumentController::class, 'retry']);
+            Route::delete('/{cvDocument}', [CvDocumentController::class, 'destroy']);
+            Route::get('/{cvDocument}/suggestions', [CvDocumentController::class, 'suggestions']);
+            Route::patch('/{cvDocument}/suggestions/{cvSuggestion}', [CvDocumentController::class, 'updateSuggestion']);
+            Route::post('/{cvDocument}/suggestions/batch', [CvDocumentController::class, 'batchUpdateSuggestions']);
+            Route::get('/{cvDocument}/import-preview', [CvDocumentController::class, 'importPreview']);
+            Route::post('/{cvDocument}/apply', [CvDocumentController::class, 'apply'])
+                ->middleware('throttle:5,1');
+            Route::get('/{cvDocument}/import-result', [CvDocumentController::class, 'importResult']);
+        });
     });
 });
