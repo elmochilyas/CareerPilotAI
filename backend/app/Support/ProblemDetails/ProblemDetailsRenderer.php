@@ -23,38 +23,36 @@ class ProblemDetailsRenderer
             return null;
         }
 
-        $debug = config('app.debug');
-
         if ($e instanceof ValidationException) {
-            return $this->buildResponse(422, 'Validation Error', $e->getMessage(), 'validation_error', $e->errors(), $debug, $e);
+            return $this->buildResponse(422, 'Validation Error', $e->getMessage(), 'validation_error', $e->errors());
         }
 
         if ($e instanceof AuthenticationException) {
-            return $this->buildResponse(401, 'Unauthenticated', 'Authentication is required.', 'unauthenticated', [], $debug, $e);
+            return $this->buildResponse(401, 'Unauthenticated', 'Authentication is required.', 'unauthenticated');
         }
 
         if ($e instanceof AuthorizationException) {
-            return $this->buildResponse(403, 'Forbidden', 'You are not authorized to perform this action.', 'forbidden', [], $debug, $e);
+            return $this->buildResponse(403, 'Forbidden', 'You are not authorized to perform this action.', 'forbidden');
         }
 
         if ($e instanceof TokenMismatchException) {
-            return $this->buildResponse(419, 'Session Expired', 'Your session has expired. Please refresh the page.', 'session_expired', [], $debug, $e);
+            return $this->buildResponse(419, 'Session Expired', 'Your session has expired. Please refresh the page.', 'session_expired');
         }
 
         if ($e instanceof NotFoundHttpException) {
-            return $this->buildResponse(404, 'Not Found', 'The requested resource was not found.', 'not_found', [], $debug, $e);
+            return $this->buildResponse(404, 'Not Found', 'The requested resource was not found.', 'not_found');
         }
 
         if ($e instanceof AccessDeniedHttpException) {
-            return $this->buildResponse(403, 'Forbidden', $e->getMessage() ?: 'You are not authorized to perform this action.', 'forbidden', [], $debug, $e);
+            return $this->buildResponse(403, 'Forbidden', $e->getMessage() ?: 'You are not authorized to perform this action.', 'forbidden');
         }
 
         if ($e instanceof ThrottleRequestsException) {
-            return $this->buildResponse(429, 'Too Many Requests', 'Too many attempts. Please try again later.', 'too_many_requests', [], $debug, $e);
+            return $this->buildResponse(429, 'Too Many Requests', 'Too many attempts. Please try again later.', 'too_many_requests');
         }
 
         if ($e instanceof MethodNotAllowedHttpException) {
-            return $this->buildResponse(405, 'Method Not Allowed', 'The HTTP method is not allowed for this endpoint.', 'method_not_allowed', [], $debug, $e);
+            return $this->buildResponse(405, 'Method Not Allowed', 'The HTTP method is not allowed for this endpoint.', 'method_not_allowed');
         }
 
         if ($e instanceof ProblemDetailsException) {
@@ -64,16 +62,10 @@ class ProblemDetailsRenderer
                 $e->getMessage() ?: class_basename($e),
                 $e->getErrorCode(),
                 $e->getErrorBag(),
-                $debug,
-                $e,
             );
         }
 
-        if ($debug) {
-            return $this->buildResponse(500, 'Server Error', $e->getMessage(), 'internal_error', [], true, $e);
-        }
-
-        return $this->buildResponse(500, 'Server Error', 'An unexpected error occurred.', 'internal_error', [], false, $e);
+        return $this->buildResponse(500, 'Server Error', 'An unexpected error occurred.', 'internal_error');
     }
 
     private function buildResponse(
@@ -81,9 +73,7 @@ class ProblemDetailsRenderer
         string $title,
         string $detail,
         string $code,
-        array $errors,
-        bool $debug,
-        ?\Throwable $e = null,
+        array $errors = [],
     ): JsonResponse {
         $body = [
             'type' => "https://careerpilot.example/problems/$code",
@@ -95,15 +85,6 @@ class ProblemDetailsRenderer
             'errors' => (object) $errors,
             'request_id' => RequestIdContext::get() ?? request()->header('X-Request-ID', (string) Str::uuid()),
         ];
-
-        if ($debug && $e !== null) {
-            $body['debug'] = [
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-            ];
-        }
 
         return response()->json($body, $status);
     }
