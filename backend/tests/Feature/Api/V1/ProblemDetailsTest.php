@@ -66,7 +66,7 @@ it('returns generic 500 without internals in production mode', function () {
     expect($response->json('debug'))->toBeNull();
 });
 
-it('includes debug in 500 when APP_DEBUG is true', function () {
+it('does not expose internals in 500 when APP_DEBUG is true', function () {
     app()['config']->set('app.debug', true);
 
     Route::get('api/v1/_test-debug', function (): never {
@@ -77,6 +77,7 @@ it('includes debug in 500 when APP_DEBUG is true', function () {
 
     $response->assertStatus(500);
     expect($response->json('code'))->toBe('internal_error');
-    expect($response->json('detail'))->toBe('Debug test error');
-    expect($response->json('debug.exception'))->toBe(RuntimeException::class);
+    expect($response->json('detail'))->toBe('An unexpected error occurred.');
+    expect($response->json('debug'))->toBeNull();
+    expect($response->getContent())->not->toContain('Debug test error');
 });
