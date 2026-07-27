@@ -4,6 +4,9 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CandidateSkillController;
 use App\Http\Controllers\Api\V1\CvIngestion\CvDocumentController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\JobOpportunityConfirmedController;
+use App\Http\Controllers\Api\V1\JobOpportunityIngestionController;
+use App\Http\Controllers\Api\V1\JobOpportunitySuggestionController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\SkillController;
 use Illuminate\Support\Facades\Route;
@@ -69,6 +72,29 @@ Route::prefix('v1')->group(function (): void {
             Route::post('/{cvDocument}/apply', [CvDocumentController::class, 'apply'])
                 ->middleware('throttle:5,1,cv_apply');
             Route::get('/{cvDocument}/import-result', [CvDocumentController::class, 'importResult']);
+        });
+
+        Route::prefix('opportunities')->group(function (): void {
+            Route::get('/ingestions', [JobOpportunityIngestionController::class, 'index']);
+            Route::post('/ingestions', [JobOpportunityIngestionController::class, 'store'])
+                ->middleware('throttle:10,1');
+            Route::get('/ingestions/{ingestion}', [JobOpportunityIngestionController::class, 'show']);
+            Route::post('/ingestions/{ingestion}/retry', [JobOpportunityIngestionController::class, 'retry'])
+                ->middleware('throttle:5,1');
+            Route::post('/ingestions/{ingestion}/reanalyze', [JobOpportunityIngestionController::class, 'reanalyze'])
+                ->middleware('throttle:5,1');
+            Route::delete('/ingestions/{ingestion}', [JobOpportunityIngestionController::class, 'destroy'])
+                ->middleware('throttle:10,1');
+            Route::get('/ingestions/{ingestion}/source', [JobOpportunityIngestionController::class, 'source']);
+            Route::get('/ingestions/{ingestion}/suggestions', [JobOpportunitySuggestionController::class, 'index']);
+            Route::patch('/ingestions/{ingestion}/suggestions/{suggestion}', [JobOpportunitySuggestionController::class, 'update']);
+            Route::post('/ingestions/{ingestion}/suggestions/batch', [JobOpportunitySuggestionController::class, 'batch']);
+            Route::post('/ingestions/{ingestion}/preview', [JobOpportunityConfirmedController::class, 'preview'])
+                ->middleware('throttle:10,1');
+            Route::post('/ingestions/{ingestion}/confirm', [JobOpportunityConfirmedController::class, 'confirm'])
+                ->middleware('throttle:100,1');
+            Route::get('/', [JobOpportunityConfirmedController::class, 'index']);
+            Route::get('/{opportunity}', [JobOpportunityConfirmedController::class, 'show']);
         });
     });
 });
