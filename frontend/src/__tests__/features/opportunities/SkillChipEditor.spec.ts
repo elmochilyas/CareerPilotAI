@@ -26,6 +26,14 @@ function createSuggestion(overrides: Partial<JobSuggestion> = {}): JobSuggestion
 }
 
 describe('SkillChipEditor', () => {
+  const skillSearchStub = {
+    name: 'SkillSearchCombobox',
+    props: ['modelValue'],
+    emits: ['update:modelValue', 'select'],
+    template:
+      "<button type=\"button\" class=\"select-skill\" @click=\"$emit('select', { id: 17, name: 'Laravel', normalized_name: 'laravel', category: null, is_active: true, aliases: [], created_at: '', updated_at: '' })\">Select Laravel</button>",
+  }
+
   it('renders skill label', () => {
     const wrapper = mount(SkillChipEditor, {
       props: { suggestion: createSuggestion() },
@@ -44,7 +52,7 @@ describe('SkillChipEditor', () => {
     const wrapper = mount(SkillChipEditor, {
       props: { suggestion: createSuggestion({ resolution: 'ambiguous' }) },
     })
-    expect(wrapper.text()).toContain('Resolve')
+    expect(wrapper.text()).toContain('Needs resolution')
   })
 
   it('shows resolution name when resolved', () => {
@@ -89,6 +97,57 @@ describe('SkillChipEditor', () => {
       props: { suggestion: createSuggestion({ review_decision: 'accepted' }) },
     })
     const keepBtn = wrapper.findAll('button').find((b) => b.text() === 'Keep')
-    expect(keepBtn?.classes()).toContain('bg-green-100')
+    expect(keepBtn?.classes()).toContain('skill-action-kept')
+  })
+
+  it('resolves an ambiguous label to a canonical skill', async () => {
+    const wrapper = mount(SkillChipEditor, {
+      props: { suggestion: createSuggestion({ resolution: 'ambiguous' }) },
+      global: {
+        stubs: {
+          SkillSearchCombobox: skillSearchStub,
+        },
+      },
+    })
+
+    const resolveButton = wrapper.findAll('button').find((button) => button.text() === 'Resolve')
+    await resolveButton?.trigger('click')
+    await wrapper.find('.select-skill').trigger('click')
+
+    expect(wrapper.emitted('resolve')).toEqual([[1, 17]])
+  })
+
+  it('can keep an ambiguous label as an unknown skill', async () => {
+    const wrapper = mount(SkillChipEditor, {
+      props: { suggestion: createSuggestion({ resolution: 'ambiguous' }) },
+      global: {
+        stubs: {
+          SkillSearchCombobox: skillSearchStub,
+        },
+      },
+    })
+
+    const resolveButton = wrapper.findAll('button').find((button) => button.text() === 'Resolve')
+    await resolveButton?.trigger('click')
+    const keepOriginalButton = wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Keep original label')
+    await keepOriginalButton?.trigger('click')
+
+    expect(wrapper.emitted('resolve')).toEqual([[1, null]])
+  })
+
+  it('restores an excluded skill instead of offering a second remove action', async () => {
+    const wrapper = mount(SkillChipEditor, {
+      props: { suggestion: createSuggestion({ review_decision: 'rejected' }) },
+    })
+
+    expect(wrapper.text()).not.toContain('Remove')
+    const restoreButton = wrapper
+      .findAll('button')
+      .find((button) => button.text() === 'Undo remove')
+    await restoreButton?.trigger('click')
+
+    expect(wrapper.emitted('restore')).toEqual([[1]])
   })
 })

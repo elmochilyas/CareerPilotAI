@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { createMemoryHistory, createRouter } from 'vue-router'
 import OpportunityCard from '@/features/opportunities/components/OpportunityCard.vue'
 import type { JobOpportunity } from '@/features/opportunities/types'
 
@@ -44,53 +45,53 @@ function createOpportunity(overrides: Partial<JobOpportunity> = {}): JobOpportun
   }
 }
 
+const router = createRouter({
+  history: createMemoryHistory(),
+  routes: [{ path: '/opportunities/:id', component: { template: '<div />' } }],
+})
+
+function mountOpportunityCard(opportunity = createOpportunity()) {
+  return mount(OpportunityCard, {
+    props: {
+      opportunity,
+      to: `/opportunities/${opportunity.id}`,
+    },
+    global: { plugins: [router] },
+  })
+}
+
 describe('OpportunityCard', () => {
   it('renders title', () => {
-    const wrapper = mount(OpportunityCard, {
-      props: { opportunity: createOpportunity() },
-    })
-    expect(wrapper.text()).toContain('Senior Laravel Developer')
+    expect(mountOpportunityCard().text()).toContain('Senior Laravel Developer')
   })
 
   it('renders company name', () => {
-    const wrapper = mount(OpportunityCard, {
-      props: { opportunity: createOpportunity() },
-    })
-    expect(wrapper.text()).toContain('Acme Corp')
+    expect(mountOpportunityCard().text()).toContain('Acme Corp')
   })
 
   it('renders work mode', () => {
-    const wrapper = mount(OpportunityCard, {
-      props: { opportunity: createOpportunity() },
-    })
-    expect(wrapper.text()).toContain('Remote')
+    expect(mountOpportunityCard().text()).toContain('Remote')
   })
 
-  it('renders Confirmed badge', () => {
-    const wrapper = mount(OpportunityCard, {
-      props: { opportunity: createOpportunity() },
-    })
-    expect(wrapper.text()).toContain('Confirmed')
+  it('renders Saved badge', () => {
+    expect(mountOpportunityCard().text()).toContain('Saved')
   })
 
   it('renders formatted date', () => {
-    const wrapper = mount(OpportunityCard, {
-      props: { opportunity: createOpportunity() },
-    })
-    expect(wrapper.text()).toContain('Jul 26, 2026')
+    expect(mountOpportunityCard().text()).toContain('Jul 26, 2026')
   })
 
   it('does not render company row when null', () => {
-    const wrapper = mount(OpportunityCard, {
-      props: { opportunity: createOpportunity({ company_name: null }) },
-    })
+    const wrapper = mountOpportunityCard(createOpportunity({ company_name: null }))
     expect(wrapper.text()).not.toContain('Acme Corp')
   })
 
   it('does not render work mode when null', () => {
-    const wrapper = mount(OpportunityCard, {
-      props: { opportunity: createOpportunity({ work_mode: null }) },
-    })
+    const wrapper = mountOpportunityCard(createOpportunity({ work_mode: null }))
     expect(wrapper.text()).not.toContain('null')
+  })
+
+  it('renders the opportunity action as a semantic navigation link', () => {
+    expect(mountOpportunityCard().get('a').attributes('href')).toBe('/opportunities/1')
   })
 })

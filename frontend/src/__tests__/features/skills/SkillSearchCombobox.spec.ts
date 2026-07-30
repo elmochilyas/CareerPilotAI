@@ -68,7 +68,7 @@ describe('SkillSearchCombobox', () => {
 
   it('shows placeholder text', () => {
     const wrapper = createWrapper()
-    expect(wrapper.find('input').attributes('placeholder')).toBe('Search for a skill...')
+    expect(wrapper.find('input').attributes('placeholder')).toBe('Search for a skill…')
   })
 
   it('has combobox role', () => {
