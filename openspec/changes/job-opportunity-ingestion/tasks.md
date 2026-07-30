@@ -297,7 +297,7 @@
 ## 31. Verification and archive
 
 - [x] 31.1 Run `/opsx:verify` against all artifacts
-- [ ] 31.2 Resolve all critical findings
+- [x] 31.2 Resolve all critical findings
 - [ ] 31.3 Confirm all acceptance criteria are met
 - [ ] 31.4 Run `/opsx:sync` to sync delta specs to canonical specs
 - [ ] 31.5 Run `/opsx:archive` to archive the change
@@ -311,3 +311,19 @@
 - [x] 32.5 Present candidate-friendly failure guidance with technical codes available only as expandable support details
 - [x] 32.6 Add focused backend and frontend regression coverage
 - [x] 32.7 Clear cached runtime state, restart one fresh queue worker, and complete a controlled end-to-end ingestion verification
+
+## 33. Corrective hardening: review, preview, and confirmation integrity
+
+- [x] 33.1 Record the audited release blockers and corrective implementation scope in this change
+- [x] 33.2 Unify analyzer, edited-value, preview, and confirmation suggestion payload contracts
+- [x] 33.3 Build preview and confirmation from the same accepted/edited/resolved suggestion values
+- [x] 33.4 Persist every approved opportunity field, requirement, skill classification, and source evidence exactly once
+- [x] 33.5 Make confirmation transactional, locked, stale-preview safe, and idempotent under concurrent requests
+- [x] 33.6 Implement client-version optimistic concurrency and atomic batch decision updates
+- [x] 33.7 Implement candidate resolution of ambiguous skills with canonical skill validation
+- [x] 33.8 Correct endpoint validation and approved per-user hourly rate limits
+- [x] 33.9 Repair responsibility editing, undo, manual additions, preview invalidation, and confirmation recovery UX
+- [x] 33.10 Add pagination and complete readonly confirmed-opportunity rendering
+- [ ] 33.11 Remove unrelated generated assets and dead feature files from the bounded change
+- [x] 33.12 Add production-shaped backend and frontend regression coverage for all corrective paths
+- [ ] 33.13 Pass Pint, PHPStan, backend tests, frontend format/lint/unit/build, browser, and acceptance verification

@@ -184,6 +184,7 @@ Indexes: FK(job_opportunity_id), INDEX(job_opportunity_id, classification)
 | `classification` | VARCHAR(20) | YES | required, preferred |
 | `language` | VARCHAR(100) | YES | When category=language |
 | `language_proficiency` | VARCHAR(30) | YES | When category=language |
+| `source_evidence` | TEXT | YES | Supporting text from the candidate-provided description |
 | `display_order` | SMALLINT UNSIGNED | NO | |
 | `created_at` | TIMESTAMP | NO | |
 | `updated_at` | TIMESTAMP | NO | |
@@ -543,6 +544,7 @@ All under `/api/v1/opportunities/`, authenticated with `auth:sanctum`.
 | DELETE | `/api/v1/opportunities/ingestions/{ingestion}` | Cancel/delete unconfirmed | 200 | 10/hour |
 | GET | `/api/v1/opportunities/ingestions/{ingestion}/source` | Read original description | 200 | 60/min |
 | GET | `/api/v1/opportunities/ingestions/{ingestion}/suggestions` | List suggestions | 200 | 120/min |
+| POST | `/api/v1/opportunities/ingestions/{ingestion}/suggestions` | Add a missing responsibility or skill during review | 201 | 60/min |
 | PATCH | `/api/v1/opportunities/ingestions/{ingestion}/suggestions/{suggestion}` | Save one decision | 200 | 60/min |
 | POST | `/api/v1/opportunities/ingestions/{ingestion}/suggestions/batch` | Batch save decisions | 200 | 30/min |
 | POST | `/api/v1/opportunities/ingestions/{ingestion}/preview` | Generate confirmation preview | 200 | 10/hour |
