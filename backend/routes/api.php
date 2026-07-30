@@ -77,22 +77,26 @@ Route::prefix('v1')->group(function (): void {
         Route::prefix('opportunities')->group(function (): void {
             Route::get('/ingestions', [JobOpportunityIngestionController::class, 'index']);
             Route::post('/ingestions', [JobOpportunityIngestionController::class, 'store'])
-                ->middleware('throttle:10,1');
+                ->middleware('throttle:opportunity-ingestion-create');
             Route::get('/ingestions/{ingestion}', [JobOpportunityIngestionController::class, 'show']);
             Route::post('/ingestions/{ingestion}/retry', [JobOpportunityIngestionController::class, 'retry'])
-                ->middleware('throttle:5,1');
+                ->middleware('throttle:opportunity-ingestion-retry');
             Route::post('/ingestions/{ingestion}/reanalyze', [JobOpportunityIngestionController::class, 'reanalyze'])
-                ->middleware('throttle:5,1');
+                ->middleware('throttle:opportunity-ingestion-reanalyze');
             Route::delete('/ingestions/{ingestion}', [JobOpportunityIngestionController::class, 'destroy'])
-                ->middleware('throttle:10,1');
+                ->middleware('throttle:opportunity-ingestion-delete');
             Route::get('/ingestions/{ingestion}/source', [JobOpportunityIngestionController::class, 'source']);
             Route::get('/ingestions/{ingestion}/suggestions', [JobOpportunitySuggestionController::class, 'index']);
-            Route::patch('/ingestions/{ingestion}/suggestions/{suggestion}', [JobOpportunitySuggestionController::class, 'update']);
-            Route::post('/ingestions/{ingestion}/suggestions/batch', [JobOpportunitySuggestionController::class, 'batch']);
+            Route::post('/ingestions/{ingestion}/suggestions', [JobOpportunitySuggestionController::class, 'store'])
+                ->middleware('throttle:opportunity-suggestion-update');
+            Route::patch('/ingestions/{ingestion}/suggestions/{suggestion}', [JobOpportunitySuggestionController::class, 'update'])
+                ->middleware('throttle:opportunity-suggestion-update');
+            Route::post('/ingestions/{ingestion}/suggestions/batch', [JobOpportunitySuggestionController::class, 'batch'])
+                ->middleware('throttle:opportunity-suggestion-batch');
             Route::post('/ingestions/{ingestion}/preview', [JobOpportunityConfirmedController::class, 'preview'])
-                ->middleware('throttle:10,1');
+                ->middleware('throttle:opportunity-preview');
             Route::post('/ingestions/{ingestion}/confirm', [JobOpportunityConfirmedController::class, 'confirm'])
-                ->middleware('throttle:100,1');
+                ->middleware('throttle:opportunity-confirm');
             Route::get('/', [JobOpportunityConfirmedController::class, 'index']);
             Route::get('/{opportunity}', [JobOpportunityConfirmedController::class, 'show']);
         });

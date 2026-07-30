@@ -9,6 +9,7 @@ use App\Models\JobOpportunityIngestion;
 use App\Models\JobOpportunitySuggestion;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Log\Events\MessageLogged;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
 
@@ -484,20 +485,27 @@ it('logs only safe diagnostic metadata for analysis failures', function () {
         'source_description' => 'PRIVATE_JOB_DESCRIPTION must never be logged.',
     ]);
 
-    Log::spy();
+    $records = [];
+    Log::listen(function (MessageLogged $record) use (&$records): void {
+        $records[] = $record;
+    });
 
     app(AnalyzeJobAction::class)->execute($ingestion);
 
-    Log::shouldHaveReceived('warning')
-        ->once()
-        ->withArgs(function (string $message, array $context) use ($ingestion): bool {
-            $encodedContext = (string) json_encode($context);
+    $warnings = array_values(array_filter(
+        $records,
+        fn (MessageLogged $record): bool => $record->level === 'warning'
+            && $record->message === 'Job opportunity analysis failed',
+    ));
 
-            return $message === 'Job opportunity analysis failed'
-                && $context['ingestion_id'] === $ingestion->id
-                && $context['processing_stage'] === 'schema_validation'
-                && $context['validation_paths'] === ['job.title']
-                && ! str_contains($encodedContext, 'RAW_PROVIDER_RESPONSE')
-                && ! str_contains($encodedContext, 'PRIVATE_JOB_DESCRIPTION');
-        });
+    expect($warnings)->toHaveCount(1);
+
+    $context = $warnings[0]->context;
+    $encodedContext = (string) json_encode($context);
+
+    expect($context['ingestion_id'])->toBe($ingestion->id)
+        ->and($context['processing_stage'])->toBe('schema_validation')
+        ->and($context['validation_paths'])->toBe(['job.title'])
+        ->and($encodedContext)->not->toContain('RAW_PROVIDER_RESPONSE')
+        ->and($encodedContext)->not->toContain('PRIVATE_JOB_DESCRIPTION');
 });

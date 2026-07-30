@@ -14,6 +14,7 @@ class JobRequirement extends Model
         'classification',
         'language',
         'language_proficiency',
+        'source_evidence',
         'display_order',
     ];
 

@@ -96,7 +96,6 @@ it('skips already queued ingestion', function () {
 
 it('returns safely when ingestion does not exist', function () {
     $job = new ProcessJobIngestionJob(99999);
-    $job->handle($this->stateService);
-
-    expect(true)->toBeTrue();
+    expect(fn () => $job->handle($this->stateService))
+        ->not->toThrow(Throwable::class);
 });

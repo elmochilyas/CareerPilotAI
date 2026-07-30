@@ -14,7 +14,7 @@ class ConfirmRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'version_token' => ['sometimes'],
+            'version_token' => ['required', 'string', 'size:64', 'regex:/\A[a-f0-9]{64}\z/'],
         ];
     }
 }

@@ -39,11 +39,17 @@ class JobOpportunitySuggestion extends Model
         'reviewed_at' => 'datetime',
     ];
 
+    /**
+     * @return BelongsTo<JobOpportunityIngestion, $this>
+     */
     public function ingestion(): BelongsTo
     {
         return $this->belongsTo(JobOpportunityIngestion::class, 'ingestion_id');
     }
 
+    /**
+     * @return BelongsTo<Skill, $this>
+     */
     public function resolvedSkill(): BelongsTo
     {
         return $this->belongsTo(Skill::class, 'resolved_skill_id');

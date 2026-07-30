@@ -20,8 +20,11 @@ use App\Models\JobOpportunity;
 use App\Models\JobOpportunityIngestion;
 use App\Models\JobOpportunitySuggestion;
 use App\Models\ProfileItem;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -42,6 +45,23 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(JobOpportunityIngestion::class, JobOpportunityIngestionPolicy::class);
         Gate::policy(JobOpportunitySuggestion::class, JobOpportunitySuggestionPolicy::class);
         Gate::policy(JobOpportunity::class, JobOpportunityPolicy::class);
+
+        RateLimiter::for('opportunity-ingestion-create', fn (Request $request): Limit => Limit::perHour(10)
+            ->by($this->rateLimitKey($request)));
+        RateLimiter::for('opportunity-ingestion-retry', fn (Request $request): Limit => Limit::perHour(5)
+            ->by($this->rateLimitKey($request)));
+        RateLimiter::for('opportunity-ingestion-reanalyze', fn (Request $request): Limit => Limit::perHour(5)
+            ->by($this->rateLimitKey($request)));
+        RateLimiter::for('opportunity-ingestion-delete', fn (Request $request): Limit => Limit::perHour(10)
+            ->by($this->rateLimitKey($request)));
+        RateLimiter::for('opportunity-suggestion-update', fn (Request $request): Limit => Limit::perMinute(60)
+            ->by($this->rateLimitKey($request)));
+        RateLimiter::for('opportunity-suggestion-batch', fn (Request $request): Limit => Limit::perMinute(30)
+            ->by($this->rateLimitKey($request)));
+        RateLimiter::for('opportunity-preview', fn (Request $request): Limit => Limit::perHour(10)
+            ->by($this->rateLimitKey($request)));
+        RateLimiter::for('opportunity-confirm', fn (Request $request): Limit => Limit::perHour(5)
+            ->by($this->rateLimitKey($request)));
 
         Route::bind('cvDocument', function (string $value): CvDocument {
             $userId = request()->user()?->id;
@@ -95,5 +115,14 @@ class AppServiceProvider extends ServiceProvider
             return JobOpportunity::whereHas('candidateProfile', fn ($q) => $q->where('user_id', $userId))
                 ->findOrFail($value);
         });
+    }
+
+    private function rateLimitKey(Request $request): string
+    {
+        if ($request->user() !== null) {
+            return (string) $request->user()->id;
+        }
+
+        return $request->ip();
     }
 }

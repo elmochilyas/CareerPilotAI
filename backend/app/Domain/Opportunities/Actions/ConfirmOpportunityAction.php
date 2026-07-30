@@ -3,8 +3,6 @@
 namespace App\Domain\Opportunities\Actions;
 
 use App\Domain\Opportunities\Enums\JobIngestionStatus;
-use App\Domain\Opportunities\Enums\ReviewDecision;
-use App\Domain\Opportunities\Enums\SkillResolutionState;
 use App\Domain\Opportunities\Services\JobIngestionStateService;
 use App\Exceptions\Api\ConflictException;
 use App\Models\CandidateProfile;
@@ -23,301 +21,311 @@ class ConfirmOpportunityAction
 
     public function execute(JobOpportunityIngestion $ingestion, string $versionToken): JobOpportunity
     {
-        if ($ingestion->status === JobIngestionStatus::Confirmed) {
-            $existing = $ingestion->opportunity()->first();
+        return DB::transaction(function () use ($ingestion, $versionToken): JobOpportunity {
+            $lockedIngestion = JobOpportunityIngestion::query()
+                ->whereKey($ingestion->getKey())
+                ->lockForUpdate()
+                ->firstOrFail();
 
-            if ($existing !== null) {
-                return $existing;
+            if ($lockedIngestion->status === JobIngestionStatus::Confirmed) {
+                return JobOpportunity::query()
+                    ->where('ingestion_id', $lockedIngestion->id)
+                    ->with(['requirements', 'skills', 'company'])
+                    ->firstOrFail();
             }
-        }
 
-        $this->stateService->assertReviewable($ingestion->status);
-        $this->verifyPreviewFreshness($ingestion, $versionToken);
+            $this->stateService->assertReviewable($lockedIngestion->status);
 
-        $suggestions = $ingestion->suggestions;
+            $suggestions = $lockedIngestion->suggestions()
+                ->lockForUpdate()
+                ->get();
 
-        $this->verifyDecisionsComplete($suggestions);
-        $this->verifyNoAmbiguousSkills($suggestions);
+            if ($suggestions->isEmpty()) {
+                throw new ConflictException(
+                    'No reviewed suggestions are available for confirmation.',
+                    'incomplete_review',
+                );
+            }
 
-        return DB::transaction(function () use ($ingestion, $suggestions) {
-            $user = $ingestion->user;
-            $candidateProfile = CandidateProfile::where('user_id', $user->id)->firstOrFail();
+            $preview = $this->previewAction->execute($lockedIngestion);
 
-            $opportunityData = $this->buildOpportunityData($ingestion, $suggestions, $candidateProfile);
+            if ($preview['version_token'] !== $versionToken) {
+                throw new ConflictException(
+                    'Preview is outdated. Please regenerate before confirming.',
+                    'stale_preview',
+                );
+            }
 
-            $opportunity = JobOpportunity::create($opportunityData);
+            $candidateProfile = CandidateProfile::query()
+                ->where('user_id', $lockedIngestion->user_id)
+                ->firstOrFail();
+            $previewData = $preview['data'];
 
-            $this->createRequirements($opportunity, $suggestions);
-            $this->createSkills($opportunity, $suggestions);
+            $opportunity = JobOpportunity::query()->create(
+                $this->buildOpportunityData($lockedIngestion, $previewData, $candidateProfile)
+            );
 
-            $ingestion->update([
+            $this->createRequirements($opportunity, $previewData);
+            $this->createSkills($opportunity, $previewData);
+
+            $lockedIngestion->update([
                 'status' => JobIngestionStatus::Confirmed,
                 'confirmed_at' => now(),
             ]);
 
-            return $opportunity;
-        });
+            return $opportunity->load(['requirements', 'skills', 'company']);
+        }, attempts: 3);
     }
 
-    private function verifyPreviewFreshness(JobOpportunityIngestion $ingestion, string $versionToken): void
-    {
-        $preview = $this->previewAction->execute($ingestion);
-
-        if ($preview['version_token'] !== $versionToken) {
-            throw new ConflictException(
-                'Preview is outdated. Please regenerate before confirming.',
-                'stale_preview',
-            );
-        }
-    }
-
-    private function verifyDecisionsComplete($suggestions): void
-    {
-        $pending = $suggestions->filter(fn ($s) => $s->review_decision === ReviewDecision::Pending);
-
-        if ($pending->isNotEmpty()) {
-            throw new ConflictException(
-                'All suggestions must be reviewed before confirmation.',
-                'incomplete_review',
-            );
-        }
-    }
-
-    private function verifyNoAmbiguousSkills($suggestions): void
-    {
-        $ambiguous = $suggestions->filter(
-            fn ($s) => $s->resolution === SkillResolutionState::Ambiguous
-        );
-
-        if ($ambiguous->isNotEmpty()) {
-            throw new ConflictException(
-                'Ambiguous skills must be resolved before confirmation.',
-                'unresolved_skill_mapping',
-            );
-        }
-    }
-
-    private function buildOpportunityData(JobOpportunityIngestion $ingestion, $suggestions, CandidateProfile $profile): array
-    {
-        $getValue = function ($suggestions, string $type, string $field = 'value') {
-            $s = $suggestions->firstWhere('type', $type);
-
-            if ($s === null) {
-                return null;
-            }
-
-            if ($s->review_decision === ReviewDecision::Edited && $s->edited_value !== null) {
-                return $s->edited_value[$field] ?? null;
-            }
-
-            if ($s->review_decision === ReviewDecision::Rejected || $s->review_decision === ReviewDecision::KeepBlank) {
-                return null;
-            }
-
-            return $s->extracted_value[$field] ?? null;
-        };
-
-        $getBool = function ($suggestions, string $type) {
-            $s = $suggestions->firstWhere('type', $type);
-
-            if ($s === null) {
-                return null;
-            }
-
-            if ($s->review_decision === ReviewDecision::Edited && $s->edited_value !== null) {
-                return filter_var($s->edited_value['value'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-            }
-
-            return filter_var($s->extracted_value['value'] ?? null, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-        };
-
-        $getLocation = function ($suggestions, string $part) {
-            $field = $part;
-            $s = $suggestions->firstWhere('field', $field);
-
-            if ($s === null) {
-                $s = $suggestions->firstWhere('type', $part);
-            }
-
-            if ($s === null) {
-                return null;
-            }
-
-            if ($s->review_decision === ReviewDecision::Edited && $s->edited_value !== null) {
-                return $s->edited_value['value'] ?? null;
-            }
-
-            return $s->extracted_value['value'] ?? null;
-        };
+    /**
+     * @param  array<string, mixed>  $previewData
+     * @return array<string, mixed>
+     */
+    private function buildOpportunityData(
+        JobOpportunityIngestion $ingestion,
+        array $previewData,
+        CandidateProfile $profile,
+    ): array {
+        $overview = $this->section($previewData, 'overview');
+        $workDetails = $this->section($previewData, 'work_details');
+        $compensation = $this->section($previewData, 'compensation');
+        $dates = $this->section($previewData, 'dates');
 
         return [
             'candidate_profile_id' => $profile->id,
             'ingestion_id' => $ingestion->id,
-            'title' => $getValue($suggestions, 'job_title', 'title') ?? 'Untitled Position',
-            'company_name' => $getValue($suggestions, 'company', 'company_name'),
-            'department' => $getValue($suggestions, 'department', 'department'),
-            'external_reference' => $getValue($suggestions, 'external_reference', 'external_reference'),
-            'summary' => $getValue($suggestions, 'summary', 'summary'),
-            'application_url' => $getValue($suggestions, 'application_url', 'application_url'),
+            'title' => $this->stringValue($overview, 'title') ?? 'Untitled Position',
+            'company_name' => $this->stringValue($overview, 'company'),
+            'department' => $this->stringValue($overview, 'department'),
+            'external_reference' => $this->stringValue($overview, 'external_reference'),
+            'summary' => $this->stringValue($overview, 'summary'),
+            'application_url' => $this->stringValue($overview, 'application_url'),
             'personal_label' => $ingestion->personal_label,
             'source_url' => $ingestion->source_url,
-            'city' => $getLocation($suggestions, 'city'),
-            'region' => $getLocation($suggestions, 'region'),
-            'country' => $getLocation($suggestions, 'country'),
-            'work_mode' => $getValue($suggestions, 'work_mode', 'work_mode'),
-            'contract_type' => $getValue($suggestions, 'contract_type', 'contract_type'),
-            'seniority_level' => $getValue($suggestions, 'seniority_level', 'seniority_level'),
-            'working_hours' => $getValue($suggestions, 'working_hours', 'working_hours'),
-            'travel_required' => $getBool($suggestions, 'travel_required'),
-            'relocation_required' => $getBool($suggestions, 'relocation_required'),
+            'city' => $this->stringValue($workDetails, 'city'),
+            'region' => $this->stringValue($workDetails, 'region'),
+            'country' => $this->stringValue($workDetails, 'country'),
+            'work_mode' => $this->stringValue($workDetails, 'work_mode'),
+            'contract_type' => $this->stringValue($workDetails, 'contract_type'),
+            'seniority_level' => $this->stringValue($workDetails, 'seniority_level'),
+            'working_hours' => $this->stringValue($workDetails, 'working_hours'),
+            'travel_required' => $this->booleanValue($workDetails, 'travel_required'),
+            'relocation_required' => $this->booleanValue($workDetails, 'relocation_required'),
+            'salary_min' => $compensation['salary_min'] ?? null,
+            'salary_max' => $compensation['salary_max'] ?? null,
+            'salary_currency' => $this->stringValue($compensation, 'currency'),
+            'salary_period' => $this->stringValue($compensation, 'period'),
+            'compensation_text' => $this->stringValue($compensation, 'text'),
+            'benefits' => $this->listValue($compensation, 'benefits'),
+            'publication_date' => $this->stringValue($dates, 'publication_date'),
+            'application_deadline' => $this->stringValue($dates, 'application_deadline'),
+            'expected_start_date' => $this->stringValue($dates, 'expected_start_date'),
+            'employment_duration' => $this->stringValue($dates, 'employment_duration'),
+            'additional_requirements' => $this->listValue($previewData, 'additional_requirements'),
             'source_hash' => $ingestion->content_hash,
             'saved_at' => now(),
         ];
     }
 
-    private function createRequirements(JobOpportunity $opportunity, $suggestions): void
+    /**
+     * @param  array<string, mixed>  $previewData
+     */
+    private function createRequirements(JobOpportunity $opportunity, array $previewData): void
     {
         $order = 0;
 
-        $responsibilities = $suggestions->filter(fn ($s) => $s->type->value === 'responsibility');
-        foreach ($responsibilities as $s) {
-            $text = $s->review_decision === ReviewDecision::Edited && $s->edited_value !== null
-                ? ($s->edited_value['text'] ?? '')
-                : ($s->extracted_value['text'] ?? '');
-
-            if (trim($text) === '') {
+        foreach ($this->listValue($previewData, 'responsibilities') as $item) {
+            if (! is_array($item) || ! is_string($item['text'] ?? null)) {
                 continue;
             }
 
-            JobRequirement::create([
-                'job_opportunity_id' => $opportunity->id,
+            $this->createRequirement($opportunity, [
                 'category' => 'responsibility',
-                'content' => $text,
+                'content' => $item['text'],
+                'source_evidence' => $this->nullableString($item['source_evidence'] ?? null),
                 'display_order' => $order++,
             ]);
         }
 
-        foreach (['required_experience' => 'required', 'preferred_experience' => 'preferred'] as $type => $classification) {
-            $items = $suggestions->filter(fn ($s) => $s->type->value === $type);
-
-            foreach ($items as $s) {
-                $summary = $s->extracted_value['summary'] ?? '';
-                $years = $s->extracted_value['years'] ?? null;
-
-                if (trim($summary) === '' && $years === null) {
+        foreach ([
+            'required_experience' => 'required',
+            'preferred_experience' => 'preferred',
+        ] as $section => $classification) {
+            foreach ($this->listValue($previewData, $section) as $item) {
+                if (! is_array($item)) {
                     continue;
                 }
 
+                $summary = $this->nullableString($item['summary'] ?? null) ?? '';
+                $years = is_numeric($item['years'] ?? null) ? $item['years'] : null;
                 $content = $summary;
+
                 if ($years !== null) {
                     $content .= ($content !== '' ? ' ' : '')."({$years} years)";
                 }
 
-                JobRequirement::create([
-                    'job_opportunity_id' => $opportunity->id,
-                    'category' => $classification === 'required' ? 'required_experience' : 'preferred_experience',
+                if ($content === '') {
+                    continue;
+                }
+
+                $this->createRequirement($opportunity, [
+                    'category' => $section,
                     'content' => $content,
                     'classification' => $classification,
+                    'source_evidence' => $this->nullableString($item['source_evidence'] ?? null),
                     'display_order' => $order++,
                 ]);
             }
         }
 
-        $educationItems = $suggestions->filter(fn ($s) => $s->type->value === 'education');
-        foreach ($educationItems as $s) {
-            $degree = $s->extracted_value['degree'] ?? '';
-            $field = $s->extracted_value['field'] ?? null;
-
-            if (trim($degree) === '') {
+        foreach ($this->listValue($previewData, 'education') as $item) {
+            if (! is_array($item) || ! is_string($item['degree'] ?? null)) {
                 continue;
             }
 
-            $content = $degree;
-            if ($field !== null && trim($field) !== '') {
+            $content = $item['degree'];
+            $field = $this->nullableString($item['field'] ?? null);
+
+            if ($field !== null) {
                 $content .= " in {$field}";
             }
 
-            JobRequirement::create([
-                'job_opportunity_id' => $opportunity->id,
+            $this->createRequirement($opportunity, [
                 'category' => 'education',
                 'content' => $content,
+                'classification' => $this->classification($item['required'] ?? null),
+                'source_evidence' => $this->nullableString($item['source_evidence'] ?? null),
                 'display_order' => $order++,
             ]);
         }
-
-        $langItems = $suggestions->filter(fn ($s) => $s->type->value === 'language');
-        foreach ($langItems as $s) {
-            $language = $s->extracted_value['language'] ?? '';
-            $proficiency = $s->extracted_value['proficiency'] ?? null;
-
-            if (trim($language) === '') {
+        foreach ($this->listValue($previewData, 'languages_certifications') as $item) {
+            if (! is_array($item) || ! is_string($item['name'] ?? null)) {
                 continue;
             }
 
-            JobRequirement::create([
-                'job_opportunity_id' => $opportunity->id,
-                'category' => 'language',
-                'content' => $language,
-                'language' => $language,
-                'language_proficiency' => $proficiency,
-                'display_order' => $order++,
-            ]);
-        }
+            $isLanguage = ($item['type'] ?? null) === 'language';
+            $classification = $this->classification($item['required'] ?? null);
 
-        $certItems = $suggestions->filter(fn ($s) => $s->type->value === 'certification');
-        foreach ($certItems as $s) {
-            $name = $s->extracted_value['name'] ?? '';
-            if (trim($name) === '') {
-                continue;
-            }
-
-            JobRequirement::create([
-                'job_opportunity_id' => $opportunity->id,
-                'category' => 'education',
-                'content' => $name,
+            $this->createRequirement($opportunity, [
+                'category' => $isLanguage
+                    ? 'language'
+                    : ($classification === 'preferred' ? 'preferred_certification' : 'required_certification'),
+                'content' => $item['name'],
+                'classification' => $classification,
+                'language' => $isLanguage ? $item['name'] : null,
+                'language_proficiency' => $isLanguage
+                    ? $this->nullableString($item['proficiency'] ?? null)
+                    : null,
+                'source_evidence' => $this->nullableString($item['source_evidence'] ?? null),
                 'display_order' => $order++,
             ]);
         }
     }
 
-    private function createSkills(JobOpportunity $opportunity, $suggestions): void
+    /**
+     * @param  array<string, mixed>  $previewData
+     */
+    private function createSkills(JobOpportunity $opportunity, array $previewData): void
     {
         $order = 0;
 
-        $skillMappings = [
+        foreach ([
             'required_skills' => 'required',
             'preferred_skills' => 'preferred',
-        ];
-
-        foreach ($skillMappings as $groupKey => $classification) {
-            $items = $suggestions->filter(fn ($s) => ($s->group_key ?? '') === $groupKey);
-
-            $seen = [];
-
-            foreach ($items as $s) {
-                $label = $s->extracted_value['label'] ?? '';
-                $normalized = mb_strtolower(trim($label));
-
-                if ($normalized === '') {
+        ] as $section => $classification) {
+            foreach ($this->listValue($previewData, $section) as $item) {
+                if (! is_array($item) || ! is_string($item['label'] ?? null)) {
                     continue;
                 }
 
-                if (isset($seen[$normalized])) {
-                    continue;
-                }
-                $seen[$normalized] = true;
-
-                JobOpportunitySkill::create([
+                JobOpportunitySkill::query()->create([
                     'job_opportunity_id' => $opportunity->id,
-                    'skill_id' => $s->resolved_skill_id,
-                    'original_label' => $label,
+                    'skill_id' => is_numeric($item['resolved_skill_id'] ?? null)
+                        ? (int) $item['resolved_skill_id']
+                        : null,
+                    'original_label' => $item['label'],
                     'classification' => $classification,
-                    'proficiency' => $s->extracted_value['proficiency'] ?? null,
-                    'years_experience' => $s->extracted_value['years_experience'] ?? null,
-                    'source_evidence' => $s->source_evidence,
+                    'proficiency' => $this->nullableString($item['proficiency'] ?? null),
+                    'years_experience' => is_numeric($item['years_experience'] ?? null)
+                        ? $item['years_experience']
+                        : null,
+                    'source_evidence' => $this->nullableString($item['source_evidence'] ?? null),
                     'display_order' => $order++,
                 ]);
             }
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    private function createRequirement(JobOpportunity $opportunity, array $attributes): void
+    {
+        $requirement = new JobRequirement;
+        $requirement->fill([
+            'job_opportunity_id' => $opportunity->id,
+            ...$attributes,
+        ]);
+        $requirement->save();
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function section(array $data, string $key): array
+    {
+        $section = $data[$key] ?? null;
+
+        return is_array($section) ? $section : [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<int, mixed>
+     */
+    private function listValue(array $data, string $key): array
+    {
+        $value = $data[$key] ?? null;
+
+        return is_array($value) && array_is_list($value) ? $value : [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function stringValue(array $data, string $key): ?string
+    {
+        return $this->nullableString($data[$key] ?? null);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function booleanValue(array $data, string $key): ?bool
+    {
+        if (! array_key_exists($key, $data)) {
+            return null;
+        }
+
+        return filter_var($data[$key], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+    }
+
+    private function nullableString(mixed $value): ?string
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        return trim($value);
+    }
+
+    private function classification(mixed $required): ?string
+    {
+        if (! is_bool($required)) {
+            return null;
+        }
+
+        return $required ? 'required' : 'preferred';
     }
 }

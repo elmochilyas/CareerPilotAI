@@ -28,7 +28,7 @@ it('resolves exact skill name match', function () {
         'extracted_value' => ['name' => 'Laravel'],
     ]);
 
-    $result = $this->action->execute($this->ingestion);
+    $this->action->execute($this->ingestion);
 
     $suggestion->refresh();
     expect($suggestion->resolution)->toBe(SkillResolutionState::Exact);
@@ -48,7 +48,7 @@ it('resolves via alias', function () {
         'extracted_value' => ['name' => 'JS'],
     ]);
 
-    $result = $this->action->execute($this->ingestion);
+    $this->action->execute($this->ingestion);
 
     $suggestion->refresh();
     expect($suggestion->resolution)->toBe(SkillResolutionState::Alias);
@@ -65,7 +65,7 @@ it('marks as ambiguous when multiple skills match', function () {
         'extracted_value' => ['name' => 'React'],
     ]);
 
-    $result = $this->action->execute($this->ingestion);
+    $this->action->execute($this->ingestion);
 
     $suggestion->refresh();
     expect($suggestion->resolution)->toBe(SkillResolutionState::Ambiguous);
@@ -78,7 +78,7 @@ it('marks as unknown when no match found', function () {
         'extracted_value' => ['name' => 'ObscureFramework2026'],
     ]);
 
-    $result = $this->action->execute($this->ingestion);
+    $this->action->execute($this->ingestion);
 
     $suggestion->refresh();
     expect($suggestion->resolution)->toBe(SkillResolutionState::Unknown);
@@ -94,7 +94,7 @@ it('skips already resolved suggestions', function () {
         'resolved_skill_id' => $skill->id,
     ]);
 
-    $result = $this->action->execute($this->ingestion);
+    $this->action->execute($this->ingestion);
 
     $suggestion->refresh();
     expect($suggestion->resolution)->toBe(SkillResolutionState::Exact);
@@ -116,7 +116,7 @@ it('prevents duplicate resolution of same skill across suggestions', function ()
         'extracted_value' => ['name' => 'Laravel'],
     ]);
 
-    $result = $this->action->execute($this->ingestion);
+    $this->action->execute($this->ingestion);
 
     $suggestion2->refresh();
     expect($suggestion2->resolution)->toBe(SkillResolutionState::Exact);

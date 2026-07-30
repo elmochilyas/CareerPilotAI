@@ -4,6 +4,7 @@ namespace App\Domain\Opportunities\Actions;
 
 use App\Domain\Opportunities\Data\SuggestionData;
 use App\Domain\Opportunities\Enums\JobIngestionStatus;
+use App\Domain\Opportunities\Enums\ReviewDecision;
 use App\Domain\Opportunities\Services\Contracts\JobAnalyzer;
 use App\Domain\Opportunities\Services\JobAnalysisSchemaValidator;
 use App\Domain\Opportunities\Services\JobIngestionStateService;
@@ -101,6 +102,11 @@ class AnalyzeJobAction
     private function persistSuggestions(JobOpportunityIngestion $ingestion, array $validAnalysis): void
     {
         $schemaVersion = Config::string('job-ingestion.analysis_schema_version', '1.0.0');
+
+        $ingestion->suggestions()
+            ->where('review_decision', ReviewDecision::Pending)
+            ->delete();
+
         $existingTypes = $ingestion->suggestions()->pluck('type')->map(fn ($t) => $t->value)->toArray();
 
         foreach ($validAnalysis['suggestions'] as $suggestionData) {

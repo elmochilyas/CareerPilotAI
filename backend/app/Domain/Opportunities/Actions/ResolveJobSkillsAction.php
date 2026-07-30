@@ -29,7 +29,7 @@ class ResolveJobSkillsAction
 
             $normalized = $this->normalizeLabel($label);
 
-            $resolution = $this->resolveSkill($normalized, $suggestion, $resolved);
+            $resolution = $this->resolveSkill($normalized, $suggestion);
 
             $suggestion->update([
                 'resolution' => $resolution['state'],
@@ -59,16 +59,9 @@ class ResolveJobSkillsAction
     private function getLabel(JobOpportunitySuggestion $suggestion): ?string
     {
         $value = $suggestion->extracted_value;
+        $label = $value['label'] ?? $value['name'] ?? null;
 
-        if (is_string($value)) {
-            return $value;
-        }
-
-        if (is_array($value)) {
-            return $value['label'] ?? $value['name'] ?? null;
-        }
-
-        return null;
+        return is_string($label) ? $label : null;
     }
 
     private function normalizeLabel(string $label): string
@@ -76,8 +69,13 @@ class ResolveJobSkillsAction
         return mb_strtolower(trim(preg_replace('/\s+/', ' ', $label)));
     }
 
-    private function resolveSkill(string $normalized, JobOpportunitySuggestion $suggestion, array &$resolved): array
-    {
+    /**
+     * @return array{state: SkillResolutionState, skill_id: int|null}
+     */
+    private function resolveSkill(
+        string $normalized,
+        JobOpportunitySuggestion $suggestion,
+    ): array {
         $exact = Skill::where('normalized_name', $normalized)->first();
 
         if ($exact !== null) {
@@ -91,7 +89,8 @@ class ResolveJobSkillsAction
         }
 
         $extracted = $suggestion->extracted_value;
-        $label = is_array($extracted) ? ($extracted['label'] ?? $extracted['name'] ?? $normalized) : $normalized;
+        $extractedLabel = $extracted['label'] ?? $extracted['name'] ?? null;
+        $label = is_string($extractedLabel) ? $extractedLabel : $normalized;
         $partialMatches = Skill::where('normalized_name', 'like', "%{$normalized}%")
             ->orWhere('name', 'like', "%{$label}%")
             ->limit(5)

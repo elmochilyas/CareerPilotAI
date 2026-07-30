@@ -38,7 +38,10 @@ class JobOpportunityConfirmedController extends Controller
     ): JsonResponse {
         Gate::authorize('update', $ingestion);
 
-        $opportunity = $action->execute($ingestion, $request->input('version_token'));
+        $opportunity = $action->execute(
+            $ingestion,
+            $request->string('version_token')->toString(),
+        );
 
         return response()->json([
             'data' => new OpportunityResource($opportunity),

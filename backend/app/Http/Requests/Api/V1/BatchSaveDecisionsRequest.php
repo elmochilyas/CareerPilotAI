@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\V1;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class BatchSaveDecisionsRequest extends FormRequest
 {
@@ -21,7 +22,16 @@ class BatchSaveDecisionsRequest extends FormRequest
                 'string',
                 'in:accepted,edited,rejected,keep_blank,resolved',
             ],
-            'decisions.*.edited_value' => ['nullable', 'array'],
+            'decisions.*.version' => ['required', 'integer', 'min:1'],
+            'decisions.*.edited_value' => [
+                'nullable',
+                'array',
+            ],
+            'decisions.*.resolved_skill_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('skills', 'id')->where('is_active', true),
+            ],
         ];
     }
 }

@@ -30,23 +30,21 @@ class JobOpportunitySuggestionFactory extends Factory
         ]);
 
         $extractedValue = match ($type) {
-            SuggestionType::JobTitle => ['title' => fake()->jobTitle()],
-            SuggestionType::Company => ['company_name' => fake()->company(), 'department' => fake()->word()],
-            SuggestionType::Summary => ['summary' => fake()->paragraph()],
-            SuggestionType::SeniorityLevel => ['seniority_level' => fake()->randomElement(['junior', 'mid', 'senior'])],
+            SuggestionType::JobTitle => ['value' => fake()->jobTitle()],
+            SuggestionType::Company => ['value' => fake()->company()],
+            SuggestionType::Summary => ['value' => fake()->paragraph()],
+            SuggestionType::SeniorityLevel => ['value' => fake()->randomElement(['junior', 'mid', 'senior'])],
             SuggestionType::RequiredSkill, SuggestionType::PreferredSkill => [
-                'name' => fake()->word(),
-                'classification' => $type === SuggestionType::RequiredSkill ? 'required' : 'preferred',
+                'label' => fake()->word(),
                 'proficiency' => fake()->randomElement(['beginner', 'intermediate', 'advanced']),
                 'years_experience' => fake()->randomFloat(1, 0, 10),
             ],
             SuggestionType::Responsibility => [
-                'description' => fake()->sentence(),
-                'order' => fake()->numberBetween(1, 10),
+                'text' => fake()->sentence(),
             ],
             SuggestionType::RequiredExperience => [
-                'years_required' => fake()->randomFloat(1, 0, 10),
-                'description' => fake()->sentence(),
+                'years' => fake()->randomFloat(1, 0, 10),
+                'summary' => fake()->sentence(),
             ],
             SuggestionType::Education => [
                 'degree' => fake()->randomElement(['Bachelor', 'Master', 'PhD']),
@@ -62,20 +60,37 @@ class JobOpportunitySuggestionFactory extends Factory
             SuggestionType::Compensation => [
                 'salary_min' => fake()->numberBetween(30000, 80000),
                 'salary_max' => fake()->numberBetween(80001, 150000),
-                'salary_currency' => 'USD',
-                'salary_period' => 'yearly',
+                'currency' => 'USD',
+                'period' => 'yearly',
             ],
+            default => throw new \LogicException('Unsupported suggestion factory type.'),
+        };
+
+        $groupKey = match ($type) {
+            SuggestionType::JobTitle,
+            SuggestionType::Company,
+            SuggestionType::Summary => 'overview',
+            SuggestionType::SeniorityLevel => 'work_details',
+            SuggestionType::RequiredSkill => 'required_skills',
+            SuggestionType::PreferredSkill => 'preferred_skills',
+            SuggestionType::Responsibility => 'responsibilities',
+            SuggestionType::RequiredExperience => 'experience',
+            SuggestionType::Education => 'education',
+            SuggestionType::Certification,
+            SuggestionType::Language => 'languages_certifications',
+            SuggestionType::Compensation => 'compensation',
         };
 
         return [
             'ingestion_id' => JobOpportunityIngestion::factory(),
             'type' => $type->value,
-            'group_key' => null,
-            'field' => null,
+            'group_key' => $groupKey,
+            'field' => $type->value,
             'extracted_value' => $extractedValue,
             'review_decision' => ReviewDecision::Pending,
             'source_evidence' => fake()->optional()->sentence(),
             'schema_version' => '1.0.0',
+            'version' => 1,
         ];
     }
 

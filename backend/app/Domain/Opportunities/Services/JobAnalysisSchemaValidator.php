@@ -145,7 +145,7 @@ class JobAnalysisSchemaValidator
         ];
 
         foreach ($mappings as $key => [$type, $group, $field]) {
-            if (isset($job[$key]) && is_string($job[$key]) && trim($job[$key]) !== '') {
+            if (JobValueMeaningfulness::isMeaningfulString($job[$key] ?? null)) {
                 $suggestions[] = new SuggestionData(
                     type: $type->value,
                     groupKey: $group,
@@ -172,7 +172,7 @@ class JobAnalysisSchemaValidator
                 'country' => SuggestionType::Country,
             ];
             foreach ($locationMappings as $key => $type) {
-                if (isset($location[$key]) && is_string($location[$key]) && trim($location[$key]) !== '') {
+                if (JobValueMeaningfulness::isMeaningfulString($location[$key] ?? null)) {
                     $suggestions[] = new SuggestionData(
                         type: $type->value,
                         groupKey: 'work_details',
@@ -193,7 +193,7 @@ class JobAnalysisSchemaValidator
         ];
 
         foreach ($scalarMappings as $key => $type) {
-            if (isset($job[$key]) && (is_string($job[$key]) || is_bool($job[$key])) && $job[$key] !== '') {
+            if (JobValueMeaningfulness::isMeaningfulString($job[$key] ?? null)) {
                 $suggestions[] = new SuggestionData(
                     type: $type->value,
                     groupKey: 'work_details',
@@ -206,7 +206,7 @@ class JobAnalysisSchemaValidator
         }
 
         foreach (['travel_required', 'relocation_required'] as $key) {
-            if (isset($job[$key]) && is_bool($job[$key])) {
+            if (array_key_exists($key, $job) && is_bool($job[$key])) {
                 $type = $key === 'travel_required' ? SuggestionType::TravelRequired : SuggestionType::RelocationRequired;
                 $suggestions[] = new SuggestionData(
                     type: $type->value,
@@ -229,7 +229,7 @@ class JobAnalysisSchemaValidator
 
         if (is_array($responsibilities)) {
             foreach ($responsibilities as $item) {
-                if (is_array($item) && isset($item['text']) && is_string($item['text']) && trim($item['text']) !== '') {
+                if (is_array($item) && JobValueMeaningfulness::isMeaningfulResponsibility($item)) {
                     $suggestions[] = new SuggestionData(
                         type: SuggestionType::Responsibility->value,
                         groupKey: 'responsibilities',
@@ -259,7 +259,7 @@ class JobAnalysisSchemaValidator
             $classification = $key === 'required_experience' ? 'required' : 'preferred';
 
             foreach ($items as $item) {
-                if (is_array($item) && isset($item['summary']) && is_string($item['summary']) && trim($item['summary']) !== '') {
+                if (is_array($item) && JobValueMeaningfulness::isMeaningfulExperience($item)) {
                     $suggestions[] = new SuggestionData(
                         type: $type->value,
                         groupKey: 'experience',
@@ -282,7 +282,7 @@ class JobAnalysisSchemaValidator
 
         if (is_array($items)) {
             foreach ($items as $item) {
-                if (is_array($item) && isset($item['degree']) && is_string($item['degree']) && trim($item['degree']) !== '') {
+                if (is_array($item) && JobValueMeaningfulness::isMeaningfulEducation($item)) {
                     $suggestions[] = new SuggestionData(
                         type: SuggestionType::Education->value,
                         groupKey: 'education',
@@ -305,7 +305,7 @@ class JobAnalysisSchemaValidator
 
         if (is_array($items)) {
             foreach ($items as $item) {
-                if (is_array($item) && isset($item['label']) && is_string($item['label']) && trim($item['label']) !== '') {
+                if (is_array($item) && JobValueMeaningfulness::isMeaningfulSkill($item)) {
                     $suggestions[] = new SuggestionData(
                         type: $type->value,
                         groupKey: $groupKey,
@@ -328,7 +328,7 @@ class JobAnalysisSchemaValidator
 
         if (is_array($items)) {
             foreach ($items as $item) {
-                if (is_array($item) && isset($item['language']) && is_string($item['language']) && trim($item['language']) !== '') {
+                if (is_array($item) && JobValueMeaningfulness::isMeaningfulLanguage($item)) {
                     $suggestions[] = new SuggestionData(
                         type: SuggestionType::Language->value,
                         groupKey: 'languages_certifications',
@@ -351,7 +351,7 @@ class JobAnalysisSchemaValidator
 
         if (is_array($items)) {
             foreach ($items as $item) {
-                if (is_array($item) && isset($item['name']) && is_string($item['name']) && trim($item['name']) !== '') {
+                if (is_array($item) && JobValueMeaningfulness::isMeaningfulCertification($item)) {
                     $suggestions[] = new SuggestionData(
                         type: SuggestionType::Certification->value,
                         groupKey: 'languages_certifications',
@@ -377,8 +377,18 @@ class JobAnalysisSchemaValidator
             $clean = [];
 
             foreach (['salary_min', 'salary_max', 'currency', 'period', 'text'] as $key) {
-                if (isset($comp[$key]) && $comp[$key] !== '') {
-                    $clean[$key] = $comp[$key];
+                if (isset($comp[$key])) {
+                    if (is_string($comp[$key])) {
+                        $trimmed = trim($comp[$key]);
+                        if ($trimmed === '') {
+                            continue;
+                        }
+                        $clean[$key] = $trimmed;
+                    } elseif (is_numeric($comp[$key])) {
+                        $clean[$key] = $comp[$key];
+                    } else {
+                        continue;
+                    }
                     $hasData = true;
                 }
             }
@@ -398,12 +408,12 @@ class JobAnalysisSchemaValidator
         $benefits = $job['benefits'] ?? [];
         if (is_array($benefits)) {
             foreach ($benefits as $benefit) {
-                if (is_string($benefit) && trim($benefit) !== '') {
+                if (JobValueMeaningfulness::isMeaningfulBenefit($benefit)) {
                     $suggestions[] = new SuggestionData(
                         type: SuggestionType::Benefit->value,
                         groupKey: 'compensation',
                         field: null,
-                        extractedValue: ['name' => $benefit],
+                        extractedValue: ['name' => trim($benefit)],
                         sourceEvidence: null,
                         schemaVersion: $schemaVersion,
                     );
@@ -425,7 +435,7 @@ class JobAnalysisSchemaValidator
         ];
 
         foreach ($mappings as $key => $type) {
-            if (isset($job[$key]) && is_string($job[$key]) && trim($job[$key]) !== '') {
+            if (JobValueMeaningfulness::isMeaningfulDate($job[$key] ?? null)) {
                 $suggestions[] = new SuggestionData(
                     type: $type->value,
                     groupKey: 'dates',
@@ -440,12 +450,12 @@ class JobAnalysisSchemaValidator
         $additional = $job['additional_requirements'] ?? [];
         if (is_array($additional)) {
             foreach ($additional as $req) {
-                if (is_string($req) && trim($req) !== '') {
+                if (JobValueMeaningfulness::isMeaningfulAdditionalRequirement($req)) {
                     $suggestions[] = new SuggestionData(
                         type: SuggestionType::AdditionalRequirement->value,
                         groupKey: 'additional',
                         field: null,
-                        extractedValue: ['text' => $req],
+                        extractedValue: ['text' => trim($req)],
                         sourceEvidence: null,
                         schemaVersion: $schemaVersion,
                     );

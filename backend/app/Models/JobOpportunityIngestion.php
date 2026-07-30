@@ -41,6 +41,9 @@ class JobOpportunityIngestion extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * @return HasMany<JobOpportunitySuggestion, $this>
+     */
     public function suggestions(): HasMany
     {
         return $this->hasMany(JobOpportunitySuggestion::class, 'ingestion_id');

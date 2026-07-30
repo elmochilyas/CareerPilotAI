@@ -98,12 +98,10 @@ it('does not modify cancelled ingestion', function () {
 });
 
 it('returns safely when ingestion does not exist', function () {
-    $this->action->execute(
+    expect(fn () => $this->action->execute(
         ingestionId: 99999,
         failureCode: 'pipeline_error',
-    );
-
-    expect(true)->toBeTrue();
+    ))->not->toThrow(Throwable::class);
 });
 
 it('sets retry_count to 1 on first failure', function () {
@@ -149,9 +147,10 @@ it('does not throw when called on failed ingestion', function () {
         'user_id' => $this->user->id,
     ]);
 
-    $this->action->execute(ingestionId: $ingestion->id, failureCode: 'error');
-
-    expect(true)->toBeTrue();
+    expect(fn () => $this->action->execute(
+        ingestionId: $ingestion->id,
+        failureCode: 'error',
+    ))->not->toThrow(Throwable::class);
 });
 
 it('does not throw when called on confirmed ingestion', function () {
@@ -159,7 +158,8 @@ it('does not throw when called on confirmed ingestion', function () {
         'user_id' => $this->user->id,
     ]);
 
-    $this->action->execute(ingestionId: $ingestion->id, failureCode: 'error');
-
-    expect(true)->toBeTrue();
+    expect(fn () => $this->action->execute(
+        ingestionId: $ingestion->id,
+        failureCode: 'error',
+    ))->not->toThrow(Throwable::class);
 });

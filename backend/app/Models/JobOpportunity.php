@@ -60,26 +60,41 @@ class JobOpportunity extends Model
         'saved_at' => 'datetime',
     ];
 
+    /**
+     * @return BelongsTo<CandidateProfile, $this>
+     */
     public function candidateProfile(): BelongsTo
     {
         return $this->belongsTo(CandidateProfile::class);
     }
 
+    /**
+     * @return BelongsTo<JobOpportunityIngestion, $this>
+     */
     public function ingestion(): BelongsTo
     {
         return $this->belongsTo(JobOpportunityIngestion::class, 'ingestion_id');
     }
 
+    /**
+     * @return BelongsTo<Company, $this>
+     */
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
     }
 
+    /**
+     * @return HasMany<JobRequirement, $this>
+     */
     public function requirements(): HasMany
     {
         return $this->hasMany(JobRequirement::class, 'job_opportunity_id');
     }
 
+    /**
+     * @return HasMany<JobOpportunitySkill, $this>
+     */
     public function skills(): HasMany
     {
         return $this->hasMany(JobOpportunitySkill::class, 'job_opportunity_id');
