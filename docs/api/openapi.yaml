@@ -930,6 +930,103 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/JobSuggestion'
+    post:
+      summary: Add a missing responsibility or skill during review
+      tags: [Job Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - in: path
+          name: ingestion
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, value, ingestion_version]
+              properties:
+                type:
+                  type: string
+                  enum: [responsibility, required_skill, preferred_skill]
+                value:
+                  type: string
+                  maxLength: 2000
+                ingestion_version:
+                  type: integer
+                  minimum: 1
+      responses:
+        '201':
+          description: Manual suggestion added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/JobSuggestion'
+        '409':
+          description: Stale ingestion version or ingestion is not reviewable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+  /api/v1/opportunities/ingestions/{ingestion}/suggestions/{suggestion}:
+    patch:
+      summary: Save one suggestion decision
+      tags: [Job Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - in: path
+          name: ingestion
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: suggestion
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision, version]
+              properties:
+                decision:
+                  type: string
+                  enum: [accepted, edited, rejected, keep_blank, resolved]
+                version:
+                  type: integer
+                  minimum: 1
+                edited_value:
+                  type: object
+                  nullable: true
+                resolved_skill_id:
+                  type: integer
+                  nullable: true
+      responses:
+        '200':
+          description: Decision saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/JobSuggestion'
+        '409':
+          description: Stale suggestion version or ingestion is not reviewable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /api/v1/opportunities/ingestions/{ingestion}/suggestions/batch:
     post:
       summary: Batch update suggestion decisions
@@ -954,14 +1051,31 @@ paths:
                   type: array
                   items:
                     type: object
+                    required: [id, decision, version]
                     properties:
                       id:
                         type: integer
                       decision:
                         type: string
+                        enum: [accepted, edited, rejected, keep_blank, resolved]
+                      version:
+                        type: integer
+                        minimum: 1
+                      edited_value:
+                        type: object
+                        nullable: true
+                      resolved_skill_id:
+                        type: integer
+                        nullable: true
       responses:
         '200':
           description: Decisions saved
+        '409':
+          description: One or more suggestion versions are stale
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /api/v1/opportunities/ingestions/{ingestion}/preview:
     post:
       summary: Generate preview of confirmed opportunity
