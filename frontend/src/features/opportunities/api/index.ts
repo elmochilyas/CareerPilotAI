@@ -6,15 +6,18 @@ import type {
   JobOpportunity,
   JobSuggestion,
   PreviewData,
+  ReviewDecisionValue,
 } from '../types'
 
 export const opportunityKeys = {
   all: ['opportunities'] as const,
-  ingestions: () => [...opportunityKeys.all, 'ingestions'] as const,
+  ingestions: (page?: number) =>
+    [...opportunityKeys.all, 'ingestions', ...(page === undefined ? [] : [page])] as const,
   ingestion: (id: number) => [...opportunityKeys.ingestions(), id] as const,
   suggestions: (id: number) => [...opportunityKeys.ingestion(id), 'suggestions'] as const,
   preview: (id: number) => [...opportunityKeys.ingestion(id), 'preview'] as const,
-  list: () => [...opportunityKeys.all, 'list'] as const,
+  list: (page?: number) =>
+    [...opportunityKeys.all, 'list', ...(page === undefined ? [] : [page])] as const,
   detail: (id: number) => [...opportunityKeys.all, 'detail', id] as const,
 }
 
@@ -61,10 +64,27 @@ export async function fetchSuggestions(id: number): Promise<JobSuggestion[]> {
   return (await client.get(`/api/v1/opportunities/ingestions/${id}/suggestions`)).data.data
 }
 
+export async function addManualSuggestion(
+  ingestionId: number,
+  data: {
+    type: 'responsibility' | 'required_skill' | 'preferred_skill'
+    value: string
+    ingestion_version: number
+  },
+): Promise<JobSuggestion> {
+  return (await client.post(`/api/v1/opportunities/ingestions/${ingestionId}/suggestions`, data))
+    .data.data
+}
+
 export async function updateSuggestion(
   ingestionId: number,
   suggestionId: number,
-  data: { decision: string; edited_value?: Record<string, unknown> },
+  data: {
+    decision: ReviewDecisionValue
+    version: number
+    edited_value?: Record<string, unknown>
+    resolved_skill_id?: number | null
+  },
 ): Promise<JobSuggestion> {
   return (
     await client.patch(

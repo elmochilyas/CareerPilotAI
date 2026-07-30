@@ -1,32 +1,222 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
+import type { RouteLocationRaw } from 'vue-router'
+import { BriefcaseBusiness, Building2, ChevronRight, MapPin } from '@lucide/vue'
 import type { JobOpportunity } from '../types'
 import { formatDate } from '@/app/utils/date'
+import OpportunityStatusBadge from './OpportunityStatusBadge.vue'
 
-defineProps<{
+const props = defineProps<{
   opportunity: JobOpportunity
+  to: RouteLocationRaw
 }>()
+
+const location = computed(() =>
+  [props.opportunity.city, props.opportunity.country].filter(Boolean).join(', '),
+)
+
+const workMode = computed(() => props.opportunity.work_mode?.replaceAll('_', ' '))
+const visibleSkills = computed(() => props.opportunity.skills.slice(0, 3))
+const remainingSkillCount = computed(() =>
+  Math.max(props.opportunity.skills.length - visibleSkills.value.length, 0),
+)
 </script>
 
 <template>
-  <div
-    class="cursor-pointer rounded-lg border border-green-200 bg-white p-4 shadow-sm hover:shadow-md"
-  >
-    <div class="flex items-start justify-between">
-      <div>
-        <h3 class="font-medium text-gray-900">{{ opportunity.title }}</h3>
-        <p v-if="opportunity.company_name" class="text-sm text-gray-500">
+  <RouterLink :to="to" class="opportunity-row">
+    <span class="row-icon" aria-hidden="true">
+      <Building2 class="size-4" />
+    </span>
+
+    <span class="row-content">
+      <span class="row-heading">
+        <span class="row-title">{{ opportunity.title }}</span>
+        <span v-if="opportunity.company_name" class="row-company">
           {{ opportunity.company_name }}
-        </p>
-      </div>
-      <span
-        class="rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-600"
-      >
-        Confirmed
+        </span>
       </span>
-    </div>
-    <div class="mt-2 flex items-center gap-4 text-xs text-gray-400">
-      <span>{{ formatDate(opportunity.saved_at) }}</span>
-      <span v-if="opportunity.work_mode">{{ opportunity.work_mode }}</span>
-    </div>
-  </div>
+
+      <span class="row-meta">
+        <span v-if="workMode">
+          <BriefcaseBusiness class="size-3.5" aria-hidden="true" />
+          {{ workMode }}
+        </span>
+        <span v-if="location">
+          <MapPin class="size-3.5" aria-hidden="true" />
+          {{ location }}
+        </span>
+        <span>Saved {{ formatDate(opportunity.saved_at) }}</span>
+      </span>
+
+      <span v-if="visibleSkills.length > 0" class="row-skills" aria-label="Key skills">
+        <span v-for="skill in visibleSkills" :key="skill.id">
+          {{ skill.original_label }}
+        </span>
+        <span v-if="remainingSkillCount > 0">+{{ remainingSkillCount }}</span>
+      </span>
+    </span>
+
+    <span class="row-status">
+      <OpportunityStatusBadge status="saved" compact />
+    </span>
+
+    <ChevronRight class="row-chevron" aria-hidden="true" />
+  </RouterLink>
 </template>
+
+<style scoped>
+.opportunity-row {
+  display: grid;
+  min-height: 6.25rem;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto 1.25rem;
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid var(--cp-border);
+  border-radius: var(--cp-radius-surface);
+  padding: 1rem 1.125rem;
+  background: var(--cp-surface);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    background-color 150ms ease;
+}
+
+.opportunity-row:hover {
+  border-color: var(--cp-border-strong);
+  background: var(--cp-surface-subtle);
+  box-shadow: var(--cp-shadow-soft);
+}
+
+.opportunity-row:focus-visible {
+  outline: 2px solid var(--cp-primary);
+  outline-offset: 3px;
+}
+
+.row-icon {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border-radius: 0.625rem;
+  background: var(--cp-success-soft);
+  color: var(--cp-success);
+}
+
+.row-content {
+  display: grid;
+  min-width: 0;
+}
+
+.row-heading {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.625rem;
+}
+
+.row-title {
+  overflow: hidden;
+  color: var(--cp-ink);
+  font-size: 0.9375rem;
+  font-weight: 680;
+  letter-spacing: -0.012em;
+  line-height: 1.25rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-company {
+  overflow-wrap: anywhere;
+  color: var(--cp-text-muted);
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+.row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.875rem;
+  margin-top: 0.375rem;
+  color: var(--cp-text-muted);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  text-transform: capitalize;
+}
+
+.row-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+}
+
+.row-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.625rem;
+}
+
+.row-skills > span {
+  border-radius: 0.375rem;
+  padding: 0.1875rem 0.4375rem;
+  background: var(--cp-surface-muted);
+  color: var(--cp-text-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 0.875rem;
+}
+
+.row-chevron {
+  width: 1rem;
+  height: 1rem;
+  color: var(--cp-text-faint);
+  transition:
+    color 150ms ease,
+    transform 150ms ease;
+}
+
+.opportunity-row:hover .row-chevron {
+  color: var(--cp-primary);
+  transform: translateX(0.125rem);
+}
+
+@media (max-width: 39.999rem) {
+  .opportunity-row {
+    grid-template-columns: 2.5rem minmax(0, 1fr) 1rem;
+    align-items: start;
+    gap: 0.75rem;
+    padding: 0.875rem;
+  }
+
+  .row-status {
+    grid-column: 2 / 3;
+    justify-self: start;
+  }
+
+  .row-chevron {
+    grid-column: 3;
+    grid-row: 1 / 3;
+    align-self: center;
+  }
+
+  .row-title {
+    white-space: normal;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .opportunity-row,
+  .row-chevron {
+    transition: none;
+  }
+
+  .opportunity-row:hover .row-chevron {
+    transform: none;
+  }
+}
+</style>

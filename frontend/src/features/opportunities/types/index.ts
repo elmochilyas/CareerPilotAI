@@ -91,6 +91,7 @@ export interface JobRequirement {
   classification: string | null
   language: string | null
   language_proficiency: string | null
+  source_evidence: string | null
   display_order: number
 }
 
@@ -124,8 +125,8 @@ export interface JobOpportunity {
   working_hours: string | null
   travel_required: boolean | null
   relocation_required: boolean | null
-  salary_min: number | null
-  salary_max: number | null
+  salary_min: string | null
+  salary_max: string | null
   salary_currency: string | null
   salary_period: string | null
   compensation_text: string | null
@@ -134,7 +135,11 @@ export interface JobOpportunity {
   application_deadline: string | null
   expected_start_date: string | null
   employment_duration: string | null
-  additional_requirements: string[] | null
+  additional_requirements: Array<{
+    id: number
+    text: string
+    source_evidence: string | null
+  }> | null
   requirements: JobRequirement[]
   skills: JobOpportunitySkill[]
   company: { id: number; name: string } | null
@@ -157,6 +162,8 @@ export interface PreviewData {
       proficiency: string | null
       years_experience: number | null
       resolution: string
+      resolved_skill_id: number | null
+      source_evidence: string | null
     }>
     preferred_skills: Array<{
       id: number
@@ -164,6 +171,8 @@ export interface PreviewData {
       proficiency: string | null
       years_experience: number | null
       resolution: string
+      resolved_skill_id: number | null
+      source_evidence: string | null
     }>
     languages_certifications: Array<{
       id: number
@@ -174,6 +183,7 @@ export interface PreviewData {
     }>
     compensation: Record<string, unknown> | null
     dates: Record<string, string | null>
+    additional_requirements: Array<{ id: number; text: string; source_evidence: string | null }>
     excluded: Array<{ id: number; type: string }>
     unknown_skills: Array<{ id: number; type: string }>
     warnings: string[]
@@ -185,7 +195,9 @@ export interface PreviewData {
 export interface DecisionInput {
   id: number
   decision: ReviewDecisionValue
+  version: number
   edited_value?: Record<string, unknown>
+  resolved_skill_id?: number | null
 }
 
 export interface ApiMeta {

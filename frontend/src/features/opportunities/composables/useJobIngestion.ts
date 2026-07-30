@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { useRouter } from 'vue-router'
 import { extractProblemDetail } from '@/api/client'
-import type { DecisionInput, PreviewData } from '../types'
+import type { DecisionInput, PreviewData, ReviewDecisionValue } from '../types'
 import {
   batchUpdateSuggestions,
   confirmIngestion,
@@ -137,13 +137,24 @@ export function useJobIngestion() {
     mutationFn: ({
       suggestionId,
       decision,
+      version,
       edited_value,
+      resolved_skill_id,
     }: {
       suggestionId: number
-      decision: string
+      decision: ReviewDecisionValue
+      version: number
       edited_value?: Record<string, unknown>
-    }) => updateSuggestion(activeIngestionId.value!, suggestionId, { decision, edited_value }),
+      resolved_skill_id?: number | null
+    }) =>
+      updateSuggestion(activeIngestionId.value!, suggestionId, {
+        decision,
+        version,
+        edited_value,
+        resolved_skill_id,
+      }),
     onSuccess: () => {
+      previewData.value = null
       suggestionsQuery.refetch()
     },
     onError: (error) => {
