@@ -1,11 +1,21 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { Search, LoaderCircle } from '@lucide/vue'
 import { searchSkills, skillKeys } from '../api'
 import type { Skill } from '../types'
 
-defineProps<{ modelValue: Skill | null }>()
+const props = withDefaults(
+  defineProps<{
+    modelValue: Skill | null
+    inputId?: string
+    ariaLabel?: string
+  }>(),
+  {
+    inputId: undefined,
+    ariaLabel: 'Search the skill catalog',
+  },
+)
 const emit = defineEmits<{ 'update:modelValue': [value: Skill | null]; select: [value: Skill] }>()
 
 const query = ref('')
@@ -27,9 +37,9 @@ watch(query, (v) => {
 })
 
 const searchQuery = useQuery({
-  queryKey: skillKeys.catalogSearch(debouncedQuery.value),
+  queryKey: computed(() => skillKeys.catalogSearch(debouncedQuery.value)),
   queryFn: () => searchSkills(debouncedQuery.value || undefined),
-  enabled: debouncedQuery.value.length >= 2,
+  enabled: computed(() => debouncedQuery.value.length >= 2),
   staleTime: 60_000,
 })
 
@@ -72,6 +82,10 @@ function onBlur() {
     activeIndex.value = -1
   }, 200)
 }
+
+onUnmounted(() => {
+  clearTimeout(debounceTimer)
+})
 </script>
 
 <template>
@@ -84,14 +98,18 @@ function onBlur() {
       <input
         ref="inputRef"
         v-model="query"
+        :id="props.inputId"
         type="text"
         role="combobox"
+        :aria-label="props.ariaLabel"
         :aria-expanded="isOpen"
         aria-haspopup="listbox"
         aria-autocomplete="list"
         :aria-activedescendant="activeIndex >= 0 ? `skill-option-${activeIndex}` : undefined"
-        class="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-sm shadow-sm transition-all focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
-        placeholder="Search for a skill..."
+        class="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-sm shadow-sm transition-[border-color,box-shadow] focus-visible:border-primary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
+        name="skill_catalog_search"
+        autocomplete="off"
+        placeholder="Search for a skill…"
         @keydown="onKeydown"
         @focus="debouncedQuery.length >= 2 ? (isOpen = true) : null"
         @blur="onBlur"

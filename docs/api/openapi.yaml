@@ -593,7 +593,566 @@ components:
             type: integer
       required: [type, item_ids]
 
+    JobIngestion:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+          enum: [draft, queued, processing, review_ready, confirmed, failed, cancelled]
+        source_url:
+          type: string
+          format: uri
+          nullable: true
+        personal_label:
+          type: string
+          nullable: true
+        failure_reason:
+          type: string
+          nullable: true
+        failure_code:
+          type: string
+          nullable: true
+        retry_count:
+          type: integer
+        last_retry_at:
+          type: string
+          format: date-time
+          nullable: true
+        confirmed_at:
+          type: string
+          format: date-time
+          nullable: true
+        version:
+          type: integer
+        confirmed_opportunity_id:
+          type: integer
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    JobSuggestion:
+      type: object
+      properties:
+        id:
+          type: integer
+        ingestion_id:
+          type: integer
+        type:
+          type: string
+        group_key:
+          type: string
+          nullable: true
+        field:
+          type: string
+          nullable: true
+        extracted_value:
+          type: object
+        edited_value:
+          type: object
+          nullable: true
+        review_decision:
+          type: string
+          enum: [pending, accepted, edited, rejected, keep_blank, resolved]
+        source_evidence:
+          type: string
+          nullable: true
+        schema_version:
+          type: string
+        resolution:
+          type: string
+          nullable: true
+        resolved_skill_id:
+          type: integer
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          nullable: true
+        version:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+    PreviewOverview:
+      type: object
+      properties:
+        title:
+          type: string
+        company:
+          type: string
+        department:
+          type: string
+        summary:
+          type: string
+    Opportunity:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        company_name:
+          type: string
+          nullable: true
+        department:
+          type: string
+          nullable: true
+        summary:
+          type: string
+          nullable: true
+        application_url:
+          type: string
+          format: uri
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        region:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        work_mode:
+          type: string
+          nullable: true
+        contract_type:
+          type: string
+          nullable: true
+        seniority_level:
+          type: string
+          nullable: true
+        salary_min:
+          type: number
+          nullable: true
+        salary_max:
+          type: number
+          nullable: true
+        salary_currency:
+          type: string
+          nullable: true
+        salary_period:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
 paths:
+  /api/v1/opportunities/ingestions:
+    get:
+      summary: List job ingestions
+      tags: [Job Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+          description: Filter by status
+      responses:
+        '200':
+          description: Paginated list of user's ingestions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JobIngestion'
+    post:
+      summary: Create a job ingestion
+      tags: [Job Ingestion]
+      security:
+        - cookie: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source_description]
+              properties:
+                source_description:
+                  type: string
+                  minLength: 50
+                source_url:
+                  type: string
+                  format: uri
+                personal_label:
+                  type: string
+      responses:
+        '201':
+          description: Ingestion created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/JobIngestion'
+        '409':
+          description: Duplicate ingestion detected
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ProblemDetail'
+                  - type: object
+                    properties:
+                      code:
+                        type: string
+                        const: duplicate_ingestion
+                      errors:
+                        type: object
+                        required: [existing_ingestion_id, existing_status]
+                        properties:
+                          existing_ingestion_id:
+                            type: integer
+                          existing_opportunity_id:
+                            type:
+                              - integer
+                              - 'null'
+                          existing_status:
+                            type: string
+                            enum: [draft, queued, processing, review_ready, confirmed, failed, cancelled]
+  /api/v1/opportunities/ingestions/{ingestion}:
+    get:
+      summary: Show ingestion details
+      tags: [Job Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - in: path
+          name: ingestion
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ingestion details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/JobIngestion'
+    delete:
+      summary: Cancel an ingestion
+      tags: [Job Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - in: path
+          name: ingestion
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ingestion cancelled
+  /api/v1/opportunities/ingestions/{ingestion}/retry:
+    post:
+      summary: Retry failed ingestion
+      tags: [Job Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - in: path
+          name: ingestion
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ingestion queued for retry
+  /api/v1/opportunities/ingestions/{ingestion}/reanalyze:
+    post:
+      summary: Reanalyze a cancelled ingestion in place
+      tags: [Job Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - in: path
+          name: ingestion
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Cancelled ingestion reset and queued for reanalysis
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/JobIngestion'
+        '409':
+          description: Ingestion is not cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+  /api/v1/opportunities/ingestions/{ingestion}/suggestions:
+    get:
+      summary: List suggestions for an ingestion
+      tags: [Job Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - in: path
+          name: ingestion
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of suggestions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JobSuggestion'
+    post:
+      summary: Add a missing responsibility or skill during review
+      tags: [Job Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - in: path
+          name: ingestion
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, value, ingestion_version]
+              properties:
+                type:
+                  type: string
+                  enum: [responsibility, required_skill, preferred_skill]
+                value:
+                  type: string
+                  maxLength: 2000
+                ingestion_version:
+                  type: integer
+                  minimum: 1
+      responses:
+        '201':
+          description: Manual suggestion added
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/JobSuggestion'
+        '409':
+          description: Stale ingestion version or ingestion is not reviewable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+  /api/v1/opportunities/ingestions/{ingestion}/suggestions/{suggestion}:
+    patch:
+      summary: Save one suggestion decision
+      tags: [Job Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - in: path
+          name: ingestion
+          required: true
+          schema:
+            type: integer
+        - in: path
+          name: suggestion
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision, version]
+              properties:
+                decision:
+                  type: string
+                  enum: [accepted, edited, rejected, keep_blank, resolved]
+                version:
+                  type: integer
+                  minimum: 1
+                edited_value:
+                  type: object
+                  nullable: true
+                resolved_skill_id:
+                  type: integer
+                  nullable: true
+      responses:
+        '200':
+          description: Decision saved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/JobSuggestion'
+        '409':
+          description: Stale suggestion version or ingestion is not reviewable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+  /api/v1/opportunities/ingestions/{ingestion}/suggestions/batch:
+    post:
+      summary: Batch update suggestion decisions
+      tags: [Job Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - in: path
+          name: ingestion
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decisions]
+              properties:
+                decisions:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, decision, version]
+                    properties:
+                      id:
+                        type: integer
+                      decision:
+                        type: string
+                        enum: [accepted, edited, rejected, keep_blank, resolved]
+                      version:
+                        type: integer
+                        minimum: 1
+                      edited_value:
+                        type: object
+                        nullable: true
+                      resolved_skill_id:
+                        type: integer
+                        nullable: true
+      responses:
+        '200':
+          description: Decisions saved
+        '409':
+          description: One or more suggestion versions are stale
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+  /api/v1/opportunities/ingestions/{ingestion}/preview:
+    post:
+      summary: Generate preview of confirmed opportunity
+      tags: [Job Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - in: path
+          name: ingestion
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Preview generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PreviewOverview'
+                      version_token:
+                        type: string
+  /api/v1/opportunities/ingestions/{ingestion}/confirm:
+    post:
+      summary: Confirm ingestion and create opportunity
+      tags: [Job Ingestion]
+      security:
+        - cookie: []
+      parameters:
+        - in: path
+          name: ingestion
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version_token]
+              properties:
+                version_token:
+                  type: string
+      responses:
+        '200':
+          description: Opportunity confirmed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Opportunity'
+  /api/v1/opportunities:
+    get:
+      summary: List confirmed opportunities
+      tags: [Job Ingestion]
+      security:
+        - cookie: []
+      responses:
+        '200':
+          description: List of confirmed opportunities
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Opportunity'
   /api/v1/cv:
     get:
       summary: List CV documents
