@@ -10,9 +10,9 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
-use Illuminate\Session\TokenMismatchException;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -46,8 +46,12 @@ return Application::configure(basePath: dirname(__DIR__))
             return $renderer->render($request, $e);
         });
 
-        $exceptions->render(function (TokenMismatchException $e, Request $request) use ($renderer) {
-            return $renderer->render($request, $e);
+        // TokenMismatchException is converted to HttpException(419) by the
+        // framework before render callbacks run, so match on the 419 status.
+        $exceptions->render(function (HttpException $e, Request $request) use ($renderer) {
+            if ($e->getStatusCode() === 419) {
+                return $renderer->render($request, $e);
+            }
         });
 
         $exceptions->render(function (NotFoundHttpException $e, Request $request) use ($renderer) {

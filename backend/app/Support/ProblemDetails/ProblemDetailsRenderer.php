@@ -12,6 +12,7 @@ use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -36,6 +37,10 @@ class ProblemDetailsRenderer
         }
 
         if ($e instanceof TokenMismatchException) {
+            return $this->buildResponse(419, 'Session Expired', 'Your session has expired. Please refresh the page.', 'session_expired');
+        }
+
+        if ($e instanceof HttpException && $e->getStatusCode() === 419) {
             return $this->buildResponse(419, 'Session Expired', 'Your session has expired. Please refresh the page.', 'session_expired');
         }
 
