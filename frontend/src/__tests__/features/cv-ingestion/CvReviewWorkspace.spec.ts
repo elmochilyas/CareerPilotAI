@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import CvReviewWorkspace from '@/features/cv-ingestion/components/CvReviewWorkspace.vue'
 import type { CvSuggestion } from '@/features/cv-ingestion/types'
 import CvReviewStepper from '@/features/cv-ingestion/components/CvReviewStepper.vue'
@@ -238,5 +238,126 @@ describe('CvReviewWorkspace', () => {
       },
     })
     expect(wrapper.text()).toContain('No suggestions to review')
+  })
+
+  it('enables the apply action before the preview has loaded (no deadlock)', async () => {
+    const suggestions = [makeSuggestion('basic_information', { review_status: 'accepted' })]
+    const wrapper = mount(CvReviewWorkspace, {
+      props: {
+        suggestions,
+        preview: null,
+        allReviewed: true,
+        applyPending: false,
+        updateSuggestionPending: false,
+        batchSavePending: false,
+        batchSaveError: false,
+        documentReviewable: true,
+      },
+    })
+    await flushPromises()
+
+    const reviewButtons = wrapper
+      .findAll('button')
+      .filter((b) => b.text().includes('Review import'))
+    expect(reviewButtons.length).toBeGreaterThan(0)
+    for (const button of reviewButtons) {
+      expect(button.attributes('disabled')).toBeUndefined()
+    }
+    expect(wrapper.text()).not.toContain('Import preview is not ready yet')
+  })
+
+  it('does not show the green no-conflicts box until the preview has loaded', async () => {
+    const suggestions = [makeSuggestion('basic_information', { review_status: 'accepted' })]
+    const wrapper = mount(CvReviewWorkspace, {
+      props: {
+        suggestions,
+        preview: null,
+        allReviewed: true,
+        applyPending: false,
+        updateSuggestionPending: false,
+        batchSavePending: false,
+        batchSaveError: false,
+        documentReviewable: true,
+      },
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('No conflicts detected')
+  })
+
+  it('shows the green no-conflicts box once the preview has loaded', async () => {
+    const suggestions = [makeSuggestion('basic_information', { review_status: 'accepted' })]
+    const preview = {
+      summary: { total: 1, accepted: 1, rejected: 0, keep_existing: 0, edited: 0 },
+      conflicts: [],
+    }
+    const wrapper = mount(CvReviewWorkspace, {
+      props: {
+        suggestions,
+        preview,
+        allReviewed: true,
+        applyPending: false,
+        updateSuggestionPending: false,
+        batchSavePending: false,
+        batchSaveError: false,
+        documentReviewable: true,
+      },
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('No conflicts detected')
+  })
+
+  it('summarizes a 56-suggestion import as 50 changes ready to apply', async () => {
+    const suggestions: CvSuggestion[] = []
+
+    for (let i = 0; i < 5; i++) {
+      suggestions.push(
+        makeSuggestion('basic_information', {
+          id: i + 1,
+          field_name: 'phone',
+          review_status: 'accepted',
+        }),
+      )
+    }
+    suggestions.push(makeSuggestion('headline', { id: 100, review_status: 'accepted' }))
+    suggestions.push(makeSuggestion('summary', { id: 101, review_status: 'accepted' }))
+    suggestions.push(makeSuggestion('experience', { id: 102, review_status: 'accepted' }))
+    suggestions.push(makeSuggestion('education', { id: 103, review_status: 'accepted' }))
+    suggestions.push(makeSuggestion('education', { id: 104, review_status: 'accepted' }))
+    suggestions.push(makeSuggestion('project', { id: 105, review_status: 'accepted' }))
+    suggestions.push(makeSuggestion('project', { id: 106, review_status: 'accepted' }))
+    suggestions.push(makeSuggestion('project', { id: 107, review_status: 'accepted' }))
+    for (let i = 0; i < 37; i++) {
+      suggestions.push(makeSuggestion('skill', { id: 200 + i, review_status: 'accepted' }))
+    }
+    for (let i = 0; i < 4; i++) {
+      suggestions.push(makeSuggestion('language', { id: 300 + i, review_status: 'accepted' }))
+    }
+    for (let i = 0; i < 2; i++) {
+      suggestions.push(makeSuggestion('social_link', { id: 400 + i, review_status: 'accepted' }))
+    }
+
+    expect(suggestions).toHaveLength(56)
+
+    const preview = {
+      summary: { total: 56, accepted: 56, rejected: 0, keep_existing: 0, edited: 0 },
+      conflicts: [],
+    }
+    const wrapper = mount(CvReviewWorkspace, {
+      props: {
+        suggestions,
+        preview,
+        allReviewed: true,
+        applyPending: false,
+        updateSuggestionPending: false,
+        batchSavePending: false,
+        batchSaveError: false,
+        documentReviewable: true,
+      },
+    })
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('50 changes ready to apply')
   })
 })

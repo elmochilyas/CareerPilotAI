@@ -98,7 +98,7 @@ export async function fetchImportPreview(documentId: number): Promise<ImportPrev
 export async function applyImport(
   documentId: number,
   idempotencyKey?: string,
-  profileUpdatedAt?: string,
+  profileUpdatedAt?: string | null,
 ): Promise<CvImportBatch> {
   const headers: Record<string, string> = {}
   if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey

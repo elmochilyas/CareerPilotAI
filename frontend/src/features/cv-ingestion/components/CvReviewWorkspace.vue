@@ -264,9 +264,8 @@ const applyDisabledReason = computed(() => {
   if (props.updateSuggestionPending) return 'A decision is being saved.'
   if (props.batchSavePending) return 'Skill changes are being saved.'
   if (props.batchSaveError) return 'Skill changes failed to save. Please retry.'
-  if (props.preview === null) return 'Import preview is not ready yet.'
-  if (props.preview.conflicts.length > 0)
-    return `${props.preview.conflicts.length} conflict(s) must be resolved.`
+  if ((props.preview?.conflicts.length ?? 0) > 0)
+    return `${props.preview?.conflicts.length ?? 0} conflict(s) must be resolved.`
   return null
 })
 

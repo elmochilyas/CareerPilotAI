@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, nextTick } from 'vue'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
-import { Trash2, AlertTriangle, Eye, ArrowRight, FileText } from '@lucide/vue'
+import { Trash2, AlertTriangle, Eye, ArrowRight, FileText, Cog, RotateCw } from '@lucide/vue'
 import { cvKeys, fetchCvDocuments, deleteCvDocument } from '../api'
 import type { CvDocument, CvDocumentStatus } from '../types'
 import Badge from '@/components/ui/Badge.vue'
@@ -18,6 +18,9 @@ const emit = defineEmits<{
   deleted: [id: number]
   review: [id: number]
   view: [id: number]
+  open: [doc: CvDocument]
+  track: [id: number]
+  retry: [id: number]
 }>()
 
 const listRef = ref<HTMLElement | null>(null)
@@ -64,6 +67,15 @@ const statusConfig: Record<
 const isDeletable = (status: CvDocumentStatus): boolean => {
   return ['pending', 'failed', 'ready_for_review', 'imported'].includes(status)
 }
+
+const processingStatuses = new Set<CvDocumentStatus>([
+  'queued',
+  'validating',
+  'extracting',
+  'analyzing',
+])
+
+const isProcessing = (status: CvDocumentStatus): boolean => processingStatuses.has(status)
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -181,53 +193,83 @@ watch(
             : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm',
         ]"
       >
-        <!-- Status dot -->
-        <div
-          class="flex h-2.5 w-2.5 shrink-0 rounded-full"
-          :class="statusConfig[doc.status].dot"
-          :title="statusConfig[doc.status].label"
-          aria-hidden="true"
-        />
-
-        <!-- Highlight icon -->
-        <div
-          v-if="doc.id === highlightId"
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-200/80"
+        <button
+          type="button"
+          class="flex min-w-0 flex-1 items-center gap-4 rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+          :aria-label="`Open ${doc.original_name}`"
+          @click="emit('open', doc)"
         >
-          <AlertTriangle class="h-4 w-4 text-amber-700" aria-hidden="true" />
-        </div>
-
-        <!-- File icon -->
-        <div
-          v-else
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 transition-colors group-hover:bg-primary-50"
-        >
-          <FileText
-            class="h-4 w-4 text-slate-400 group-hover:text-primary-500"
+          <!-- Status dot -->
+          <span
+            class="flex h-2.5 w-2.5 shrink-0 rounded-full"
+            :class="statusConfig[doc.status].dot"
+            :title="statusConfig[doc.status].label"
             aria-hidden="true"
           />
-        </div>
 
-        <!-- Info -->
-        <div class="min-w-0 flex-1">
-          <p class="truncate text-sm font-medium text-slate-900" :title="doc.original_name">
-            {{ doc.original_name }}
-          </p>
-          <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500">
-            <span>{{ formatSize(doc.size) }}</span>
-            <span aria-hidden="true">&middot;</span>
-            <span :title="new Date(doc.created_at).toLocaleString()">{{
-              formatDate(doc.created_at)
-            }}</span>
-            <span aria-hidden="true">&middot;</span>
-            <Badge :variant="statusConfig[doc.status].variant">
-              {{ statusConfig[doc.status].label }}
-            </Badge>
-          </div>
-        </div>
+          <!-- Highlight icon -->
+          <span
+            v-if="doc.id === highlightId"
+            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-200/80"
+          >
+            <AlertTriangle class="h-4 w-4 text-amber-700" aria-hidden="true" />
+          </span>
+
+          <!-- File icon -->
+          <span
+            v-else
+            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 transition-colors group-hover:bg-primary-50"
+          >
+            <FileText
+              class="h-4 w-4 text-slate-400 group-hover:text-primary-500"
+              aria-hidden="true"
+            />
+          </span>
+
+          <!-- Info -->
+          <span class="min-w-0 flex-1">
+            <span
+              class="block truncate text-sm font-medium text-slate-900"
+              :title="doc.original_name"
+            >
+              {{ doc.original_name }}
+            </span>
+            <span class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500">
+              <span>{{ formatSize(doc.size) }}</span>
+              <span aria-hidden="true">&middot;</span>
+              <span :title="new Date(doc.created_at).toLocaleString()">{{
+                formatDate(doc.created_at)
+              }}</span>
+              <span aria-hidden="true">&middot;</span>
+              <Badge :variant="statusConfig[doc.status].variant">
+                {{ statusConfig[doc.status].label }}
+              </Badge>
+            </span>
+          </span>
+        </button>
 
         <!-- Actions -->
         <div class="flex shrink-0 items-center gap-1.5">
+          <Button
+            v-if="isProcessing(doc.status)"
+            variant="outline"
+            size="sm"
+            class="shadow-xs"
+            @click="emit('track', doc.id)"
+          >
+            <Cog class="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+            Track
+          </Button>
+          <Button
+            v-if="doc.status === 'failed'"
+            variant="outline"
+            size="sm"
+            class="shadow-xs"
+            @click="emit('retry', doc.id)"
+          >
+            <RotateCw class="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+            Retry
+          </Button>
           <Button
             v-if="doc.status === 'ready_for_review'"
             variant="primary"
