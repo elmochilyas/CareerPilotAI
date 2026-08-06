@@ -52,9 +52,9 @@ class ResolveJobSkillsJob implements ShouldQueue
         $resolveAction->execute($ingestion);
     }
 
-    public function failed(\Throwable $e, MarkIngestionFailedAction $markFailed): void
+    public function failed(\Throwable $e): void
     {
-        $markFailed->execute(
+        app(MarkIngestionFailedAction::class)->execute(
             ingestionId: $this->ingestionId,
             failureCode: 'pipeline_error',
             failureReason: 'Failed to resolve job skills.',

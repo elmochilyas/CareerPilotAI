@@ -51,9 +51,9 @@ function createOpportunity(): JobOpportunity {
     salary_period: 'year',
     compensation_text: 'Annual bonus available.',
     benefits: ['Health insurance'],
-    publication_date: '2026-07-01',
-    application_deadline: '2026-08-01',
-    expected_start_date: '2026-09-01',
+    publication_date: '2026-07-01T12:00:00Z',
+    application_deadline: '2026-08-01T12:00:00Z',
+    expected_start_date: '2026-09-01T12:00:00Z',
     employment_duration: 'Permanent',
     additional_requirements: [
       { id: 5, text: 'Occasional on-call rotation.', source_evidence: null },
@@ -129,6 +129,11 @@ async function mountPage() {
         name: 'opportunities-detail',
         component: OpportunityDetailPage,
       },
+      {
+        path: '/opportunities/:id/match',
+        name: 'opportunities-match',
+        component: { template: '<div />' },
+      },
     ],
   })
   await router.push('/opportunities/8')
@@ -166,6 +171,57 @@ describe('OpportunityDetailPage', () => {
     ]) {
       expect(wrapper.text()).toContain(text)
     }
+  })
+
+  it('renders the quick-facts rail blocks', async () => {
+    const wrapper = await mountPage()
+
+    for (const text of [
+      'Work details',
+      'Location',
+      'Work mode',
+      'Contract type',
+      'Seniority',
+      'Working hours',
+      'Relocation required',
+      'Compensation',
+      'Salary',
+      'Compensation note',
+      'Benefits',
+      'Dates',
+      'Published',
+      'Application deadline',
+      'Expected start',
+      'Employment duration',
+      'Source',
+      'Saved',
+      'Original posting',
+    ]) {
+      expect(wrapper.text()).toContain(text)
+    }
+  })
+
+  it('renders the design-pass header and rail eyebrows', async () => {
+    const wrapper = await mountPage()
+
+    expect(wrapper.text()).toContain('Saved opportunity')
+    expect(wrapper.text()).toContain('Quick facts')
+    expect(wrapper.text()).toContain('Top choice')
+  })
+
+  it('links the match-brief CTA to the opportunities-match route', async () => {
+    const wrapper = await mountPage()
+
+    const link = wrapper.find('a[href="/opportunities/8/match"]')
+    expect(link.exists()).toBe(true)
+    expect(link.text()).toContain('View match brief')
+  })
+
+  it('uses the shared date formatter for dates', async () => {
+    const wrapper = await mountPage()
+
+    expect(wrapper.text()).toContain('Jul 1, 2026')
+    expect(wrapper.text()).toContain('Jul 30, 2026')
   })
 
   it('identifies catalog-matched and original skill labels', async () => {

@@ -1,0 +1,148 @@
+## Purpose
+
+Define the candidate-facing match API: endpoints for creating, listing, reading, and recalculating match analyses, with ownership authorization, RFC 9457 problem details, rate limiting, asynchronous creation, and a resource shape that exposes category scores, matches, uncertain items, gaps, and suggestions.
+
+## Requirements
+
+### Requirement: Create a match analysis
+The system SHALL expose `POST /api/v1/opportunities/{id}/matches` to start a match analysis for a confirmed opportunity owned by the authenticated candidate, returning `202 Accepted` with an operation resource and a polling location.
+
+#### Scenario: Analysis creation accepted
+- **GIVEN** an authenticated candidate who owns the confirmed opportunity
+- **WHEN** they POST to `/api/v1/opportunities/{id}/matches`
+- **THEN** the system SHALL return 202 with an operation resource in `queued` state
+- **AND** the response SHALL include the operation ID and a `Location` header for polling
+- **AND** an analysis record SHALL be created
+
+#### Scenario: Opportunity not owned
+- **GIVEN** an authenticated candidate who does not own the opportunity
+- **WHEN** they POST to `/api/v1/opportunities/{id}/matches`
+- **THEN** the system SHALL return 404 with a stable problem code
+- **AND** SHALL NOT reveal that the opportunity exists
+
+#### Scenario: Opportunity does not exist
+- **GIVEN** no opportunity with the given id
+- **WHEN** they POST to `/api/v1/opportunities/{id}/matches`
+- **THEN** the system SHALL return 404 with a stable problem code
+
+#### Scenario: Unconfirmed opportunity rejected
+- **GIVEN** an opportunity that is not in a confirmed state
+- **WHEN** they POST to `/api/v1/opportunities/{id}/matches`
+- **THEN** the system SHALL return 409 with a stable problem code
+
+#### Scenario: Unauthenticated creation
+- **GIVEN** no authenticated session
+- **WHEN** they POST to the match creation endpoint
+- **THEN** the system SHALL return 401 with code `unauthenticated`
+
+#### Scenario: Idempotent duplicate creation
+- **GIVEN** an analysis already queued or processing for the same profile and opportunity
+- **WHEN** they POST again with the same idempotency key
+- **THEN** the system SHALL return 202 referencing the existing operation
+- **AND** SHALL NOT create a duplicate analysis
+
+#### Scenario: Rate limit exceeded on creation
+- **GIVEN** a candidate who exceeded the configured match creation limit
+- **WHEN** they POST to the match creation endpoint
+- **THEN** the system SHALL return 429 with a stable problem code
+
+### Requirement: Poll analysis status
+The system SHALL expose the operation resource so the candidate can poll analysis status through `queued`, `processing`, `completed`, and failure states.
+
+#### Scenario: Poll completes
+- **GIVEN** an analysis created for the candidate
+- **WHEN** they poll the operation endpoint
+- **THEN** the response SHALL reflect the current state
+- **AND** once processing finishes SHALL return `completed` with the analysis resource
+
+#### Scenario: Poll after failure
+- **GIVEN** an analysis that failed during processing
+- **WHEN** they poll the operation endpoint
+- **THEN** the response SHALL expose a failed state with a stable problem code
+- **AND** SHALL NOT include a partial score
+
+### Requirement: List match analyses
+The system SHALL expose `GET /api/v1/opportunities/{id}/matches` returning the candidate's analyses for that opportunity, newest first, using cursor pagination, with the latest analysis flagged.
+
+#### Scenario: List analyses
+- **GIVEN** an authenticated candidate who owns the opportunity and has analyses
+- **WHEN** they GET `/api/v1/opportunities/{id}/matches`
+- **THEN** the system SHALL return the analyses newest first with pagination metadata
+- **AND** SHALL flag the latest analysis
+
+#### Scenario: List analyses cross-user denied
+- **GIVEN** an authenticated candidate who does not own the opportunity
+- **WHEN** they GET `/api/v1/opportunities/{id}/matches`
+- **THEN** the system SHALL return 404
+
+#### Scenario: List with no analyses
+- **GIVEN** an opportunity with no analyses
+- **WHEN** they GET `/api/v1/opportunities/{id}/matches`
+- **THEN** the system SHALL return an empty paginated result
+
+### Requirement: Read a single match analysis
+The system SHALL expose `GET /api/v1/matches/{id}` returning the full analysis with category scores, per-requirement results, evidence references, versions, fingerprints, stale status, and critical-missing warnings.
+
+#### Scenario: Read own analysis
+- **GIVEN** a completed analysis owned by the candidate
+- **WHEN** they GET `/api/v1/matches/{id}`
+- **THEN** the response SHALL include the overall score, category scores, per-requirement results, evidence references, scoring version, fingerprints, and any critical-missing warnings
+
+#### Scenario: Read another candidate's analysis
+- **GIVEN** an analysis owned by a different candidate
+- **WHEN** they GET `/api/v1/matches/{id}`
+- **THEN** the system SHALL return 404 with a stable problem code
+
+#### Scenario: Analysis does not exist
+- **GIVEN** no analysis with the given id
+- **WHEN** they GET `/api/v1/matches/{id}`
+- **THEN** the system SHALL return 404
+
+#### Scenario: Stale analysis flags staleness
+- **GIVEN** an analysis whose profile or opportunity changed since completion
+- **WHEN** they GET `/api/v1/matches/{id}`
+- **THEN** the response SHALL include a stale flag
+- **AND** SHALL include the versions that differ from the current sources
+
+### Requirement: Recalculate a match analysis
+The system SHALL expose `POST /api/v1/matches/{id}/recalculate` to create a fresh snapshot, returning `202 Accepted` with the new operation.
+
+#### Scenario: Recalculate own analysis
+- **GIVEN** an analysis owned by the candidate
+- **WHEN** they POST to `/api/v1/matches/{id}/recalculate`
+- **THEN** the system SHALL create a new analysis snapshot and return 202 with its operation resource
+- **AND** the previous analysis SHALL remain stored unchanged
+
+#### Scenario: Recalculate another candidate's analysis
+- **GIVEN** an analysis owned by a different candidate
+- **WHEN** they POST to `/api/v1/matches/{id}/recalculate`
+- **THEN** the system SHALL return 404
+
+#### Scenario: Recalculate requires no active analysis
+- **GIVEN** an analysis already queued or processing for the same profile and opportunity
+- **WHEN** they POST to `/api/v1/matches/{id}/recalculate`
+- **THEN** the system SHALL return 409 referencing the active analysis
+- **AND** SHALL NOT create a duplicate
+
+### Requirement: Problem-details error contract
+The API SHALL return RFC 9457-style problem details with stable problem codes and no internal exception messages.
+
+#### Scenario: Validation error shape
+- **GIVEN** a request with an invalid parameter
+- **WHEN** the system rejects it
+- **THEN** the response SHALL include `type`, `title`, `status`, `detail`, `instance`, `code`, `errors`, and `request_id`
+- **AND** SHALL NOT expose stack traces or internal messages
+
+#### Scenario: Unknown filter or sort rejected
+- **GIVEN** a list request with a filter or sort field outside the allowlist
+- **WHEN** the system validates it
+- **THEN** the system SHALL return 422 with a validation problem detail
+
+### Requirement: Request ID propagation
+The API SHALL accept and generate `X-Request-ID` and propagate it through the analysis job and provider calls.
+
+#### Scenario: Request ID echoed
+- **GIVEN** a client sends `X-Request-ID`
+- **WHEN** they create a match analysis
+- **THEN** the response SHALL include the same request ID
+- **AND** the queued job SHALL carry the request ID for logs and metrics

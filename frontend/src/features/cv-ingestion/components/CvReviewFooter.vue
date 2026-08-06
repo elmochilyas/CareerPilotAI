@@ -151,7 +151,7 @@ const allDone = computed(() => props.total > 0 && props.reviewed === props.total
             @click="emit('apply')"
           >
             <CheckCircle2 class="mr-1.5 h-4 w-4" aria-hidden="true" />
-            {{ applyPending ? 'Applying to profile...' : 'Apply to profile' }}
+            {{ applyPending ? 'Loading preview...' : 'Review import' }}
           </Button>
           <p
             v-if="applyDisabledReason"

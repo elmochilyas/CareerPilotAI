@@ -214,3 +214,61 @@ it('marks failed ingestion when state service throws conflict on re-run', functi
     $ingestion->refresh();
     expect($ingestion->status)->toBe(JobIngestionStatus::ReviewReady);
 });
+
+it('marks the ingestion failed when failed() is invoked with only the exception', function () {
+    $ingestion = JobOpportunityIngestion::factory()->processing()->create([
+        'user_id' => $this->user->id,
+    ]);
+
+    $job = new ExtractJobInformationJob($ingestion->id);
+
+    $job->failed(new RuntimeException('Unexpected failure.'));
+
+    $ingestion->refresh();
+    expect($ingestion->status)->toBe(JobIngestionStatus::Failed);
+    expect($ingestion->failure_code)->toBe('unexpected_processing_failure');
+    expect($ingestion->failure_reason)->toBe('We could not complete the analysis safely.');
+    expect($ingestion->retry_count)->toBe(1);
+    expect($ingestion->last_retry_at)->not->toBeNull();
+});
+
+it('maps a conflict exception error code when failed() is invoked', function () {
+    $ingestion = JobOpportunityIngestion::factory()->processing()->create([
+        'user_id' => $this->user->id,
+    ]);
+
+    $job = new ExtractJobInformationJob($ingestion->id);
+
+    $job->failed(new ConflictException('Invalid output.', 'invalid_ai_output'));
+
+    $ingestion->refresh();
+    expect($ingestion->status)->toBe(JobIngestionStatus::Failed);
+    expect($ingestion->failure_code)->toBe('invalid_ai_output');
+});
+
+it('does not leave a processing ingestion stuck after failed()', function () {
+    $ingestion = JobOpportunityIngestion::factory()->processing()->create([
+        'user_id' => $this->user->id,
+    ]);
+
+    $job = new ExtractJobInformationJob($ingestion->id);
+    $job->failed(new RuntimeException('Boom'));
+
+    expect($ingestion->fresh()->status)->toBe(JobIngestionStatus::Failed);
+});
+
+it('is idempotent when failed() is invoked again', function () {
+    $ingestion = JobOpportunityIngestion::factory()->processing()->create([
+        'user_id' => $this->user->id,
+    ]);
+
+    $job = new ExtractJobInformationJob($ingestion->id);
+
+    $job->failed(new RuntimeException('Boom'));
+    $job->failed(new RuntimeException('Boom again'));
+
+    $ingestion->refresh();
+    expect($ingestion->status)->toBe(JobIngestionStatus::Failed);
+    expect($ingestion->failure_code)->toBe('unexpected_processing_failure');
+    expect($ingestion->retry_count)->toBe(1);
+});

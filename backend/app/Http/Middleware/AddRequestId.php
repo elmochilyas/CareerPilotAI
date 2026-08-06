@@ -17,6 +17,12 @@ class AddRequestId
 
         if ($requestId === null) {
             $requestId = (string) Str::uuid();
+        } else {
+            $requestId = mb_substr(trim($requestId), 0, 64);
+
+            if ($requestId === '') {
+                $requestId = (string) Str::uuid();
+            }
         }
 
         RequestIdContext::set($requestId);

@@ -317,7 +317,13 @@ class ConfirmOpportunityAction
             return null;
         }
 
-        return trim($value);
+        $trimmed = trim($value);
+
+        if (strcasecmp($trimmed, 'null') === 0) {
+            return null;
+        }
+
+        return $trimmed;
     }
 
     private function classification(mixed $required): ?string

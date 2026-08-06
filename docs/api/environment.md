@@ -33,3 +33,19 @@ CareerPilot uses Laravel Sanctum for SPA cookie-based authentication.
 - Session cookie is HTTP-only and SameSite is set to Lax/Strict
 - In development, the `SESSION_DOMAIN` should include the backend domain
 - Rate limiting: 5 attempts/minute for login and forgot-password; 3 attempts/minute for verification resend; 10 attempts/minute for registration
+
+## Match Analysis
+
+| Variable | Description | Default |
+|---|---|---|
+| `MATCHING_QUEUE` | Queue name for match analysis jobs | `matching` |
+| `MATCHING_MAX_REQUIREMENTS` | Max requirements analyzed per opportunity | `100` |
+| `MATCHING_MAX_REQUIREMENT_TEXT` | Max requirement text length | `500` |
+| `MATCHING_MIN_PROFILE_COMPLETION` | Minimum profile completion (%) to run a match | `50` |
+| `MATCHING_MIN_TRUSTED_SKILLS` | Minimum trusted skills required to run a match | `1` |
+| `MATCHING_CLASSIFIER_MODEL` | Default semantic classifier model | `gpt-4o-mini` |
+| `MATCHING_CLASSIFIER_MAX_TEXT` | Max untrusted text sent to the classifier | `30000` |
+
+### Recalculation semantics
+
+A completed match analysis is an immutable snapshot. Recalculating creates a new analysis for the same profile and opportunity; the previous snapshot is never mutated. At most one active (`queued`/`processing`) analysis may exist per profile and opportunity.

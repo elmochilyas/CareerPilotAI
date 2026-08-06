@@ -88,8 +88,8 @@ const fields: LinkField[] = [
 
 const hasAny = computed(() => fields.some((f) => props.profile[f.key]))
 
-function displayUrl(url: string): string {
-  return url.replace(/^https?:\/\//, '').replace(/\/$/, '')
+function displayUrl(url: string | null): string {
+  return (url ?? '').replace(/^https?:\/\//, '').replace(/\/$/, '')
 }
 </script>
 
@@ -173,44 +173,44 @@ function displayUrl(url: string): string {
       </div>
 
       <div v-else class="grid gap-3 pt-2">
-        <div
-          v-for="f in fields"
-          :key="f.key"
-          v-show="profile[f.key]"
-          class="group flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-slate-300 hover:shadow-md"
-        >
+        <template v-for="f in fields" :key="f.key">
           <div
-            class="flex size-10 shrink-0 items-center justify-center rounded-lg shadow-sm"
-            :class="f.iconBg"
+            v-if="profile[f.key]"
+            class="group flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-slate-300 hover:shadow-md"
           >
-            <svg
-              viewBox="0 0 16 16"
-              fill="none"
-              class="size-4"
-              stroke="currentColor"
-              stroke-width="1.3"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+            <div
+              class="flex size-10 shrink-0 items-center justify-center rounded-lg shadow-sm"
+              :class="f.iconBg"
             >
-              <path :d="f.icon" />
-            </svg>
+              <svg
+                viewBox="0 0 16 16"
+                fill="none"
+                class="size-4"
+                stroke="currentColor"
+                stroke-width="1.3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path :d="f.icon" />
+              </svg>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-semibold text-slate-900">{{ f.label }}</p>
+              <p class="mt-0.5 truncate text-xs text-slate-500">
+                {{ displayUrl(profile[f.key]!) }}
+              </p>
+            </div>
+            <a
+              :href="profile[f.key]!"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex size-9 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-slate-100 hover:text-primary-600"
+              :aria-label="`Open ${f.label}`"
+            >
+              <ExternalLink :size="16" stroke-width="1.5" />
+            </a>
           </div>
-          <div class="min-w-0 flex-1">
-            <p class="text-sm font-semibold text-slate-900">{{ f.label }}</p>
-            <p class="mt-0.5 truncate text-xs text-slate-500">
-              {{ displayUrl(profile[f.key]!) }}
-            </p>
-          </div>
-          <a
-            :href="profile[f.key]!"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="flex size-9 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-slate-100 hover:text-primary-600"
-            :aria-label="`Open ${f.label}`"
-          >
-            <ExternalLink :size="16" stroke-width="1.5" />
-          </a>
-        </div>
+        </template>
       </div>
     </div>
   </section>

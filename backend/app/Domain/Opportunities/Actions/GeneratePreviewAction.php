@@ -376,7 +376,13 @@ class GeneratePreviewAction
             );
 
             if ($suggestion !== null) {
-                $dates[$type] = $this->effectiveValue($suggestion)['value'] ?? null;
+                $value = $this->effectiveValue($suggestion)['value'] ?? null;
+
+                if (is_string($value) && strcasecmp(trim($value), 'null') === 0) {
+                    $value = null;
+                }
+
+                $dates[$type] = $value;
             }
         }
 

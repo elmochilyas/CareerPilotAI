@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 const mockQueryResult = ref<unknown>(undefined)
 const mockIsPending = ref(true)
@@ -93,5 +93,68 @@ describe('useCvIngestion', () => {
     expect(state.reviewProgress.value.reviewed).toBe(0)
     expect(state.reviewProgress.value.total).toBe(0)
     expect(state.reviewProgress.value.pct).toBe(0)
+  })
+
+  it('can resume processing for a document', async () => {
+    const { useCvIngestion } = await import('@/features/cv-ingestion/composables/useCvIngestion')
+    const state = useCvIngestion()
+    state.resumeProcessing(42)
+    expect(state.activeDocumentId.value).toBe(42)
+    expect(state.stage.value).toBe('processing')
+    expect(state.reviewReadonly.value).toBe(false)
+    expect(mockRefetch).toHaveBeenCalled()
+  })
+
+  it('restores the processing stage from params', async () => {
+    const { useCvIngestion } = await import('@/features/cv-ingestion/composables/useCvIngestion')
+    const state = useCvIngestion()
+    state.restoreFromParams({ documentId: 42, stage: 'processing' })
+    expect(state.activeDocumentId.value).toBe(42)
+    expect(state.stage.value).toBe('processing')
+    expect(state.reviewReadonly.value).toBe(false)
+  })
+
+  it('proceeds from review to the import stage when starting an import', async () => {
+    const { useCvIngestion } = await import('@/features/cv-ingestion/composables/useCvIngestion')
+    const state = useCvIngestion()
+    state.resumeReview(42)
+    expect(state.stage.value).toBe('review')
+
+    state.startImport()
+
+    expect(state.stage.value).toBe('import')
+    expect(mockRefetch).toHaveBeenCalled()
+  })
+
+  it('sets the profile concurrency token from the preview and clears it to null', async () => {
+    mockIsPending.value = false
+
+    const { useCvIngestion } = await import('@/features/cv-ingestion/composables/useCvIngestion')
+    const state = useCvIngestion()
+
+    mockQueryResult.value = { profile_updated_at: '2026-08-05T10:00:00.000000Z' }
+    await nextTick()
+
+    expect(state.profileUpdatedAt.value).toBe('2026-08-05T10:00:00.000000Z')
+
+    mockQueryResult.value = undefined
+    await nextTick()
+
+    expect(state.profileUpdatedAt.value).toBeNull()
+  })
+
+  it('never leaves a stale token behind after a fresh preview', async () => {
+    mockIsPending.value = false
+
+    const { useCvIngestion } = await import('@/features/cv-ingestion/composables/useCvIngestion')
+    const state = useCvIngestion()
+
+    mockQueryResult.value = { profile_updated_at: 'stale-token' }
+    await nextTick()
+    expect(state.profileUpdatedAt.value).toBe('stale-token')
+
+    mockQueryResult.value = { profile_updated_at: 'fresh-token' }
+    await nextTick()
+    expect(state.profileUpdatedAt.value).toBe('fresh-token')
   })
 })

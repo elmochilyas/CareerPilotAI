@@ -41,6 +41,17 @@ it('preserves a provided X-Request-ID header', function () {
     expect($response->json('request_id'))->toBe($requestId);
 });
 
+it('caps an over-long X-Request-ID header to the column limit', function () {
+    $requestId = 'req-'.str_repeat('a', 200);
+
+    $response = $this->withHeaders(['X-Request-ID' => $requestId])
+        ->getJson('/api/v1/health');
+
+    expect(strlen($response->headers->get('X-Request-ID')))->toBe(64);
+    expect($response->json('request_id'))->toBe($response->headers->get('X-Request-ID'));
+    expect($response->json('request_id'))->toBe('req-'.str_repeat('a', 60));
+});
+
 it('generates a UUID when no X-Request-ID is provided', function () {
     $response = $this->getJson('/api/v1/health');
 

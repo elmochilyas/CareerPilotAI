@@ -31,7 +31,7 @@ export function useCvIngestion() {
   const activeDocumentId = ref<number | null>(null)
   const uploadProgress = ref(0)
   const importIdempotencyKey = ref('')
-  const profileUpdatedAt = ref('')
+  const profileUpdatedAt = ref<string | null>(null)
   const uploadMode = ref<'create_new' | 'update_existing'>('create_new')
   const uploadError = ref<{ code: string; detail: string } | null>(null)
   const duplicateCvId = ref<number | null>(null)
@@ -91,9 +91,7 @@ export function useCvIngestion() {
   })
 
   watch(preview, (p) => {
-    if (p?.profile_updated_at) {
-      profileUpdatedAt.value = p.profile_updated_at
-    }
+    profileUpdatedAt.value = p?.profile_updated_at ?? null
   })
   const isUploading = ref(false)
 
@@ -267,6 +265,14 @@ export function useCvIngestion() {
     documentQuery.refetch()
   }
 
+  function resumeProcessing(id: number): void {
+    uploadError.value = null
+    activeDocumentId.value = id
+    stage.value = 'processing'
+    reviewReadonly.value = false
+    documentQuery.refetch()
+  }
+
   function restoreFromParams(params: {
     documentId: number
     stage: string
@@ -283,6 +289,9 @@ export function useCvIngestion() {
       importIdempotencyKey.value = crypto.randomUUID()
     } else if (params.stage === 'complete') {
       stage.value = 'complete'
+    } else if (params.stage === 'processing') {
+      stage.value = 'processing'
+      reviewReadonly.value = false
     }
   }
 
@@ -307,6 +316,7 @@ export function useCvIngestion() {
     document,
     suggestions,
     preview,
+    profileUpdatedAt,
     reviewProgress,
     reviewedSuggestions,
     pendingSuggestions,
@@ -316,6 +326,7 @@ export function useCvIngestion() {
     reviewReadonly,
     startImport,
     resumeReview,
+    resumeProcessing,
     restoreFromParams,
     reset,
     isRetrying,

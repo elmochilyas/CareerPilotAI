@@ -66,4 +66,27 @@ describe('CvImportPreview', () => {
     const wrapper = mount(CvImportPreview, { props: { preview: null, isPending: false } })
     expect(wrapper.text()).toContain('Unable to load import preview')
   })
+
+  it('shows importing state on the confirm button while applying', () => {
+    const wrapper = mount(CvImportPreview, {
+      props: { preview: makePreview(), isPending: false, isApplying: true },
+    })
+    expect(wrapper.text()).toContain('Importing...')
+    expect(wrapper.text()).not.toContain('Confirm and import')
+  })
+
+  it('disables the confirm button while applying', () => {
+    const wrapper = mount(CvImportPreview, {
+      props: { preview: makePreview(), isPending: false, isApplying: true },
+    })
+    const confirmBtn = wrapper.findAll('button').find((b) => b.text().includes('Importing'))
+    expect(confirmBtn!.attributes('disabled')).toBeDefined()
+  })
+
+  it('keeps the confirm label when loading the preview is pending', () => {
+    const wrapper = mount(CvImportPreview, {
+      props: { preview: null, isPending: true, isApplying: false },
+    })
+    expect(wrapper.text()).toContain('Preparing preview')
+  })
 })

@@ -1,0 +1,302 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { ChevronDown } from '@lucide/vue'
+import { useRoute } from 'vue-router'
+import { useQuery } from '@tanstack/vue-query'
+import { extractProblemDetail } from '@/api/client'
+import Button from '@/components/ui/Button.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
+import { fetchOpportunity, opportunityKeys } from '@/features/opportunities/api'
+import { useMatchAnalysis } from '../composables/useMatchAnalysis'
+import InsufficientProfileGate from '../components/InsufficientProfileGate.vue'
+import MatchAtAGlance from '../components/MatchAtAGlance.vue'
+import MatchBriefHeader from '../components/MatchBriefHeader.vue'
+import MatchErrorState from '../components/MatchErrorState.vue'
+import MatchFilterBar from '../components/MatchFilterBar.vue'
+import MatchScoreDetails from '../components/MatchScoreDetails.vue'
+import MatchStatusPanel from '../components/MatchStatusPanel.vue'
+import MatchSummaryHero from '../components/MatchSummaryHero.vue'
+import RequirementResultRow from '../components/RequirementResultRow.vue'
+import StaleNotice from '../components/StaleNotice.vue'
+import type { MatchFinding, MatchImportance } from '../types'
+import { findingKey } from '../utils/matchPresentation'
+
+const route = useRoute()
+
+const opportunityId = computed(() => {
+  const id = Number(route.params.id)
+  return Number.isInteger(id) && id > 0 ? id : null
+})
+
+const {
+  announcement,
+  analyses,
+  completedAnalysis,
+  listQuery,
+  createProblemCode,
+  isStarting,
+  isRecalculating,
+  recalculateMutation,
+  startAnalysis,
+} = useMatchAnalysis(opportunityId)
+
+const opportunityQuery = useQuery({
+  queryKey: computed(() => opportunityKeys.detail(opportunityId.value ?? 0)),
+  queryFn: () => fetchOpportunity(opportunityId.value!),
+  enabled: computed(() => opportunityId.value !== null),
+  retry: 1,
+})
+
+const opportunity = opportunityQuery.data
+
+const newest = computed(() => analyses.value[0] ?? null)
+const processing = computed(
+  () =>
+    newest.value?.status === 'queued' || newest.value?.status === 'processing' || isStarting.value,
+)
+const failedNewest = computed(() => (newest.value?.status === 'failed' ? newest.value : null))
+const noAnalyses = computed(() => analyses.value.length === 0)
+const invalidId = computed(() => opportunityId.value === null)
+const loading = computed(() => opportunityQuery.isLoading.value || listQuery.isLoading.value)
+const loadError = computed(() => opportunityQuery.isError.value || listQuery.isError.value)
+const insufficientProfile = computed(
+  () => noAnalyses.value && createProblemCode.value === 'insufficient_profile',
+)
+const failedAnalysisTitle = computed(() => 'The match analysis failed')
+
+const loadErrorDetail = computed(() => {
+  const error = (opportunityQuery.error.value ?? listQuery.error.value) as
+    | unknown
+    | null
+    | undefined
+  return extractProblemDetail(error as never)?.detail ?? null
+})
+
+function retryLoad(): void {
+  if (opportunityId.value !== null) {
+    void opportunityQuery.refetch()
+    void listQuery.refetch()
+  }
+}
+
+function recalculate(): void {
+  const target = completedAnalysis.value
+  if (target !== null && !isRecalculating.value) {
+    recalculateMutation.mutate(target.id)
+  }
+}
+
+const classifierUnavailable = computed(
+  () => completedAnalysis.value?.classifier.status === 'unavailable',
+)
+
+const fullAnalysisOpen = ref(false)
+
+function onFullAnalysisToggle(event: Event): void {
+  fullAnalysisOpen.value = (event.target as HTMLDetailsElement).open
+}
+
+function openFullAnalysis(): void {
+  fullAnalysisOpen.value = true
+}
+
+function viewGaps(): void {
+  matchFilter.value = 'gap'
+  openFullAnalysis()
+}
+
+function viewAll(): void {
+  matchFilter.value = 'all'
+  openFullAnalysis()
+}
+
+function viewUnknown(): void {
+  matchFilter.value = 'all'
+  includeUnknown.value = true
+  openFullAnalysis()
+}
+
+const matchFilter = ref<'all' | 'matched' | 'gap'>('all')
+const importanceFilter = ref<MatchImportance[]>([])
+const includeUnknown = ref(false)
+
+const filteredFindings = computed(() => {
+  const findings = completedAnalysis.value?.findings ?? []
+  return findings.filter((finding: MatchFinding) => {
+    if (matchFilter.value !== 'all' && finding.match_state !== matchFilter.value) {
+      return false
+    }
+    if (matchFilter.value === 'all' && finding.match_state === 'unknown' && !includeUnknown.value) {
+      return false
+    }
+    if (importanceFilter.value.length > 0 && !importanceFilter.value.includes(finding.importance)) {
+      return false
+    }
+    return true
+  })
+})
+</script>
+
+<template>
+  <div class="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+    <MatchBriefHeader
+      :opportunity="opportunity ?? null"
+      :classifier-unavailable="classifierUnavailable"
+    />
+
+    <div class="sr-only" aria-live="polite">{{ announcement }}</div>
+
+    <div v-if="invalidId" class="mt-8">
+      <MatchErrorState title="Invalid link" detail="This match link is not valid." />
+    </div>
+
+    <div v-else-if="loading" class="mt-10" role="status">
+      <div class="mx-auto max-w-md space-y-4">
+        <div class="h-6 w-40 animate-pulse rounded bg-slate-100" />
+        <div class="h-28 animate-pulse rounded-xl border border-slate-200 bg-white" />
+        <div class="h-40 animate-pulse rounded-xl border border-slate-200 bg-white" />
+      </div>
+      <span class="sr-only">Loading the Career Intelligence Brief…</span>
+    </div>
+
+    <MatchErrorState
+      v-else-if="loadError"
+      class="mt-8"
+      :detail="loadErrorDetail"
+      :busy="false"
+      @retry="retryLoad"
+    />
+
+    <InsufficientProfileGate v-else-if="insufficientProfile" class="mt-8" />
+
+    <MatchStatusPanel
+      v-else-if="processing && !completedAnalysis"
+      class="mt-8"
+      :status="newest?.status === 'processing' ? 'processing' : 'queued'"
+    />
+
+    <MatchErrorState
+      v-else-if="failedNewest && !completedAnalysis"
+      class="mt-8"
+      :title="failedAnalysisTitle"
+      :detail="failedNewest.failure.reason"
+      :busy="isStarting"
+      @retry="startAnalysis"
+    />
+
+    <div v-else-if="noAnalyses" class="mt-8">
+      <EmptyState
+        title="No match analysis yet"
+        description="Start an analysis to see how this opportunity matches your profile."
+      >
+        <Button :loading="isStarting" @click="startAnalysis">
+          {{ isStarting ? 'Starting…' : 'Start analysis' }}
+        </Button>
+      </EmptyState>
+    </div>
+
+    <template v-else-if="completedAnalysis">
+      <div
+        v-if="processing"
+        role="status"
+        aria-live="polite"
+        class="mt-8 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"
+      >
+        A new analysis is running. The previous result stays visible below.
+      </div>
+      <div
+        v-else-if="failedNewest"
+        role="alert"
+        class="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+      >
+        <span>The latest analysis failed. The previous result is shown below.</span>
+        <button
+          type="button"
+          :disabled="isStarting"
+          class="rounded-lg bg-red-600 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1 focus-visible:outline-none disabled:opacity-50"
+          @click="startAnalysis"
+        >
+          Retry
+        </button>
+      </div>
+
+      <StaleNotice
+        v-if="completedAnalysis.stale"
+        class="mt-8"
+        :busy="isRecalculating"
+        @recalculate="recalculate"
+      />
+
+      <MatchSummaryHero :analysis="completedAnalysis" class="mt-6" />
+
+      <MatchAtAGlance
+        :findings="completedAnalysis.findings"
+        class="mt-6"
+        @view-gaps="viewGaps"
+        @expand-all="viewAll"
+        @expand-unknown="viewUnknown"
+      />
+
+      <details
+        id="full-analysis"
+        class="group mt-6 rounded-2xl border border-slate-200 bg-white"
+        :open="fullAnalysisOpen"
+        @toggle="onFullAnalysisToggle"
+      >
+        <summary
+          class="flex cursor-pointer list-none items-center justify-between gap-3 p-6 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none sm:p-8"
+        >
+          <span>
+            <span class="text-base font-semibold text-slate-900">Full analysis</span>
+            <span class="text-slate-400">
+              ({{ completedAnalysis.findings.length }} requirement{{
+                completedAnalysis.findings.length === 1 ? '' : 's'
+              }})
+            </span>
+          </span>
+          <span class="flex items-center gap-2 text-sm font-medium text-slate-500">
+            <span>{{ fullAnalysisOpen ? 'Hide details' : 'View full analysis' }}</span>
+            <ChevronDown
+              class="size-5 text-slate-400 transition-transform group-open:rotate-180"
+              aria-hidden="true"
+            />
+          </span>
+        </summary>
+
+        <div class="border-t border-slate-100 p-6 sm:p-8">
+          <MatchFilterBar
+            v-model:match-filter="matchFilter"
+            v-model:importance="importanceFilter"
+            v-model:include-unknown="includeUnknown"
+            :findings="completedAnalysis.findings"
+          />
+
+          <ul
+            v-if="filteredFindings.length"
+            class="mt-5 grid gap-4"
+            aria-label="Match requirements"
+          >
+            <li v-for="finding in filteredFindings" :key="findingKey(finding)">
+              <RequirementResultRow :finding="finding" />
+            </li>
+          </ul>
+          <EmptyState
+            v-else
+            :title="
+              completedAnalysis.findings.length === 0
+                ? 'No requirement results'
+                : 'No requirements match these filters'
+            "
+            :description="
+              completedAnalysis.findings.length === 0
+                ? 'This analysis has no per-requirement results to show.'
+                : 'Adjust the filters to see more requirement results.'
+            "
+          />
+        </div>
+      </details>
+
+      <MatchScoreDetails :analysis="completedAnalysis" class="mt-6" />
+    </template>
+  </div>
+</template>

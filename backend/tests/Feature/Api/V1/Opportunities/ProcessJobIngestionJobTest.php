@@ -99,3 +99,48 @@ it('returns safely when ingestion does not exist', function () {
     expect(fn () => $job->handle($this->stateService))
         ->not->toThrow(Throwable::class);
 });
+
+it('marks the ingestion failed when failed() is invoked with only the exception', function () {
+    $ingestion = JobOpportunityIngestion::factory()->processing()->create([
+        'user_id' => $this->user->id,
+    ]);
+
+    $job = new ProcessJobIngestionJob($ingestion->id);
+
+    $job->failed(new RuntimeException('Unexpected pipeline failure.'));
+
+    $ingestion->refresh();
+    expect($ingestion->status)->toBe(JobIngestionStatus::Failed);
+    expect($ingestion->failure_code)->toBe('pipeline_error');
+    expect($ingestion->failure_reason)->toBe('Failed to start processing the job description.');
+    expect($ingestion->retry_count)->toBe(1);
+    expect($ingestion->last_retry_at)->not->toBeNull();
+});
+
+it('does not leave a processing ingestion stuck after failed()', function () {
+    $ingestion = JobOpportunityIngestion::factory()->processing()->create([
+        'user_id' => $this->user->id,
+    ]);
+
+    $job = new ProcessJobIngestionJob($ingestion->id);
+    $job->failed(new RuntimeException('Boom'));
+
+    expect($ingestion->fresh()->status)->toBe(JobIngestionStatus::Failed);
+});
+
+it('is idempotent when failed() is invoked again', function () {
+    $ingestion = JobOpportunityIngestion::factory()->processing()->create([
+        'user_id' => $this->user->id,
+    ]);
+
+    $job = new ProcessJobIngestionJob($ingestion->id);
+
+    $job->failed(new RuntimeException('Boom'));
+    $job->failed(new RuntimeException('Boom again'));
+
+    $ingestion->refresh();
+    expect($ingestion->status)->toBe(JobIngestionStatus::Failed);
+    expect($ingestion->failure_code)->toBe('pipeline_error');
+    expect($ingestion->failure_reason)->toBe('Failed to start processing the job description.');
+    expect($ingestion->retry_count)->toBe(1);
+});

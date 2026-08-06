@@ -5,7 +5,7 @@ import { ArrowLeft, Check, Upload, Cog, ListChecks, FileCheck, Sparkles } from '
 import type { LucideIcon } from '@lucide/vue'
 import { useCvIngestion } from '../composables/useCvIngestion'
 import type { CvStage } from '../composables/useCvIngestion'
-import type { ReviewDecision } from '../types'
+import type { ReviewDecision, CvDocument } from '../types'
 import CvUploadZone from '../components/CvUploadZone.vue'
 import CvDocumentList from '../components/CvDocumentList.vue'
 import CvProcessingStatus from '../components/CvProcessingStatus.vue'
@@ -41,9 +41,11 @@ const {
   updateSuggestionMutation,
   batchSaveMutation,
   documentQuery,
+  previewQuery,
   reviewReadonly,
   startImport,
   resumeReview,
+  resumeProcessing,
   restoreFromParams,
   reset,
 } = useCvIngestion()
@@ -110,7 +112,11 @@ onMounted(() => {
   const q = route.query as Record<string, string | undefined>
   if (q.documentId) {
     const docId = Number(q.documentId)
-    if (!isNaN(docId) && q.stage && ['review', 'import', 'complete'].includes(q.stage)) {
+    if (
+      !isNaN(docId) &&
+      q.stage &&
+      ['review', 'import', 'complete', 'processing'].includes(q.stage)
+    ) {
       restoreFromParams({
         documentId: docId,
         stage: q.stage as CvStage,
@@ -221,6 +227,26 @@ function handleReviewCv(id: number): void {
 
 function handleViewCv(id: number): void {
   resumeReview(id, true)
+}
+
+function handleTrackCv(id: number): void {
+  resumeProcessing(id)
+}
+
+function handleRetryFromList(id: number): void {
+  activeDocumentId.value = id
+  stage.value = 'processing'
+  retryMutation.mutate(id)
+}
+
+function handleOpenDocument(doc: CvDocument): void {
+  if (doc.status === 'ready_for_review') {
+    handleReviewCv(doc.id)
+  } else if (doc.status === 'imported') {
+    handleViewCv(doc.id)
+  } else {
+    handleTrackCv(doc.id)
+  }
 }
 
 onBeforeRouteLeave(() => {
@@ -361,6 +387,9 @@ onBeforeRouteLeave(() => {
             :highlight-id="duplicateCvId"
             @review="handleReviewCv"
             @view="handleViewCv"
+            @open="handleOpenDocument"
+            @track="handleTrackCv"
+            @retry="handleRetryFromList"
           />
         </div>
 
@@ -464,7 +493,8 @@ onBeforeRouteLeave(() => {
           <div class="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
             <CvImportPreview
               :preview="preview"
-              :is-pending="importBusy"
+              :is-pending="previewQuery.isPending.value"
+              :is-applying="importBusy"
               @confirm="handleConfirmImport"
               @go-back="handleBackToReview"
             />

@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\JobOpportunityConfirmedController;
 use App\Http\Controllers\Api\V1\JobOpportunityIngestionController;
 use App\Http\Controllers\Api\V1\JobOpportunitySuggestionController;
+use App\Http\Controllers\Api\V1\MatchAnalysisController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\SkillController;
 use Illuminate\Support\Facades\Route;
@@ -99,6 +100,18 @@ Route::prefix('v1')->group(function (): void {
                 ->middleware('throttle:opportunity-confirm');
             Route::get('/', [JobOpportunityConfirmedController::class, 'index']);
             Route::get('/{opportunity}', [JobOpportunityConfirmedController::class, 'show']);
+
+            Route::post('/{opportunity}/matches', [MatchAnalysisController::class, 'store'])
+                ->middleware('throttle:matching-create')
+                ->name('matches.store');
+            Route::get('/{opportunity}/matches', [MatchAnalysisController::class, 'index'])
+                ->name('matches.index');
         });
+
+        Route::get('/matches/{matchAnalysis}', [MatchAnalysisController::class, 'show'])
+            ->name('matches.show');
+        Route::post('/matches/{matchAnalysis}/recalculate', [MatchAnalysisController::class, 'recalculate'])
+            ->middleware('throttle:matching-recalculate')
+            ->name('matches.recalculate');
     });
 });

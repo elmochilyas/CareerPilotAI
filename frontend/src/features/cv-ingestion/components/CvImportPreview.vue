@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button.vue'
 const props = defineProps<{
   preview: ImportPreview | null
   isPending: boolean
+  isApplying?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -133,8 +134,9 @@ const totalBarPercent = computed(() => {
       <!-- Actions -->
       <div class="flex justify-between border-t border-slate-100 pt-5">
         <Button variant="outline" @click="emit('goBack')"> Back to review </Button>
-        <Button :disabled="isPending" @click="emit('confirm')">
-          <ArrowRight class="mr-1 h-4 w-4" aria-hidden="true" /> Confirm and import
+        <Button :disabled="isPending || isApplying" :loading="isApplying" @click="emit('confirm')">
+          <ArrowRight class="mr-1 h-4 w-4" aria-hidden="true" />
+          {{ isApplying ? 'Importing...' : 'Confirm and import' }}
         </Button>
       </div>
     </div>
