@@ -1,5 +1,7 @@
 <?php
 
+use App\Domain\Matching\Services\OpportunitySnapshot;
+use App\Domain\Matching\Services\ProfileSnapshot;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -43,6 +45,42 @@ expect()->extend('toBeOne', function () {
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
+
+if (! function_exists('matchProfileSnapshot')) {
+    function matchProfileSnapshot(array $skills = [], array $items = [], array $languages = []): ProfileSnapshot
+    {
+        return new ProfileSnapshot(
+            headline: 'Backend Developer',
+            professionalSummary: null,
+            targetRoles: ['Backend Developer'],
+            workModes: ['remote'],
+            contractTypes: ['full-time'],
+            languages: $languages,
+            skills: $skills,
+            items: $items,
+        );
+    }
+}
+
+if (! function_exists('matchOpportunitySnapshot')) {
+    function matchOpportunitySnapshot(): OpportunitySnapshot
+    {
+        return new OpportunitySnapshot(
+            title: 'Senior PHP Developer',
+            companyName: 'Acme',
+            summary: 'Build APIs',
+            workMode: 'remote',
+            contractType: 'full-time',
+            seniorityLevel: 'senior',
+            requirements: [
+                ['id' => 1, 'category' => 'education', 'content' => "Master's degree", 'classification' => 'required', 'language' => null, 'display_order' => 0],
+            ],
+            skills: [
+                ['id' => 2, 'normalized_name' => 'php', 'original_label' => 'PHP', 'classification' => 'required', 'display_order' => 0],
+            ],
+        );
+    }
+}
 
 function something()
 {

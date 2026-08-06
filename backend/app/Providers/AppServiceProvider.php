@@ -7,6 +7,9 @@ use App\Domain\CvIngestion\Policies\CvImportBatchPolicy;
 use App\Domain\CvIngestion\Policies\CvSuggestionPolicy;
 use App\Domain\CvIngestion\Services\Contracts\CvAnalyzer;
 use App\Domain\CvIngestion\Services\OpenAiCvAnalyzer;
+use App\Domain\Matching\Policies\MatchAnalysisPolicy;
+use App\Domain\Matching\Services\Contracts\RequirementClassifier;
+use App\Domain\Matching\Services\OpenAiRequirementClassifier;
 use App\Domain\Opportunities\Policies\JobOpportunityIngestionPolicy;
 use App\Domain\Opportunities\Policies\JobOpportunityPolicy;
 use App\Domain\Opportunities\Policies\JobOpportunitySuggestionPolicy;
@@ -19,6 +22,7 @@ use App\Models\CvSuggestion;
 use App\Models\JobOpportunity;
 use App\Models\JobOpportunityIngestion;
 use App\Models\JobOpportunitySuggestion;
+use App\Models\MatchAnalysis;
 use App\Models\ProfileItem;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -34,6 +38,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(CvAnalyzer::class, OpenAiCvAnalyzer::class);
         $this->app->bind(JobAnalyzer::class, OpenAiJobAnalyzer::class);
+        $this->app->bind(RequirementClassifier::class, OpenAiRequirementClassifier::class);
     }
 
     public function boot(): void
@@ -45,6 +50,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(JobOpportunityIngestion::class, JobOpportunityIngestionPolicy::class);
         Gate::policy(JobOpportunitySuggestion::class, JobOpportunitySuggestionPolicy::class);
         Gate::policy(JobOpportunity::class, JobOpportunityPolicy::class);
+        Gate::policy(MatchAnalysis::class, MatchAnalysisPolicy::class);
 
         RateLimiter::for('opportunity-ingestion-create', fn (Request $request): Limit => Limit::perHour(10)
             ->by($this->rateLimitKey($request)));
@@ -62,6 +68,9 @@ class AppServiceProvider extends ServiceProvider
             ->by($this->rateLimitKey($request)));
         RateLimiter::for('opportunity-confirm', fn (Request $request): Limit => Limit::perHour(5)
             ->by($this->rateLimitKey($request)));
+
+        RateLimiter::for('matching-create', fn (Request $request): Limit => $this->matchingLimit($request, 'create_rate_limit'));
+        RateLimiter::for('matching-recalculate', fn (Request $request): Limit => $this->matchingLimit($request, 'recalculate_rate_limit'));
 
         Route::bind('cvDocument', function (string $value): CvDocument {
             $userId = request()->user()?->id;
@@ -115,6 +124,25 @@ class AppServiceProvider extends ServiceProvider
             return JobOpportunity::whereHas('candidateProfile', fn ($q) => $q->where('user_id', $userId))
                 ->findOrFail($value);
         });
+
+        Route::bind('matchAnalysis', function (string $value): MatchAnalysis {
+            $userId = request()->user()?->id;
+
+            if ($userId === null) {
+                throw new ModelNotFoundException;
+            }
+
+            return MatchAnalysis::whereHas('candidateProfile', fn ($q) => $q->where('user_id', $userId))
+                ->findOrFail($value);
+        });
+    }
+
+    private function matchingLimit(Request $request, string $configKey): Limit
+    {
+        [$maxAttempts, $decayMinutes] = explode(',', (string) config("matching.$configKey", '10,1'));
+
+        return Limit::perMinutes((int) $decayMinutes, (int) $maxAttempts)
+            ->by($this->rateLimitKey($request));
     }
 
     private function rateLimitKey(Request $request): string
