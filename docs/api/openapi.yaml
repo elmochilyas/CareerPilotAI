@@ -746,6 +746,309 @@ components:
           type: string
           format: date-time
 
+    MatchAnalysisStatus:
+      type: string
+      enum: [queued, processing, completed, failed]
+
+    MatchState:
+      type: string
+      enum: [matched, partial, gap, unknown]
+
+    MatchImportance:
+      type: string
+      enum: [required, preferred]
+
+    MatchCategory:
+      type: string
+      enum: [required_skills, preferred_skills, evidence, experience_education, language_soft]
+
+    RequirementSourceType:
+      type: string
+      enum: [job_requirement, job_opportunity_skill]
+
+    MatchCounts:
+      type: object
+      properties:
+        required:
+          type: integer
+        preferred:
+          type: integer
+        matched:
+          type: integer
+        partial:
+          type: integer
+        gap:
+          type: integer
+        unknown:
+          type: integer
+
+    MatchVersions:
+      type: object
+      properties:
+        algorithm:
+          type: string
+        scoring:
+          type: string
+        classifier_schema:
+          type: string
+
+    MatchFingerprints:
+      type: object
+      properties:
+        profile:
+          type: string
+        opportunity:
+          type: string
+
+    MatchFailure:
+      type: object
+      properties:
+        code:
+          type: string
+          nullable: true
+        reason:
+          type: string
+          nullable: true
+
+    MatchClassifier:
+      type: object
+      properties:
+        provider:
+          type: string
+          nullable: true
+        model:
+          type: string
+          nullable: true
+        prompt_version:
+          type: string
+          nullable: true
+        latency_ms:
+          type: integer
+          nullable: true
+        tokens_prompt:
+          type: integer
+          nullable: true
+        tokens_completion:
+          type: integer
+          nullable: true
+        response_id:
+          type: string
+          nullable: true
+        status:
+          type: string
+          nullable: true
+
+    MatchTimestamps:
+      type: object
+      properties:
+        queued_at:
+          type: string
+          format: date-time
+          nullable: true
+        processing_started_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        failed_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    MatchScoreComponent:
+      type: object
+      properties:
+        category:
+          $ref: '#/components/schemas/MatchCategory'
+        weight:
+          type: number
+          format: float
+        score:
+          type: number
+          format: float
+        achieved_points:
+          type: number
+          format: float
+        total_points:
+          type: number
+          format: float
+        has_candidate_data:
+          type: boolean
+
+    MatchEvidenceRef:
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: integer
+          nullable: true
+        label:
+          type: string
+          nullable: true
+
+    MatchFinding:
+      type: object
+      properties:
+        source_type:
+          $ref: '#/components/schemas/RequirementSourceType'
+        source_id:
+          type: integer
+        requirement_text:
+          type: string
+        requirement_label:
+          type: string
+          nullable: true
+        importance:
+          $ref: '#/components/schemas/MatchImportance'
+        category:
+          $ref: '#/components/schemas/MatchCategory'
+          nullable: true
+        match_state:
+          $ref: '#/components/schemas/MatchState'
+        factor:
+          type: number
+          format: float
+        matched_candidate_skill_id:
+          type: integer
+          nullable: true
+        evidence_refs:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchEvidenceRef'
+        justification:
+          type: string
+          nullable: true
+        confidence:
+          type: string
+          nullable: true
+        classifier_source:
+          type: string
+          nullable: true
+        display_order:
+          type: integer
+
+    MatchAnalysis:
+      type: object
+      properties:
+        id:
+          type: integer
+        candidate_profile_id:
+          type: integer
+        job_opportunity_id:
+          type: integer
+        status:
+          $ref: '#/components/schemas/MatchAnalysisStatus'
+        overall_score:
+          type: number
+          format: float
+          nullable: true
+        evidence_coverage_score:
+          type: number
+          format: float
+          nullable: true
+        counts:
+          $ref: '#/components/schemas/MatchCounts'
+        versions:
+          $ref: '#/components/schemas/MatchVersions'
+        fingerprints:
+          $ref: '#/components/schemas/MatchFingerprints'
+        stale:
+          type: boolean
+        latest:
+          type: boolean
+        warnings:
+          type: array
+          items:
+            type: string
+        failure:
+          $ref: '#/components/schemas/MatchFailure'
+        classifier:
+          $ref: '#/components/schemas/MatchClassifier'
+        request_id:
+          type: string
+          nullable: true
+        score_components:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchScoreComponent'
+        findings:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchFinding'
+        timestamps:
+          $ref: '#/components/schemas/MatchTimestamps'
+
+    MatchOperation:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          $ref: '#/components/schemas/MatchAnalysisStatus'
+        candidate_profile_id:
+          type: integer
+        job_opportunity_id:
+          type: integer
+        request_id:
+          type: string
+          nullable: true
+        failure_code:
+          type: string
+          nullable: true
+        failure_reason:
+          type: string
+          nullable: true
+        queued_at:
+          type: string
+          format: date-time
+          nullable: true
+        processing_started_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        failed_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    MatchListMeta:
+      type: object
+      properties:
+        path:
+          type: string
+        per_page:
+          type: integer
+        next_cursor:
+          type: string
+          nullable: true
+        prev_cursor:
+          type: string
+          nullable: true
+
+    MatchList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchAnalysis'
+        meta:
+          $ref: '#/components/schemas/MatchListMeta'
+
 paths:
   /api/v1/opportunities/ingestions:
     get:
@@ -1153,6 +1456,235 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Opportunity'
+  /api/v1/opportunities/{opportunity}/matches:
+    post:
+      summary: Start a match analysis for an opportunity
+      description: |
+        Creates a queued match analysis for a confirmed opportunity owned by the
+        authenticated candidate. Returns 202 with an operation resource and a
+        Location header for polling. Replaying the same Idempotency-Key returns
+        the existing operation instead of creating a duplicate.
+      tags: [Match Analysis]
+      security:
+        - cookie: []
+      parameters:
+        - name: opportunity
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: Idempotency-Key
+          in: header
+          required: false
+          schema:
+            type: string
+            pattern: '^[A-Za-z0-9._:-]{8,128}$'
+          description: Client idempotency key (8-128 chars, [A-Za-z0-9._:-])
+        - name: X-Request-ID
+          in: header
+          required: false
+          schema:
+            type: string
+          description: Client-provided request ID propagated through the analysis job
+      responses:
+        '202':
+          description: Match analysis queued for processing
+          headers:
+            Location:
+              description: Polling location for the analysis operation
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MatchOperation'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Opportunity not found or not owned by the candidate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '409':
+          description: Opportunity is not confirmed (opportunity_not_confirmed)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '422':
+          description: Profile lacks the minimum trusted data (insufficient_profile)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '429':
+          description: Match creation rate limit exceeded (10 per minute)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    get:
+      summary: List match analyses for an opportunity
+      description: |
+        Returns the candidate's match analyses for the opportunity, newest first,
+        using cursor pagination. The latest analysis is flagged.
+      tags: [Match Analysis]
+      security:
+        - cookie: []
+      parameters:
+        - name: opportunity
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+            maxLength: 100
+      responses:
+        '200':
+          description: Paginated match analyses, newest first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchList'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Opportunity not found or not owned by the candidate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '422':
+          description: Unknown filter or sort parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/v1/matches/{matchAnalysis}:
+    get:
+      summary: Show a match analysis
+      description: |
+        Returns the full analysis including category scores, per-requirement
+        results, evidence references, versions, fingerprints, stale status, and
+        critical-missing warnings.
+      tags: [Match Analysis]
+      security:
+        - cookie: []
+      parameters:
+        - name: matchAnalysis
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Match analysis detail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MatchAnalysis'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Analysis not found or owned by another candidate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /api/v1/matches/{matchAnalysis}/recalculate:
+    post:
+      summary: Recalculate a match analysis
+      description: |
+        Creates a fresh analysis snapshot for the same profile and opportunity.
+        The previous analysis remains stored unchanged.
+      tags: [Match Analysis]
+      security:
+        - cookie: []
+      parameters:
+        - name: matchAnalysis
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: X-Request-ID
+          in: header
+          required: false
+          schema:
+            type: string
+      responses:
+        '202':
+          description: New match analysis queued
+          headers:
+            Location:
+              description: Polling location for the new analysis operation
+              schema:
+                type: string
+                format: uri
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MatchOperation'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Analysis not found or owned by another candidate
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '409':
+          description: An analysis is already queued or processing (active_match_analysis)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '429':
+          description: Recalculation rate limit exceeded (10 per minute)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
   /api/v1/cv:
     get:
       summary: List CV documents

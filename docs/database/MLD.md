@@ -226,35 +226,137 @@ Il définit les tables, colonnes, types SQL, clés, contraintes et règles de su
 
 ---
 
-## `opportunity_analyses`
+## `opportunity_analyses` (remplacé)
+
+L'ancienne table fusionnée `opportunity_analyses` regroupait l'analyse d'offre, les exigences, la correspondance, les résultats et les clarifications dans des colonnes JSON. Elle est **remplacée** par le changement OpenSpec `profile-job-matching` :
+
+- `match_analyses` — snapshots versionnés d'analyse de correspondance (cycle de vie propre : queued → processing → completed/failed).
+- `match_scores` — scores déterministes par catégorie, normalisés.
+- `match_findings` — résultats par exigence, normalisés.
+
+L'analyse d'offre (`job_analyses`) et les exigences (`job_requirements`, `job_opportunity_skills`) restent des tables séparées appartenant à leurs changements respectifs. Les tables de clarification appartiennent au futur changement « clarification workflow » et ne sont pas créées ici.
+
+## `match_analyses`
 
 | Colonne | Type | NULL | Clé / défaut |
 |---|---|---|---:|
 | `id` | BIGINT UNSIGNED | NO | PK |
-| `opportunity_id` | BIGINT UNSIGNED | NO | FK, UNIQUE |
+| `candidate_profile_id` | BIGINT UNSIGNED | NO | FK |
+| `job_opportunity_id` | BIGINT UNSIGNED | NO | FK |
 | `status` | VARCHAR(30) | NO | |
-| `summary` | TEXT | YES | |
-| `match_score` | DECIMAL(5,2) | YES | |
-| `confidence` | DECIMAL(5,2) | YES | |
-| `requirements` | JSON | YES | |
-| `findings` | JSON | YES | |
-| `clarification` | JSON | YES | |
-| `profile_snapshot` | JSON | YES | |
-| `job_snapshot` | JSON | YES | |
-| `scoring_version` | VARCHAR(30) | YES | |
-| `analyzed_at` | DATETIME | YES | |
+| `operation_key` | CHAR(64) | NO | |
+| `overall_score` | SMALLINT UNSIGNED | YES | |
+| `evidence_coverage_score` | SMALLINT UNSIGNED | YES | |
+| `required_count` | SMALLINT UNSIGNED | YES | |
+| `preferred_count` | SMALLINT UNSIGNED | YES | |
+| `matched_count` | SMALLINT UNSIGNED | YES | |
+| `partial_count` | SMALLINT UNSIGNED | YES | |
+| `gap_count` | SMALLINT UNSIGNED | YES | |
+| `unknown_count` | SMALLINT UNSIGNED | YES | |
+| `profile_fingerprint` | CHAR(64) | NO | |
+| `opportunity_fingerprint` | CHAR(64) | NO | |
+| `profile_updated_at` | DATETIME | YES | |
+| `opportunity_updated_at` | DATETIME | YES | |
+| `algorithm_version` | VARCHAR(30) | NO | |
+| `scoring_version` | VARCHAR(30) | NO | |
+| `classifier_schema_version` | VARCHAR(30) | NO | |
+| `failure_code` | VARCHAR(100) | YES | |
+| `failure_reason` | TEXT | YES | |
+| `request_id` | VARCHAR(64) | YES | |
+| `classifier_provider` | VARCHAR(50) | YES | |
+| `classifier_model` | VARCHAR(100) | YES | |
+| `classifier_prompt_version` | VARCHAR(30) | YES | |
+| `classifier_latency_ms` | SMALLINT UNSIGNED | YES | |
+| `classifier_tokens_prompt` | INT UNSIGNED | YES | |
+| `classifier_tokens_completion` | INT UNSIGNED | YES | |
+| `classifier_response_id` | VARCHAR(100) | YES | |
+| `classifier_status` | VARCHAR(20) | YES | |
+| `queued_at` | DATETIME | YES | |
+| `processing_started_at` | DATETIME | YES | |
+| `completed_at` | DATETIME | YES | |
+| `failed_at` | DATETIME | YES | |
 | `created_at` | TIMESTAMP | NO | |
 | `updated_at` | TIMESTAMP | NO | |
 
 **Clés étrangères :**
-- `opportunity_id` → `opportunities.id`
+- `candidate_profile_id` → `candidate_profiles.id` (CASCADE)
+- `job_opportunity_id` → `job_opportunities.id` (CASCADE)
 
 **Contraintes et index :**
-- UNIQUE(opportunity_id)
-- CHECK(match_score IS NULL OR match_score BETWEEN 0 AND 100)
-- CHECK(confidence IS NULL OR confidence BETWEEN 0 AND 100)
+- UNIQUE(candidate_profile_id, operation_key)
+- INDEX(job_opportunity_id, status, created_at)
+- CHECK(status IN ('queued', 'processing', 'completed', 'failed'))
+- CHECK(overall_score IS NULL OR overall_score BETWEEN 0 AND 100)
+- CHECK(evidence_coverage_score IS NULL OR evidence_coverage_score BETWEEN 0 AND 100)
 
-**Remarque :** Cette table regroupe les concepts d'analyse d'offre, d'exigences, de correspondance, de résultats et de clarifications. Les champs JSON permettent de stocker des structures complexes lues et écrites comme une seule unité. La normalisation en tables séparées interviendra uniquement si un filtrage SQL complexe ou un cycle de vie indépendant devient nécessaire.
+**Remarque :** Un profil et une offre peuvent avoir plusieurs analyses (snapshots successifs, la plus récente étant marquée `latest` côté API). Une seule analyse active (`queued`/`processing`) est autorisée à la fois par profil et offre. `operation_key` (SHA-256 du profil, de l'offre et de la clé client) garantit l'idempotence des créations. Une analyse terminée est immuable ; le recalcul crée un nouveau snapshot.
+
+---
+
+## `match_scores`
+
+| Colonne | Type | NULL | Clé / défaut |
+|---|---|---|---:|
+| `id` | BIGINT UNSIGNED | NO | PK |
+| `match_analysis_id` | BIGINT UNSIGNED | NO | FK |
+| `category` | VARCHAR(30) | NO | |
+| `weight` | DECIMAL(4,3) | NO | |
+| `score` | SMALLINT UNSIGNED | NO | |
+| `achieved_points` | DECIMAL(8,2) | NO | |
+| `total_points` | DECIMAL(8,2) | NO | |
+| `has_candidate_data` | BOOLEAN | NO | |
+| `created_at` | TIMESTAMP | NO | |
+| `updated_at` | TIMESTAMP | NO | |
+
+**Clés étrangères :**
+- `match_analysis_id` → `match_analyses.id` (CASCADE)
+
+**Contraintes et index :**
+- UNIQUE(match_analysis_id, category)
+- CHECK(category IN ('required_skills', 'preferred_skills', 'evidence', 'experience_education', 'language_soft'))
+- CHECK(score BETWEEN 0 AND 100)
+- CHECK(weight BETWEEN 0 AND 1)
+
+**Remarque :** Poids approuvés : required_skills 0.500, preferred_skills 0.200, evidence 0.150, experience_education 0.100, language_soft 0.050. `has_candidate_data = false` signale une catégorie sans données candidat, exclue de la contribution au score global.
+
+---
+
+## `match_findings`
+
+| Colonne | Type | NULL | Clé / défaut |
+|---|---|---|---:|
+| `id` | BIGINT UNSIGNED | NO | PK |
+| `match_analysis_id` | BIGINT UNSIGNED | NO | FK |
+| `source_type` | VARCHAR(30) | NO | |
+| `source_id` | BIGINT UNSIGNED | NO | |
+| `requirement_text` | VARCHAR(500) | NO | |
+| `requirement_label` | VARCHAR(255) | YES | |
+| `importance` | VARCHAR(20) | NO | |
+| `category` | VARCHAR(30) | YES | |
+| `match_state` | VARCHAR(20) | NO | |
+| `factor` | DECIMAL(4,2) | NO | |
+| `matched_candidate_skill_id` | BIGINT UNSIGNED | YES | FK |
+| `evidence_refs` | JSON | YES | |
+| `justification` | TEXT | YES | |
+| `confidence` | VARCHAR(20) | YES | |
+| `classifier_source` | VARCHAR(255) | YES | |
+| `display_order` | SMALLINT UNSIGNED | NO | |
+| `created_at` | TIMESTAMP | NO | |
+| `updated_at` | TIMESTAMP | NO | |
+
+**Clés étrangères :**
+- `match_analysis_id` → `match_analyses.id` (CASCADE)
+- `matched_candidate_skill_id` → `candidate_skills.id` (NULL ON DELETE)
+
+**Contraintes et index :**
+- INDEX(match_analysis_id, importance)
+- INDEX(match_analysis_id, match_state)
+- CHECK(source_type IN ('job_requirement', 'job_opportunity_skill'))
+- CHECK(importance IN ('required', 'preferred'))
+- CHECK(match_state IN ('matched', 'partial', 'gap', 'unknown'))
+- CHECK(factor IN (0, 0.2, 0.5, 1))
+
+**Remarque :** Facteurs approuvés : verified 1.00, claimed 0.50, learning 0.20, missing 0.00. L'état `unknown` est exclu des points et ne constitue pas une lacune. `evidence_refs` (JSON) référence les preuves candidat (`profile_items`, `candidate_skills`, `resumes`, `files`).
 
 ---
 
@@ -479,11 +581,12 @@ Utiliser le schéma fourni par le framework pour la version Laravel installée, 
 | `skill_evidences` | Colonne JSON `evidence` dans `candidate_skills` |
 | `cv_imports` | Fichier avec purpose `cv_import` + `extracted_data` dans `files` |
 | `company_research` | Colonne JSON `research` dans `companies` |
-| `job_analyses` | Colonnes JSON dans `opportunity_analyses` |
-| `job_requirements` | Colonne JSON `requirements` dans `opportunity_analyses` |
-| `match_analyses` | Colonnes dans `opportunity_analyses` |
-| `match_findings` | Colonne JSON `findings` dans `opportunity_analyses` |
-| `clarifications` | Colonne JSON `clarification` dans `opportunity_analyses` |
+| `job_analyses` | Table `job_analyses` (changement job-analysis) |
+| `job_requirements` | Table `job_requirements` + `job_opportunity_skills` |
+| `match_analyses` | Table `match_analyses` normalisée (snapshots versionnés) |
+| `match_scores` | Table `match_scores` normalisée |
+| `match_findings` | Table `match_findings` normalisée |
+| `clarifications` | Reporté au futur changement clarification-workflow |
 | `resume_versions` | Colonne JSON `content` dans `resumes` |
 | `resume_exports` | Clé étrangère `file_id` dans `resumes` |
 | `application_status_histories` | `application_activities` avec type `status_change` |
@@ -502,7 +605,7 @@ Utiliser le schéma fourni par le framework pour la version Laravel installée, 
 
 1. Un profil par utilisateur.
 2. Une compétence par profil et compétence normalisée.
-3. Une analyse courante par opportunité.
+3. Une seule analyse de correspondance active (queued/processing) par profil et opportunité ; les snapshots terminés sont immuables.
 4. Un CV ciblé par opportunité non nulle.
 5. Une candidature par profil candidat et opportunité.
 6. Les activités de candidature sont immuables.

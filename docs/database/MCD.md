@@ -25,7 +25,11 @@ erDiagram
     USER ||--o{ FILE : STOCKER
     CANDIDATE_PROFILE ||--o{ OPPORTUNITY : SAUVEGARDER
     COMPANY ||--o{ OPPORTUNITY : PUBLIER
-    OPPORTUNITY ||--o| OPPORTUNITY_ANALYSIS : ANALYSER
+    CANDIDATE_PROFILE ||--o{ MATCH_ANALYSIS : ANALYSER
+    OPPORTUNITY ||--o{ MATCH_ANALYSIS : ANALYSER
+    MATCH_ANALYSIS ||--o{ MATCH_SCORE : NOTER
+    MATCH_ANALYSIS ||--o{ MATCH_FINDING : DETAILLER
+    CANDIDATE_SKILL ||--o{ MATCH_FINDING : EVIDENCER
     CANDIDATE_PROFILE ||--o{ RESUME : GENERER_RESUME
     OPPORTUNITY ||--o{ RESUME : CIBLER
     RESUME ||--o| FILE : EXPORTER
@@ -155,20 +159,76 @@ erDiagram
 
 ---
 
-### OPPORTUNITY_ANALYSIS
+### MATCH_ANALYSIS
 - **#analysis_id**
 - status
-- summary
-- match_score
-- confidence
-- requirements
-- findings
-- clarification
-- profile_snapshot
-- job_snapshot
+- operation_key
+- overall_score
+- evidence_coverage_score
+- required_count
+- preferred_count
+- matched_count
+- partial_count
+- gap_count
+- unknown_count
+- profile_fingerprint
+- opportunity_fingerprint
+- profile_updated_at
+- opportunity_updated_at
+- algorithm_version
 - scoring_version
+- classifier_schema_version
+- failure_code
+- failure_reason
+- request_id
+- classifier_provider
+- classifier_model
+- classifier_prompt_version
+- classifier_latency_ms
+- classifier_tokens_prompt
+- classifier_tokens_completion
+- classifier_response_id
+- classifier_status
+- queued_at
+- processing_started_at
+- completed_at
+- failed_at
 
-**Règles :** Une nouvelle analyse remplace transactionnellement l'analyse courante. Les instantanés (snapshots) préservent la cohérence historique.
+**Règles :** Un profil et une offre peuvent avoir plusieurs analyses (snapshots successifs) ; une seule analyse active (`queued`/`processing`) à la fois. L'analyse terminée est immuable ; le recalcul crée un nouveau snapshot. `operation_key` garantit l'idempotence des créations. Les scores déterministes sont calculés par Laravel ; la sortie du classifieur IA ne détermine jamais le score final. Les clarifications appartiennent au futur changement « clarification workflow ».
+
+---
+
+### MATCH_SCORE
+- **#score_id**
+- category
+- weight
+- score
+- achieved_points
+- total_points
+- has_candidate_data
+
+**Règles :** Une ligne par catégorie et par analyse (required_skills, preferred_skills, evidence, experience_education, language_soft). Poids approuvés : 0.500 / 0.200 / 0.150 / 0.100 / 0.050. Une catégorie sans données candidat (`has_candidate_data = false`) n'entre pas dans le score global.
+
+---
+
+### MATCH_FINDING
+- **#finding_id**
+- source_type
+- source_id
+- requirement_text
+- requirement_label
+- importance
+- category
+- match_state
+- factor
+- matched_candidate_skill_id
+- evidence_refs
+- justification
+- confidence
+- classifier_source
+- display_order
+
+**Règles :** Un résultat par exigence (source `job_requirement` ou `job_opportunity_skill`) et par analyse. Facteurs approuvés : verified 1.00, claimed 0.50, learning 0.20, missing 0.00. L'état `unknown` est exclu des points et ne constitue pas une lacune.
 
 ---
 
@@ -298,10 +358,31 @@ erDiagram
 ---
 
 ### ANALYSER
-- OPPORTUNITY `(0,1)` analyse OPPORTUNITY_ANALYSIS `(1,1)`
+- CANDIDATE_PROFILE `(0,N)` analyse OPPORTUNITY `(0,N)`
 - **Attribut d'association :** date_analyse
 
-**Règle :** Une opportunité a au plus une analyse courante.
+**Règle :** L'analyse de correspondance devient la table `match_analyses`. Un profil et une opportunité peuvent avoir plusieurs snapshots d'analyse ; une seule analyse active (`queued`/`processing`) à la fois. Les snapshots terminés sont immuables.
+
+---
+
+### NOTER
+- MATCH_ANALYSIS `(0,N)` note MATCH_SCORE `(1,1)`
+
+**Règle :** Une ligne de score par catégorie (`match_scores`), calculée de façon déterministe par Laravel.
+
+---
+
+### DETAILLER
+- MATCH_ANALYSIS `(0,N)` détaille MATCH_FINDING `(1,1)`
+
+**Règle :** Un résultat par exigence et par analyse (`match_findings`), avec état (`matched`/`partial`/`gap`/`unknown`), facteur et références de preuves.
+
+---
+
+### EVIDENCER
+- CANDIDATE_SKILL `(0,N)` évidence MATCH_FINDING `(0,N)`
+
+**Règle :** `matched_candidate_skill_id` relie un résultat à la compétence candidat qui le justifie, sans casser l'historique (NULL ON DELETE).
 
 ---
 
@@ -394,8 +475,8 @@ erDiagram
 4. Une compétence (SKILL) peut être partagée par plusieurs profils candidats.
 5. L'association MAITRISER porte le niveau de compétence, l'expérience, la dernière utilisation et les preuves.
 6. Chaque offre (OPPORTUNITY) appartient à un profil candidat.
-7. Une offre peut avoir au plus une analyse courante.
-8. Une analyse d'offre stocke des instantanés (snapshots) pour préserver la cohérence historique.
+7. Un profil et une opportunité peuvent avoir plusieurs analyses de correspondance (snapshots) ; une seule analyse active (`queued`/`processing`) à la fois.
+8. Une analyse de correspondance stocke des instantanés (snapshots) pour préserver la cohérence historique et détecter la péremption (staleness) par empreintes.
 9. Un candidat ne peut soumettre qu'une seule candidature pour la même offre.
 10. Un CV peut être générique ou ciblé vers une opportunité.
 11. Les activités de candidature forment un historique chronologique immuable.
@@ -415,9 +496,9 @@ erDiagram
 - Preuves de compétence (skill_evidences) — fusionné dans MAITRISER
 - Import CV (cv_imports) — remplacé par FILE avec purpose `cv_import`
 - Recherche entreprise (company_research) — fusionné dans COMPANY
-- Analyse d'offre détaillée (job_analyses, job_requirements) — fusionné dans OPPORTUNITY_ANALYSIS
-- Analyse de correspondance (match_analyses, match_findings) — fusionné dans OPPORTUNITY_ANALYSIS
-- Clarifications (clarifications) — fusionné dans OPPORTUNITY_ANALYSIS
+- Analyse d'offre détaillée (job_analyses, job_requirements) — tables séparées, changement job-analysis
+- Analyse de correspondance (match_analyses, match_findings) — tables normalisées `match_analyses`, `match_scores`, `match_findings`, changement profile-job-matching
+- Clarifications (clarifications) — reportées au changement clarification-workflow
 - Versions de CV (resume_versions) — fusionné dans RESUME via content JSON
 - Export CV (resume_exports) — fusionné via RESUME → FILE
 - Historique statut (application_status_histories) — fusionné dans APPLICATION_ACTIVITY

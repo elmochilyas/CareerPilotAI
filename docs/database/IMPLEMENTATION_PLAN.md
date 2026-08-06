@@ -9,7 +9,7 @@
 - Utiliser JSON pour les structures générées par l'IA qui sont lues et écrites comme une seule unité.
 - Normaliser le JSON uniquement lorsqu'un filtrage SQL complexe ou un cycle de vie indépendant devient nécessaire.
 - Utiliser une table `files` partagée pour tous les types de fichiers.
-- Utiliser une analyse courante par opportunité.
+- Utiliser une analyse de correspondance par profil et opportunité, avec snapshots versionnés immuables et une seule analyse active à la fois.
 - Utiliser un CV ciblé courant par opportunité.
 - Utiliser `application_activities` comme fil d'Ariane de la candidature.
 - Utiliser `tasks` pour les tâches, rappels, entretiens et suivis.
@@ -43,11 +43,13 @@
 ### Phase 2 — Offres et matching
 - `companies`
 - `opportunities`
-- `opportunity_analyses`
-- Instantanés du profil et de l'offre
-- Une analyse courante par opportunité
+- `match_analyses`
+- `match_scores`
+- `match_findings`
+- Empreintes du profil et de l'offre (snapshots)
+- Une seule analyse active (queued/processing) par profil et opportunité
 
-**Changements OpenSpec associés :** `job-opportunity-ingestion`, `job-requirement-analysis`, `company-research-brief`, `deterministic-match-engine`, `clarification-workflow`
+**Changements OpenSpec associés :** `job-opportunity-ingestion`, `profile-job-matching` (l'analyse d'offre `job_requirements`/`job_opportunity_skills` et les clarifications appartiennent à des changements ultérieurs)
 
 ---
 
@@ -90,14 +92,16 @@
 6. `candidate_skills`
 7. `companies`
 8. `opportunities`
-9. `opportunity_analyses`
-10. `resumes`
-11. `applications`
-12. `application_activities`
-13. `tasks`
-14. `learning_roadmaps`
-15. `roadmap_items`
-16. `ai_runs` (optionnel, phase 5)
+9. `match_analyses`
+10. `match_scores`
+11. `match_findings`
+12. `resumes`
+13. `applications`
+14. `application_activities`
+15. `tasks`
+16. `learning_roadmaps`
+17. `roadmap_items`
+18. `ai_runs` (optionnel, phase 5)
 
 Cet ordre reflète les dépendances de clés étrangères. Chaque table ne doit être créée que dans le changement OpenSpec qui la possède.
 
@@ -109,9 +113,8 @@ Cet ordre reflète les dépendances de clés étrangères. Chaque table ne doit 
 - Pas de table `resume_versions`
 - Pas de table `resume_exports`
 - Pas de table `company_research` séparée
-- Pas de table `job_requirements` séparée
-- Pas de table `match_findings` séparée
-- Pas de table `clarifications` séparée
+- Pas de table `opportunity_analyses` fusionnée (remplacée par `match_analyses`, `match_scores`, `match_findings`)
+- Pas de table `clarifications` séparée (changement clarification-workflow)
 - Pas de sous-système d'entretien séparé
 - Pas de simulations d'entretien (mock interviews)
 - Pas de kits de préparation (preparation packs)

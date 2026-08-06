@@ -39,5 +39,6 @@ Before creating or modifying a migration, model, factory, seeder, policy, reques
 - AI never updates trusted profile data without validation and required candidate confirmation.
 - Job-offer descriptions are not versioned in the MVP.
 - Match runs, resume versions, and application status history are retained.
+- Match analysis snapshots are immutable once completed; recalculating creates a new snapshot, never mutating the old one. At most one active (queued/processing) analysis exists per profile and opportunity. See the `match_analyses`, `match_scores`, and `match_findings` tables in `MLD.md`.
 - A user can have at most one candidate profile.
 - A candidate can have at most one application for one saved opportunity.
