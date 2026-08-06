@@ -3,7 +3,7 @@ import type { FunctionalComponent, SVGAttributes } from 'vue'
 
 withDefaults(
   defineProps<{
-    variant?: 'default' | 'success' | 'warning' | 'error' | 'info'
+    variant?: 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info'
     icon?: FunctionalComponent<SVGAttributes>
   }>(),
   { variant: 'default' },
@@ -15,6 +15,7 @@ withDefaults(
     class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium"
     :class="[
       variant === 'default' ? 'border-slate-300 bg-slate-50 text-slate-700' : '',
+      variant === 'primary' ? 'border-primary-200 bg-primary-50 text-primary-700' : '',
       variant === 'success' ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : '',
       variant === 'warning' ? 'border-amber-300 bg-amber-50 text-amber-700' : '',
       variant === 'error' ? 'border-red-300 bg-red-50 text-red-700' : '',

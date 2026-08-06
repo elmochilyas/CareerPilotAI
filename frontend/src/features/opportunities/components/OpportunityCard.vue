@@ -17,9 +17,10 @@ const location = computed(() =>
 )
 
 const workMode = computed(() => props.opportunity.work_mode?.replaceAll('_', ' '))
-const visibleSkills = computed(() => props.opportunity.skills.slice(0, 3))
+const skills = computed(() => props.opportunity.skills ?? [])
+const visibleSkills = computed(() => skills.value.slice(0, 3))
 const remainingSkillCount = computed(() =>
-  Math.max(props.opportunity.skills.length - visibleSkills.value.length, 0),
+  Math.max(skills.value.length - visibleSkills.value.length, 0),
 )
 </script>
 

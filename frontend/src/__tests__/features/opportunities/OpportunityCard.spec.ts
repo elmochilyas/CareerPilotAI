@@ -94,4 +94,11 @@ describe('OpportunityCard', () => {
   it('renders the opportunity action as a semantic navigation link', () => {
     expect(mountOpportunityCard().get('a').attributes('href')).toBe('/opportunities/1')
   })
+
+  it('renders without crashing when the payload omits the skills list', () => {
+    const opportunity = createOpportunity({ skills: undefined as unknown as never[] })
+    const wrapper = mountOpportunityCard(opportunity)
+    expect(wrapper.text()).toContain('Senior Laravel Developer')
+    expect(wrapper.text()).not.toContain('undefined')
+  })
 })

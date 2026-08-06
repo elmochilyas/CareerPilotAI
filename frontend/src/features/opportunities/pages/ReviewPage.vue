@@ -12,6 +12,7 @@ import ReviewTimeline from '../components/ReviewTimeline.vue'
 import ReviewActionFooter from '../components/ReviewActionFooter.vue'
 import {
   addManualSuggestion,
+  batchUpdateSuggestions,
   confirmIngestion,
   fetchIngestion,
   fetchSuggestions,
@@ -43,6 +44,8 @@ const previewIsStale = shallowRef(false)
 const isConfirming = shallowRef(false)
 const pendingMutationCount = shallowRef(0)
 const hasMutationError = shallowRef(false)
+const acceptAllArmed = shallowRef(false)
+const acceptAllDisarmTimer = shallowRef<ReturnType<typeof setTimeout> | null>(null)
 const manualSuggestionType = shallowRef<
   'responsibility' | 'required_skill' | 'preferred_skill' | null
 >(null)
@@ -368,6 +371,78 @@ async function retryReviewQueries(): Promise<void> {
   await Promise.all([refetchSuggestions(), refetchIngestion()])
 }
 
+function disarmAcceptAll(): void {
+  acceptAllArmed.value = false
+
+  if (acceptAllDisarmTimer.value !== null) {
+    clearTimeout(acceptAllDisarmTimer.value)
+    acceptAllDisarmTimer.value = null
+  }
+}
+
+function handleAcceptAllClick(): void {
+  if (pendingCount.value === 0 || pendingMutationCount.value > 0) return
+
+  if (!acceptAllArmed.value) {
+    acceptAllArmed.value = true
+    acceptAllDisarmTimer.value = setTimeout(disarmAcceptAll, 4000)
+    return
+  }
+
+  disarmAcceptAll()
+  void executeAcceptAll()
+}
+
+async function executeAcceptAll(): Promise<void> {
+  const pending = visibleSuggestions.value.filter(
+    (suggestion) => suggestion.review_decision === 'pending',
+  )
+
+  if (pending.length === 0) return
+
+  const decisions = pending.map((suggestion) => {
+    const isAmbiguousSkill =
+      (suggestion.type === 'required_skill' || suggestion.type === 'preferred_skill') &&
+      suggestion.resolution === 'ambiguous'
+
+    if (isAmbiguousSkill) {
+      return {
+        id: suggestion.id,
+        decision: 'resolved' as const,
+        version: suggestion.version,
+        resolved_skill_id: null,
+      }
+    }
+
+    return { id: suggestion.id, decision: 'accepted' as const, version: suggestion.version }
+  })
+
+  const hadPreview = previewData.value !== null
+  pendingMutationCount.value++
+  hasMutationError.value = false
+
+  try {
+    await batchUpdateSuggestions(ingestionId.value, decisions)
+    previewData.value = null
+    previewIsStale.value = hadPreview
+    announcement.value = hadPreview
+      ? `${decisions.length} items accepted. Preview is outdated — regenerate to confirm.`
+      : `${decisions.length} items accepted.`
+    await Promise.all([refetchSuggestions(), refetchIngestion()])
+  } catch (err: unknown) {
+    hasMutationError.value = true
+    const detail = (err as { response?: { data?: { code?: string; detail?: string } } })?.response
+      ?.data
+    announcement.value = detail?.detail ?? 'Failed to accept the remaining items.'
+
+    if (detail?.code === 'stale_mutation') {
+      await Promise.all([refetchSuggestions(), refetchIngestion()])
+    }
+  } finally {
+    pendingMutationCount.value--
+  }
+}
+
 async function confirmAction() {
   if (!previewData.value) return
 
@@ -607,6 +682,29 @@ const isPrimaryDisabled = computed(() => {
       <div class="review-workspace">
         <div v-if="announcement" role="status" aria-live="polite" class="announcement-banner">
           {{ announcement }}
+        </div>
+
+        <div v-if="totalCount > 0" class="accept-all-toolbar">
+          <span class="accept-all-status" aria-live="polite">
+            {{
+              pendingCount === 0
+                ? 'All decisions made'
+                : `${pendingCount} decision${pendingCount === 1 ? '' : 's'} remaining`
+            }}
+          </span>
+          <button
+            type="button"
+            class="accept-all-btn"
+            :class="{ 'accept-all-btn-armed': acceptAllArmed }"
+            :disabled="pendingCount === 0 || pendingMutationCount > 0 || hasMutationError"
+            @click="handleAcceptAllClick"
+          >
+            {{
+              acceptAllArmed
+                ? `Accept all — click again to confirm (${pendingCount})`
+                : `Accept all remaining (${pendingCount})`
+            }}
+          </button>
         </div>
 
         <section
@@ -1082,6 +1180,70 @@ const isPrimaryDisabled = computed(() => {
   padding: 0.75rem 1rem;
   color: var(--cp-warning);
   font-size: 0.875rem;
+}
+
+.accept-all-toolbar {
+  position: sticky;
+  z-index: 4;
+  top: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--cp-border);
+  border-radius: 0.5rem;
+  background: var(--cp-surface);
+  padding: 0.625rem 0.75rem;
+  box-shadow: 0 4px 12px rgb(16 24 40 / 0.06);
+}
+
+.accept-all-status {
+  color: var(--cp-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 640;
+  font-variant-numeric: tabular-nums;
+}
+
+.accept-all-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-height: 2.25rem;
+  border: 1px solid var(--cp-primary-border);
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  background: var(--cp-primary-soft);
+  color: var(--cp-primary);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.accept-all-btn:hover:not(:disabled) {
+  background: var(--cp-primary-border);
+}
+
+.accept-all-btn-armed {
+  border-color: var(--cp-danger-border);
+  background: var(--cp-danger-soft);
+  color: var(--cp-danger);
+}
+
+.accept-all-btn-armed:hover:not(:disabled) {
+  background: var(--cp-danger-border);
+}
+
+.accept-all-btn:focus-visible {
+  outline: 2px solid var(--cp-primary);
+  outline-offset: 2px;
+}
+
+.accept-all-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .step-section {

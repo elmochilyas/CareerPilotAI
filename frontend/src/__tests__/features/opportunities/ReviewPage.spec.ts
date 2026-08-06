@@ -3,13 +3,19 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import ReviewPage from '@/features/opportunities/pages/ReviewPage.vue'
 
-const { addManualSuggestionMock, updateSuggestionMock, useQueryMock } = vi.hoisted(() => ({
-  addManualSuggestionMock: vi.fn<(...args: unknown[]) => Promise<unknown>>(() =>
-    Promise.resolve({}),
-  ),
-  updateSuggestionMock: vi.fn<(...args: unknown[]) => Promise<unknown>>(() => Promise.resolve({})),
-  useQueryMock: vi.fn<(...args: unknown[]) => unknown>(),
-}))
+const { addManualSuggestionMock, updateSuggestionMock, batchUpdateSuggestionsMock, useQueryMock } =
+  vi.hoisted(() => ({
+    addManualSuggestionMock: vi.fn<(...args: unknown[]) => Promise<unknown>>(() =>
+      Promise.resolve({}),
+    ),
+    updateSuggestionMock: vi.fn<(...args: unknown[]) => Promise<unknown>>(() =>
+      Promise.resolve({}),
+    ),
+    batchUpdateSuggestionsMock: vi.fn<(...args: unknown[]) => Promise<unknown>>(() =>
+      Promise.resolve([]),
+    ),
+    useQueryMock: vi.fn<(...args: unknown[]) => unknown>(),
+  }))
 
 vi.mock('@tanstack/vue-query', () => ({
   useQuery: useQueryMock,
@@ -38,6 +44,7 @@ vi.mock('@/features/opportunities/api', () => ({
   fetchSuggestions: vi.fn<() => void>(),
   addManualSuggestion: addManualSuggestionMock,
   updateSuggestion: updateSuggestionMock,
+  batchUpdateSuggestions: batchUpdateSuggestionsMock,
   generatePreview: vi.fn<() => Promise<void>>(() => Promise.resolve({ version_token: 'abc' })),
   confirmIngestion: vi.fn<() => Promise<void>>(() => Promise.resolve({ id: 1 })),
 }))
@@ -253,5 +260,88 @@ describe('ReviewPage', () => {
       value: 'Document public APIs.',
       ingestion_version: 4,
     })
+  })
+
+  it('accepts all pending suggestions after a two-step confirm', async () => {
+    batchUpdateSuggestionsMock.mockClear()
+    const wrapper = mountReviewPage(createSuggestions(3, 0))
+    const acceptAllButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().startsWith('Accept all'))
+
+    expect(acceptAllButton?.text()).toBe('Accept all remaining (3)')
+
+    await acceptAllButton?.trigger('click')
+    expect(acceptAllButton?.text()).toBe('Accept all — click again to confirm (3)')
+    expect(batchUpdateSuggestionsMock).not.toHaveBeenCalled()
+
+    await acceptAllButton?.trigger('click')
+    await flushPromises()
+
+    expect(batchUpdateSuggestionsMock).toHaveBeenCalledWith(1, [
+      { id: 1, decision: 'accepted', version: 7 },
+      { id: 2, decision: 'accepted', version: 7 },
+      { id: 3, decision: 'accepted', version: 7 },
+    ])
+  })
+
+  it('accepts ambiguous skills as resolved unknown labels during accept all', async () => {
+    batchUpdateSuggestionsMock.mockClear()
+    const [scalar] = createSuggestions(1, 0)
+    const wrapper = mountReviewPage([
+      scalar,
+      {
+        ...scalar,
+        id: 2,
+        type: 'required_skill',
+        resolution: 'ambiguous',
+        extracted_value: { label: 'Spring' },
+      },
+    ])
+
+    const acceptAllButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().startsWith('Accept all'))
+
+    await acceptAllButton?.trigger('click')
+    await acceptAllButton?.trigger('click')
+    await flushPromises()
+
+    expect(batchUpdateSuggestionsMock).toHaveBeenCalledWith(1, [
+      { id: 1, decision: 'accepted', version: 7 },
+      { id: 2, decision: 'resolved', version: 7, resolved_skill_id: null },
+    ])
+  })
+
+  it('disables accept all when no decisions remain', () => {
+    const wrapper = mountReviewPage(createSuggestions(2, 2))
+
+    const acceptAllButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().startsWith('Accept all'))
+
+    expect(wrapper.text()).toContain('All decisions made')
+    expect(acceptAllButton?.attributes('disabled')).toBeDefined()
+  })
+
+  it('refetches and announces a stale-mutation error from accept all', async () => {
+    batchUpdateSuggestionsMock.mockClear()
+    batchUpdateSuggestionsMock.mockRejectedValueOnce({
+      response: {
+        data: { code: 'stale_mutation', detail: 'Suggestion has been modified. Please refresh.' },
+      },
+    })
+
+    const wrapper = mountReviewPage(createSuggestions(2, 0))
+    const acceptAllButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().startsWith('Accept all'))
+
+    await acceptAllButton?.trigger('click')
+    await acceptAllButton?.trigger('click')
+    await flushPromises()
+
+    expect(batchUpdateSuggestionsMock).toHaveBeenCalledTimes(1)
+    expect(wrapper.text()).toContain('Suggestion has been modified. Please refresh.')
   })
 })
