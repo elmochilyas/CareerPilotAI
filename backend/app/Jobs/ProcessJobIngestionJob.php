@@ -49,9 +49,9 @@ class ProcessJobIngestionJob implements ShouldQueue
         ExtractJobInformationJob::dispatch($this->ingestionId, $ingestion->version);
     }
 
-    public function failed(\Throwable $e, MarkIngestionFailedAction $markFailed): void
+    public function failed(\Throwable $e): void
     {
-        $markFailed->execute(
+        app(MarkIngestionFailedAction::class)->execute(
             ingestionId: $this->ingestionId,
             failureCode: 'pipeline_error',
             failureReason: 'Failed to start processing the job description.',

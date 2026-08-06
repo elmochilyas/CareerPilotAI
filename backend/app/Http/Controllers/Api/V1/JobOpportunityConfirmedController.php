@@ -58,6 +58,7 @@ class JobOpportunityConfirmedController extends Controller
         }
 
         $opportunities = JobOpportunity::where('candidate_profile_id', $profile->id)
+            ->with(['requirements', 'skills', 'company'])
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 

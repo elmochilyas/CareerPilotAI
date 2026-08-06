@@ -52,13 +52,13 @@ class ExtractJobInformationJob implements ShouldQueue
         $analyzeAction->execute($ingestion, $this->expectedVersion);
     }
 
-    public function failed(\Throwable $e, MarkIngestionFailedAction $markFailed): void
+    public function failed(\Throwable $e): void
     {
         $failureCode = $e instanceof ConflictException
             ? $e->getErrorCode()
             : 'unexpected_processing_failure';
 
-        $markFailed->execute(
+        app(MarkIngestionFailedAction::class)->execute(
             ingestionId: $this->ingestionId,
             failureCode: $failureCode,
             failureReason: $this->failureReason($failureCode),

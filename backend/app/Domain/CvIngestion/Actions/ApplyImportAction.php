@@ -15,12 +15,53 @@ use App\Models\CvImportBatch;
 use App\Models\CvSuggestion;
 use App\Models\ProfileItem;
 use App\Models\Skill;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class ApplyImportAction
 {
+    /**
+     * French month names (with and without accents, with and without the
+     * trailing period used in abbreviations) mapped to their English forms.
+     *
+     * @var array<string, string>
+     */
+    private const FRENCH_MONTH_NAMES = [
+        'janvier' => 'January',
+        'janv' => 'January',
+        'jan' => 'January',
+        'février' => 'February',
+        'fevrier' => 'February',
+        'févr' => 'February',
+        'fevr' => 'February',
+        'mars' => 'March',
+        'mar' => 'March',
+        'avril' => 'April',
+        'avr' => 'April',
+        'mai' => 'May',
+        'juin' => 'June',
+        'juillet' => 'July',
+        'juil' => 'July',
+        'août' => 'August',
+        'aout' => 'August',
+        'aoû' => 'August',
+        'septembre' => 'September',
+        'sept' => 'September',
+        'sep' => 'September',
+        'octobre' => 'October',
+        'oct' => 'October',
+        'novembre' => 'November',
+        'nov' => 'November',
+        'décembre' => 'December',
+        'decembre' => 'December',
+        'déc' => 'December',
+        'dec' => 'December',
+    ];
+
     public function execute(CvDocument $document, string $idempotencyKey, ?string $profileUpdatedAt = null): CvImportBatch
     {
+        $profileUpdatedAt = $this->normalizeProfileUpdatedAt($profileUpdatedAt);
+
         $existing = CvImportBatch::where('idempotency_key', $idempotencyKey)->first();
         if ($existing) {
             throw new ConflictException(
@@ -56,9 +97,22 @@ class ApplyImportAction
 
         try {
             return DB::transaction(function () use ($document, $suggestions, $batch, $profileUpdatedAt) {
+                $mode = (string) ($document->metadata['mode'] ?? 'create_new');
+
                 $profile = CandidateProfile::where('user_id', $document->user_id)
                     ->lockForUpdate()
-                    ->firstOrFail();
+                    ->first();
+
+                if ($profile === null) {
+                    if ($mode === 'update_existing') {
+                        throw new ConflictException(
+                            'This CV is set to update an existing profile, but no candidate profile exists yet. Create a profile first or re-upload this CV in "Create new" mode.',
+                            'profile_required_for_update',
+                        );
+                    }
+
+                    $profile = CandidateProfile::create(['user_id' => $document->user_id]);
+                }
 
                 if ($profileUpdatedAt !== null) {
                     $stored = $profile->updated_at?->toIso8601String();
@@ -300,8 +354,10 @@ class ApplyImportAction
         if ($existing && $suggestion->review_status->value === CvSuggestionReviewStatus::UpdateExisting->value) {
             $existing->update([
                 'description' => $value['description'] ?? $existing->description,
-                'start_date' => $value['start_date'] ?? $existing->start_date,
-                'end_date' => $value['end_date'] ?? $existing->end_date,
+                'start_date' => $this->normalizeDate($value['start_date'] ?? null) ?? $existing->start_date,
+                'end_date' => ! empty($value['is_current'])
+                    ? null
+                    : ($this->normalizeDate($value['end_date'] ?? null) ?? $existing->end_date),
                 'location' => $value['location'] ?? $existing->location,
             ]);
             $suggestion->update(['import_status' => 'included', 'applied_profile_id' => $existing->id]);
@@ -316,8 +372,8 @@ class ApplyImportAction
                 'title' => mb_substr($title, 0, 255),
                 'organization' => $organization !== '' ? mb_substr($organization, 0, 255) : null,
                 'location' => isset($value['location']) ? mb_substr((string) $value['location'], 0, 255) : null,
-                'start_date' => $value['start_date'] ?? null,
-                'end_date' => $value['end_date'] ?? null,
+                'start_date' => $this->normalizeDate($value['start_date'] ?? null),
+                'end_date' => ! empty($value['is_current']) ? null : $this->normalizeDate($value['end_date'] ?? null),
                 'description' => isset($value['description']) ? mb_substr((string) $value['description'], 0, 5000) : null,
                 'display_order' => $maxOrder + 1,
             ]);
@@ -377,5 +433,88 @@ class ApplyImportAction
         ]);
 
         return ['type' => 'skill_added', 'id' => $candidateSkill->id];
+    }
+
+    private function normalizeProfileUpdatedAt(?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $trimmed = trim($value);
+
+        return $trimmed === '' ? null : $trimmed;
+    }
+
+    /**
+     * Normalize an AI-extracted date to a Y-m-d string.
+     *
+     * CV text is untrusted data, so a value that cannot be interpreted must
+     * never crash the import. French month names (full or abbreviated, with or
+     * without accents) are translated first, then the value is matched against
+     * a strict allowlist of formats. Bare years default to January 1st and
+     * month-only values default to the first of the month. Unparseable values
+     * return null so the field is simply left empty.
+     */
+    private function normalizeDate(mixed $value): ?string
+    {
+        if (! is_string($value) && ! is_numeric($value)) {
+            return null;
+        }
+
+        $raw = trim((string) $value);
+
+        if ($raw === '') {
+            return null;
+        }
+
+        $lower = mb_strtolower($raw);
+
+        if (str_contains($lower, 'présent')
+            || str_contains($lower, 'present')
+            || str_contains($lower, 'now')
+            || str_contains($lower, 'ongoing')
+            || str_contains($lower, 'current')
+            || str_contains($lower, 'actuel')
+            || $lower === 'en cours'
+            || $lower === 'à ce jour') {
+            return null;
+        }
+
+        if (preg_match('/^\d{4}$/', $raw)) {
+            return $raw.'-01-01';
+        }
+
+        $words = preg_split('/\s+/', $raw) ?: [];
+        $words = array_map(fn (string $word): string => self::FRENCH_MONTH_NAMES[mb_strtolower(rtrim($word, '.'))] ?? $word, $words);
+        $raw = trim(implode(' ', $words));
+        $raw = trim($raw, "., \t\n\r\0\x0B");
+
+        $formats = [
+            'Y-m-d', 'Y/m/d', 'd-m-Y', 'd/m/Y', 'm/d/Y', 'd.m.Y', 'Y.m.d',
+            'Y-m', 'Y/m', 'm/Y', 'n/Y',
+            'F Y', 'M Y', 'F y', 'M y',
+            'j F Y', 'd F Y', 'j M Y', 'd M Y', 'F j, Y', 'M j, Y', 'F d, Y', 'M d, Y',
+        ];
+
+        foreach ($formats as $format) {
+            try {
+                $parsed = Carbon::createFromFormat($format, $raw);
+            } catch (\Throwable) {
+                continue;
+            }
+
+            if ($parsed === null || mb_strtolower($parsed->format($format)) !== mb_strtolower($raw)) {
+                continue;
+            }
+
+            if (! str_contains($format, 'd') && ! str_contains($format, 'j')) {
+                $parsed->day(1);
+            }
+
+            return $parsed->toDateString();
+        }
+
+        return null;
     }
 }

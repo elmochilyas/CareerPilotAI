@@ -14,6 +14,7 @@ final readonly class JobValueMeaningfulness
         '/^none$/i',
         '/^any$/i',
         '/^various$/i',
+        '/^null$/i',
     ];
 
     public static function isMeaningfulString(mixed $value): bool

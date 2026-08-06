@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\CandidateProfile;
+use App\Models\JobOpportunity;
 use App\Models\JobOpportunityIngestion;
 use App\Models\JobOpportunitySuggestion;
 use App\Models\Skill;
@@ -113,6 +114,45 @@ it('rejects confirm when suggestions are pending', function () {
         ]);
 
     $response->assertStatus(409);
+});
+
+it('confirms an ingestion whose date suggestion holds the literal string "null"', function () {
+    $ingestion = JobOpportunityIngestion::factory()->reviewReady()->create([
+        'user_id' => $this->user->id,
+    ]);
+    JobOpportunitySuggestion::factory()->accepted()->create([
+        'ingestion_id' => $ingestion->id,
+        'type' => 'job_title',
+        'extracted_value' => ['value' => 'Senior Laravel Developer'],
+    ]);
+    JobOpportunitySuggestion::factory()->accepted()->create([
+        'ingestion_id' => $ingestion->id,
+        'type' => 'publication_date',
+        'extracted_value' => ['value' => 'null'],
+    ]);
+    JobOpportunitySuggestion::factory()->accepted()->create([
+        'ingestion_id' => $ingestion->id,
+        'type' => 'expected_start_date',
+        'extracted_value' => ['value' => 'null'],
+    ]);
+
+    $preview = $this->actingAs($this->user)
+        ->postJson("/api/v1/opportunities/ingestions/{$ingestion->id}/preview");
+
+    $preview->assertStatus(200);
+    expect($preview->json('data.data.dates.publication_date'))->toBeNull();
+
+    $response = $this->actingAs($this->user)
+        ->postJson("/api/v1/opportunities/ingestions/{$ingestion->id}/confirm", [
+            'version_token' => $preview->json('data.version_token'),
+        ]);
+
+    $response->assertStatus(200);
+    $this->assertDatabaseHas('job_opportunities', [
+        'id' => $response->json('data.id'),
+        'publication_date' => null,
+        'expected_start_date' => null,
+    ]);
 });
 
 it('is idempotent on repeated confirm', function () {
@@ -330,4 +370,104 @@ it('confirms the exact production-shaped preview and excludes rejected suggestio
         'source_evidence' => "Advanced Laravel knowledge.\nLaravel is required.",
     ]);
     $this->assertDatabaseCount('job_opportunity_skills', 1);
+});
+
+it('lists confirmed opportunities with skills, requirements and company in the payload', function () {
+    $ingestion = JobOpportunityIngestion::factory()->reviewReady()->create([
+        'user_id' => $this->user->id,
+    ]);
+    $skill = Skill::factory()->create([
+        'name' => 'Laravel',
+        'normalized_name' => 'laravel',
+    ]);
+
+    $createSuggestion = function (array $attributes) use ($ingestion): JobOpportunitySuggestion {
+        return JobOpportunitySuggestion::factory()->create([
+            'ingestion_id' => $ingestion->id,
+            'review_decision' => 'accepted',
+            'reviewed_at' => now(),
+            ...$attributes,
+        ]);
+    };
+
+    $createSuggestion([
+        'type' => 'job_title',
+        'extracted_value' => ['value' => 'Laravel Engineer'],
+    ]);
+    $createSuggestion([
+        'type' => 'company',
+        'extracted_value' => ['value' => 'CareerPilot'],
+    ]);
+    $createSuggestion([
+        'type' => 'responsibility',
+        'extracted_value' => ['text' => 'Build reliable Laravel services'],
+    ]);
+    $createSuggestion([
+        'type' => 'required_skill',
+        'group_key' => 'required_skills',
+        'extracted_value' => ['label' => 'Laravel', 'proficiency' => 'advanced'],
+        'resolution' => 'exact',
+        'resolved_skill_id' => $skill->id,
+        'source_evidence' => 'Advanced Laravel knowledge.',
+    ]);
+
+    $preview = $this->actingAs($this->user)
+        ->postJson("/api/v1/opportunities/ingestions/{$ingestion->id}/preview")
+        ->assertOk();
+
+    $this->actingAs($this->user)
+        ->postJson("/api/v1/opportunities/ingestions/{$ingestion->id}/confirm", [
+            'version_token' => $preview->json('data.version_token'),
+        ])
+        ->assertOk();
+
+    $response = $this->actingAs($this->user)
+        ->getJson('/api/v1/opportunities')
+        ->assertOk();
+
+    $payload = $response->json('data');
+
+    expect($payload)->toHaveCount(1)
+        ->and($payload[0]['title'])->toBe('Laravel Engineer')
+        ->and($payload[0]['skills'])->toBeArray()
+        ->and($payload[0]['skills'])->toHaveCount(1)
+        ->and($payload[0]['skills'][0]['original_label'])->toBe('Laravel')
+        ->and($payload[0]['requirements'])->toBeArray()
+        ->and($payload[0]['requirements'])->not->toBeEmpty();
+
+    $this->assertArrayHasKey('company', $payload[0]);
+});
+
+it('does not expose another user confirmed opportunities in the saved list', function () {
+    $ownIngestion = JobOpportunityIngestion::factory()->confirmed()->create([
+        'user_id' => $this->user->id,
+    ]);
+    $ownOpportunity = JobOpportunity::factory()->create([
+        'candidate_profile_id' => $this->user->candidateProfile->id,
+        'ingestion_id' => $ownIngestion->id,
+        'company_id' => null,
+        'title' => 'Own Saved Role',
+    ]);
+
+    $otherUser = User::factory()->create();
+    $otherProfile = CandidateProfile::factory()->create(['user_id' => $otherUser->id]);
+    $otherIngestion = JobOpportunityIngestion::factory()->confirmed()->create([
+        'user_id' => $otherUser->id,
+    ]);
+    JobOpportunity::factory()->create([
+        'candidate_profile_id' => $otherProfile->id,
+        'ingestion_id' => $otherIngestion->id,
+        'company_id' => null,
+        'title' => 'Someone Elses Role',
+    ]);
+
+    $response = $this->actingAs($this->user)
+        ->getJson('/api/v1/opportunities')
+        ->assertOk();
+
+    $payload = $response->json('data');
+
+    expect($payload)->toHaveCount(1)
+        ->and($payload[0]['id'])->toBe($ownOpportunity->id)
+        ->and($payload[0]['title'])->toBe('Own Saved Role');
 });
