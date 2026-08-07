@@ -1,7 +1,10 @@
 <?php
 
+use App\Domain\Matching\Enums\MatchImportance;
+use App\Domain\Matching\Enums\MatchState;
 use App\Domain\Matching\Services\OpportunitySnapshot;
 use App\Domain\Matching\Services\ProfileSnapshot;
+use App\Models\MatchFinding;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -59,6 +62,21 @@ if (! function_exists('matchProfileSnapshot')) {
             skills: $skills,
             items: $items,
         );
+    }
+}
+
+if (! function_exists('clarificationFinding')) {
+    function clarificationFinding(array $attributes = []): MatchFinding
+    {
+        return new MatchFinding(array_merge([
+            'requirement_text' => 'PHP development',
+            'requirement_label' => 'PHP',
+            'importance' => MatchImportance::Required,
+            'category' => 'required_skills',
+            'match_state' => MatchState::Gap,
+            'factor' => 0.00,
+            'display_order' => 0,
+        ], $attributes));
     }
 }
 
