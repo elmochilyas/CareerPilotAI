@@ -68,8 +68,8 @@ const ingestions = computed(() => ingestionsQuery.data.value?.data ?? [])
 const opportunities = computed(() => opportunitiesQuery.data.value?.data ?? [])
 const lastPage = computed(() =>
   Math.max(
-    ingestionsQuery.data.value?.meta.last_page ?? 1,
-    opportunitiesQuery.data.value?.meta.last_page ?? 1,
+    ingestionsQuery.data.value?.meta?.last_page ?? 1,
+    opportunitiesQuery.data.value?.meta?.last_page ?? 1,
   ),
 )
 const hasPagination = computed(() => lastPage.value > 1)
