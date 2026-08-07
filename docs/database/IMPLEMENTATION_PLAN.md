@@ -46,10 +46,15 @@
 - `match_analyses`
 - `match_scores`
 - `match_findings`
+- `clarification_questions`
+- `clarification_answers`
+- `clarification_proposals`
+- `clarification_audit_events`
 - Empreintes du profil et de l'offre (snapshots)
 - Une seule analyse active (queued/processing) par profil et opportunité
+- Une question par résultat incertain à fort impact, une seule réponse par question, acceptation explicite des propositions
 
-**Changements OpenSpec associés :** `job-opportunity-ingestion`, `profile-job-matching` (l'analyse d'offre `job_requirements`/`job_opportunity_skills` et les clarifications appartiennent à des changements ultérieurs)
+**Changements OpenSpec associés :** `job-opportunity-ingestion`, `profile-job-matching`, `clarification-workflow` (l'analyse d'offre `job_requirements`/`job_opportunity_skills` appartient à un changement ultérieur)
 
 ---
 
@@ -95,13 +100,17 @@
 9. `match_analyses`
 10. `match_scores`
 11. `match_findings`
-12. `resumes`
-13. `applications`
-14. `application_activities`
-15. `tasks`
-16. `learning_roadmaps`
-17. `roadmap_items`
-18. `ai_runs` (optionnel, phase 5)
+12. `clarification_questions`
+13. `clarification_answers`
+14. `clarification_proposals`
+15. `clarification_audit_events`
+16. `resumes`
+17. `applications`
+18. `application_activities`
+19. `tasks`
+20. `learning_roadmaps`
+21. `roadmap_items`
+22. `ai_runs` (optionnel, phase 5)
 
 Cet ordre reflète les dépendances de clés étrangères. Chaque table ne doit être créée que dans le changement OpenSpec qui la possède.
 
@@ -114,7 +123,7 @@ Cet ordre reflète les dépendances de clés étrangères. Chaque table ne doit 
 - Pas de table `resume_exports`
 - Pas de table `company_research` séparée
 - Pas de table `opportunity_analyses` fusionnée (remplacée par `match_analyses`, `match_scores`, `match_findings`)
-- Pas de table `clarifications` séparée (changement clarification-workflow)
+- Clarifications : tables `clarification_questions`, `clarification_answers`, `clarification_proposals`, `clarification_audit_events` (changement clarification-workflow)
 - Pas de sous-système d'entretien séparé
 - Pas de simulations d'entretien (mock interviews)
 - Pas de kits de préparation (preparation packs)

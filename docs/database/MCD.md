@@ -30,6 +30,13 @@ erDiagram
     MATCH_ANALYSIS ||--o{ MATCH_SCORE : NOTER
     MATCH_ANALYSIS ||--o{ MATCH_FINDING : DETAILLER
     CANDIDATE_SKILL ||--o{ MATCH_FINDING : EVIDENCER
+    MATCH_ANALYSIS ||--o{ CLARIFICATION_QUESTION : POSER
+    MATCH_FINDING ||--o{ CLARIFICATION_QUESTION : MOTIVER
+    USER ||--o{ CLARIFICATION_ANSWER : REPONDRE
+    CLARIFICATION_QUESTION ||--o| CLARIFICATION_ANSWER : OBTENIR
+    CLARIFICATION_ANSWER ||--o| CLARIFICATION_PROPOSAL : PROPOSER
+    CLARIFICATION_ANSWER ||--o{ CLARIFICATION_AUDIT_EVENT : TRACER
+    CLARIFICATION_PROPOSAL ||--o{ CLARIFICATION_AUDIT_EVENT : TRACER
     CANDIDATE_PROFILE ||--o{ RESUME : GENERER_RESUME
     OPPORTUNITY ||--o{ RESUME : CIBLER
     RESUME ||--o| FILE : EXPORTER
@@ -194,7 +201,7 @@ erDiagram
 - completed_at
 - failed_at
 
-**Règles :** Un profil et une offre peuvent avoir plusieurs analyses (snapshots successifs) ; une seule analyse active (`queued`/`processing`) à la fois. L'analyse terminée est immuable ; le recalcul crée un nouveau snapshot. `operation_key` garantit l'idempotence des créations. Les scores déterministes sont calculés par Laravel ; la sortie du classifieur IA ne détermine jamais le score final. Les clarifications appartiennent au futur changement « clarification workflow ».
+**Règles :** Un profil et une offre peuvent avoir plusieurs analyses (snapshots successifs) ; une seule analyse active (`queued`/`processing`) à la fois. L'analyse terminée est immuable ; le recalcul crée un nouveau snapshot. `operation_key` garantit l'idempotence des créations. Les scores déterministes sont calculés par Laravel ; la sortie du classifieur IA ne détermine jamais le score final. Les clarifications utilisent les tables du changement `clarification-workflow`.
 
 ---
 
@@ -229,6 +236,69 @@ erDiagram
 - display_order
 
 **Règles :** Un résultat par exigence (source `job_requirement` ou `job_opportunity_skill`) et par analyse. Facteurs approuvés : verified 1.00, claimed 0.50, learning 0.20, missing 0.00. L'état `unknown` est exclu des points et ne constitue pas une lacune.
+
+---
+
+### CLARIFICATION_QUESTION
+- **#question_id**
+- match_analysis_id
+- match_finding_id
+- question_no
+- question_type
+- prompt
+- detail
+- template_key
+- options_json
+- unit
+- status
+- ai_metadata
+
+**Règles :** Une question est composée depuis un template déterministe versionné (`template_key`) pour chaque résultat incertain à fort impact (`partial`/`gap` avec facteur 0.00/0.50, sans réponse de confiance déjà présente). Au plus trois questions par passe. Une seule réponse par question. L'assistant peut reformuler et ordonner (provenance dans `ai_metadata`) ; le repli déterministe s'applique en cas d'échec du fournisseur.
+
+---
+
+### CLARIFICATION_ANSWER
+- **#answer_id**
+- user_id
+- question_id
+- answer_type
+- value
+- acknowledged_no_evidence
+- status
+- proposal_id
+
+**Règles :** Une réponse est une saisie candidat avec statut explicite, jamais une donnée de confiance par défaut. `acknowledged_no_evidence` (défaut `false`) reconnaît explicitement l'absence de preuve : avec une réponse `yes`, elle produit `claimed` (0.50), jamais `verified`. La réponse est reliée (0..1) à sa proposition après revue.
+
+---
+
+### CLARIFICATION_PROPOSAL
+- **#proposal_id**
+- answer_id
+- target_type
+- target_id
+- field
+- before_value
+- after_value
+- status
+
+**Règles :** Une proposition décrit une mutation concrète (entité cible, champ, avant → après) issue d'une réponse d'origine ; une proposition au plus par réponse. Une fois `accepted`, la proposition est immuable et auditable ; seule son acceptation explicite produit une mutation des données de confiance. La cible (`candidate_skill` ou `profile_item`) est polymorphe.
+
+---
+
+### CLARIFICATION_AUDIT_EVENT
+- **#event_id**
+- answer_id
+- proposal_id
+- user_id
+- match_analysis_id
+- target_type
+- target_id
+- field
+- before_value
+- after_value
+- metadata
+
+**Règles :** Écrit lors de l'acceptation d'une proposition (réponse d'origine, cible, avant/après, métadonnées) de manière best-effort et non bloquante ; les références sont conservées (NULL ON DELETE) pour préserver l'historique.
 
 ---
 
@@ -386,6 +456,51 @@ erDiagram
 
 ---
 
+### POSER
+- MATCH_ANALYSIS `(0,N)` pose CLARIFICATION_QUESTION `(1,1)`
+- **Attribut d'association :** question_no
+
+**Règle :** Une question est rattachée à une analyse (et optionnellement à un résultat via `match_finding_id`). Au plus trois questions par passe ; une seule réponse par question. Les questions sont issues de templates déterministes versionnés ; l'assistant peut reformuler et ordonner avec provenance dans `ai_metadata`.
+
+---
+
+### MOTIVER
+- MATCH_FINDING `(0,N)` motive CLARIFICATION_QUESTION `(0,N)`
+
+**Règle :** Une question peut cibler un résultat incertain (`partial`/`gap` avec facteur 0.00/0.50) pour lever l'ambiguïté, sans casser l'historique.
+
+---
+
+### REPONDRE
+- USER `(0,N)` répond CLARIFICATION_QUESTION `(1,1)`
+
+**Règle :** Une réponse est une saisie candidat avec statut explicite (`pending`/`accepted`/`rejected`/`skipped`/`expired`), jamais une donnée de confiance par défaut. L'absence de preuve doit être reconnue explicitement (`acknowledged_no_evidence`), sinon la réponse est refusée.
+
+---
+
+### OBTENIR
+- CLARIFICATION_QUESTION `(0,1)` obtient CLARIFICATION_ANSWER `(1,1)`
+
+**Règle :** Une question obtient au plus une réponse ; une réponse est liée à une question unique.
+
+---
+
+### PROPOSER
+- CLARIFICATION_ANSWER `(0,1)` propose CLARIFICATION_PROPOSAL `(1,1)`
+- **Attribut d'association :** avant_apres
+
+**Règle :** Une réponse valide produit une proposition (avant → après) ; une proposition au plus par réponse. Une fois `accepted`, la proposition est immuable et auditable ; seule l'acceptation explicite produit une mutation des données de confiance.
+
+---
+
+### TRACER
+- CLARIFICATION_ANSWER `(0,N)` trace CLARIFICATION_AUDIT_EVENT `(0,N)`
+- CLARIFICATION_PROPOSAL `(0,N)` trace CLARIFICATION_AUDIT_EVENT `(0,N)`
+
+**Règle :** L'acceptation d'une proposition émet un événement d'audit (réponse d'origine, cible, avant/après, métadonnées) de manière best-effort et non bloquante.
+
+---
+
 ### GENERER_RESUME
 - CANDIDATE_PROFILE `(0,N)` génère RESUME `(1,1)`
 - **Attribut d'association :** date_generation
@@ -498,7 +613,7 @@ erDiagram
 - Recherche entreprise (company_research) — fusionné dans COMPANY
 - Analyse d'offre détaillée (job_analyses, job_requirements) — tables séparées, changement job-analysis
 - Analyse de correspondance (match_analyses, match_findings) — tables normalisées `match_analyses`, `match_scores`, `match_findings`, changement profile-job-matching
-- Clarifications (clarifications) — reportées au changement clarification-workflow
+- Clarifications (clarifications) — tables `clarification_questions`, `clarification_answers`, `clarification_proposals`, `clarification_audit_events`, changement clarification-workflow
 - Versions de CV (resume_versions) — fusionné dans RESUME via content JSON
 - Export CV (resume_exports) — fusionné via RESUME → FILE
 - Historique statut (application_status_histories) — fusionné dans APPLICATION_ACTIVITY
