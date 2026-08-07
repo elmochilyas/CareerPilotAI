@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\Api\UnprocessableEntityException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Session\TokenMismatchException;
 use Illuminate\Support\Facades\Route;
@@ -95,4 +96,35 @@ it('returns 419 session_expired problem detail for csrf mismatch', function () {
     expect($response->json('status'))->toBe(419);
     expect($response->json('title'))->toBe('Session Expired');
     expect($response->json('request_id'))->toBeString()->not->toBeEmpty();
+});
+
+it('derives the problem title from the stable code without leaking the exception class', function () {
+    Route::post('api/v1/_test-problem', function (): never {
+        throw new UnprocessableEntityException(
+            'This answer cannot produce a proposal.',
+            'proposal_not_supported',
+        );
+    });
+
+    $response = $this->postJson('/api/v1/_test-problem');
+
+    $response->assertStatus(422);
+    expect($response->json('code'))->toBe('proposal_not_supported');
+    expect($response->json('title'))->toBe('Proposal Not Supported');
+    expect($response->json('detail'))->toBe('This answer cannot produce a proposal.');
+    expect($response->getContent())->not->toContain('UnprocessableEntityException');
+    expect($response->getContent())->not->toContain('ProblemDetailsException');
+});
+
+it('falls back to the code-derived title as detail when the message is empty', function () {
+    Route::get('api/v1/_test-empty-detail', function (): never {
+        throw new UnprocessableEntityException('', 'answer_already_exists');
+    });
+
+    $response = $this->getJson('/api/v1/_test-empty-detail');
+
+    $response->assertStatus(422);
+    expect($response->json('title'))->toBe('Answer Already Exists');
+    expect($response->json('detail'))->toBe('Answer Already Exists');
+    expect($response->getContent())->not->toContain('UnprocessableEntityException');
 });

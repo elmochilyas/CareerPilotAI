@@ -12,6 +12,7 @@ use App\Http\Resources\Api\V1\PreviewResource;
 use App\Models\JobOpportunity;
 use App\Models\JobOpportunityIngestion;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
@@ -54,7 +55,17 @@ class JobOpportunityConfirmedController extends Controller
         $profile = $user->candidateProfile;
 
         if ($profile === null) {
-            return response()->json(['data' => []]);
+            $empty = new LengthAwarePaginator([], 0, 20);
+
+            return response()->json([
+                'data' => OpportunityResource::collection($empty),
+                'meta' => [
+                    'current_page' => $empty->currentPage(),
+                    'last_page' => $empty->lastPage(),
+                    'per_page' => $empty->perPage(),
+                    'total' => $empty->total(),
+                ],
+            ]);
         }
 
         $opportunities = JobOpportunity::where('candidate_profile_id', $profile->id)

@@ -471,3 +471,16 @@ it('does not expose another user confirmed opportunities in the saved list', fun
         ->and($payload[0]['id'])->toBe($ownOpportunity->id)
         ->and($payload[0]['title'])->toBe('Own Saved Role');
 });
+
+it('returns a paginated empty list for a user without a candidate profile', function () {
+    $profilelessUser = User::factory()->create();
+
+    $response = $this->actingAs($profilelessUser)
+        ->getJson('/api/v1/opportunities')
+        ->assertOk();
+
+    expect($response->json('data'))->toBe([])
+        ->and($response->json('meta.last_page'))->toBe(1)
+        ->and($response->json('meta.total'))->toBe(0)
+        ->and($response->json('meta.per_page'))->toBe(20);
+});
