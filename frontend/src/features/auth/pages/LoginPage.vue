@@ -22,8 +22,13 @@ async function handleSubmit(): Promise<void> {
   submitting.value = true
   try {
     await auth.login(form.value)
+    const rawRedirect = route.query.redirect
     const redirect =
-      typeof route.query.redirect === 'string' ? route.query.redirect : { name: 'home' }
+      typeof rawRedirect === 'string' &&
+      rawRedirect.startsWith('/') &&
+      !rawRedirect.startsWith('//')
+        ? rawRedirect
+        : { name: 'home' }
     await router.push(redirect)
   } catch (e: unknown) {
     if (e && typeof e === 'object' && 'response' in e) {

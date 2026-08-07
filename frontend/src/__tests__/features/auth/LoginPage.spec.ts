@@ -83,4 +83,85 @@ describe('LoginPage', () => {
       })
     })
   })
+
+  it('navigates to a single-slash redirect path after login', async () => {
+    const { loginUser } = await import('@/features/auth/api')
+    vi.mocked(loginUser).mockResolvedValueOnce({
+      data: {
+        id: 1,
+        full_name: 'Jane',
+        email: 'jane@example.com',
+        email_verified_at: null,
+        role: 'candidate',
+        account_status: 'active',
+        timezone: 'UTC',
+        created_at: '',
+        updated_at: '',
+      },
+    })
+
+    await router.push({ name: 'login', query: { redirect: '/opportunities' } })
+    const wrapper = createWrapper()
+    await wrapper.find('#email').setValue('jane@example.com')
+    await wrapper.find('#password').setValue('secret123')
+    await wrapper.find('form').trigger('submit.prevent')
+
+    await vi.waitFor(() => {
+      expect(router.currentRoute.value.fullPath).toBe('/opportunities')
+    })
+  })
+
+  it('falls back to home when the redirect starts with a double slash', async () => {
+    const { loginUser } = await import('@/features/auth/api')
+    vi.mocked(loginUser).mockResolvedValueOnce({
+      data: {
+        id: 1,
+        full_name: 'Jane',
+        email: 'jane@example.com',
+        email_verified_at: null,
+        role: 'candidate',
+        account_status: 'active',
+        timezone: 'UTC',
+        created_at: '',
+        updated_at: '',
+      },
+    })
+
+    await router.push({ name: 'login', query: { redirect: '//' } })
+    const wrapper = createWrapper()
+    await wrapper.find('#email').setValue('jane@example.com')
+    await wrapper.find('#password').setValue('secret123')
+    await wrapper.find('form').trigger('submit.prevent')
+
+    await vi.waitFor(() => {
+      expect(router.currentRoute.value.fullPath).toBe('/')
+    })
+  })
+
+  it('falls back to home when the redirect is not a string', async () => {
+    const { loginUser } = await import('@/features/auth/api')
+    vi.mocked(loginUser).mockResolvedValueOnce({
+      data: {
+        id: 1,
+        full_name: 'Jane',
+        email: 'jane@example.com',
+        email_verified_at: null,
+        role: 'candidate',
+        account_status: 'active',
+        timezone: 'UTC',
+        created_at: '',
+        updated_at: '',
+      },
+    })
+
+    await router.push({ name: 'login', query: { redirect: ['//'] } })
+    const wrapper = createWrapper()
+    await wrapper.find('#email').setValue('jane@example.com')
+    await wrapper.find('#password').setValue('secret123')
+    await wrapper.find('form').trigger('submit.prevent')
+
+    await vi.waitFor(() => {
+      expect(router.currentRoute.value.fullPath).toBe('/')
+    })
+  })
 })

@@ -132,7 +132,8 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return { name: 'login', query: { redirect: to.fullPath } }
+    const redirect = to.fullPath.replace(/^\/{2,}/, '/')
+    return { name: 'login', query: { redirect } }
   }
 
   if (auth.isAuthenticated && ['login', 'register'].includes(String(to.name))) {
