@@ -35,7 +35,7 @@ class CandidateSkillResource extends JsonResource
             'is_custom' => $this->skill_id === null,
             'custom_skill_name' => $this->custom_skill_name,
             'state' => $this->state->value,
-            'proficiency_level' => $this->proficiency_level->value,
+            'proficiency_level' => $this->proficiency_level?->value,
             'years_experience' => $this->years_experience,
             'last_used_at' => $this->last_used_at?->toDateString(),
             'evidence' => $evidence,

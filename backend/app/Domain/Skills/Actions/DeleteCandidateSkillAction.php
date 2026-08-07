@@ -21,5 +21,7 @@ class DeleteCandidateSkillAction
         }
 
         $skill->delete();
+
+        $profile->touch();
     }
 }

@@ -8,5 +8,7 @@ readonly class EvidenceData
         public string $type,
         public string $value,
         public ?string $label,
+        public ?int $originAnswerId = null,
+        public ?int $originQuestionId = null,
     ) {}
 }

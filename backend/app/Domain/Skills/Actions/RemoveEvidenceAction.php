@@ -54,6 +54,8 @@ class RemoveEvidenceAction
 
         $skill->refresh();
 
+        $profile->touch();
+
         return $skill;
     }
 }

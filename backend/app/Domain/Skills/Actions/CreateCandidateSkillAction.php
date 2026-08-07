@@ -47,6 +47,8 @@ class CreateCandidateSkillAction
             'evidence' => $data->evidence,
         ]);
 
+        $profile->touch();
+
         return $candidateSkill->load('skill.aliases');
     }
 }

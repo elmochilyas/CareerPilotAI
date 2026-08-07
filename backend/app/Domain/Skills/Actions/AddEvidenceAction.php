@@ -28,6 +28,14 @@ class AddEvidenceAction
             'label' => $evidenceData->label,
         ];
 
+        if ($evidenceData->originAnswerId !== null) {
+            $entry['origin_answer_id'] = $evidenceData->originAnswerId;
+        }
+
+        if ($evidenceData->originQuestionId !== null) {
+            $entry['origin_question_id'] = $evidenceData->originQuestionId;
+        }
+
         if ($entry['type'] === 'profile_item') {
             $profileItem = ProfileItem::where('candidate_profile_id', $profile->id)
                 ->where('id', $entry['value'])
@@ -74,6 +82,8 @@ class AddEvidenceAction
         }
 
         $skill->refresh();
+
+        $profile->touch();
 
         return $skill;
     }

@@ -60,6 +60,8 @@ class UpdateEvidenceAction
 
         $skill->refresh();
 
+        $profile->touch();
+
         return $skill;
     }
 }

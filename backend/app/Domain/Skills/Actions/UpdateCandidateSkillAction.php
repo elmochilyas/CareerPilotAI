@@ -89,6 +89,8 @@ class UpdateCandidateSkillAction
 
         $skill->refresh();
 
+        $profile->touch();
+
         return $skill;
     }
 }
