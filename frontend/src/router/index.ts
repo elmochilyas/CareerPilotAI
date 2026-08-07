@@ -119,6 +119,12 @@ const router = createRouter({
           meta: { requiresAuth: true },
           component: () => import('@/features/matching/pages/MatchBriefPage.vue'),
         },
+        {
+          path: 'opportunities/:id/match/clarifications',
+          name: 'opportunities-match-clarifications',
+          meta: { requiresAuth: true },
+          component: () => import('@/features/clarification/pages/ClarificationPage.vue'),
+        },
       ],
     },
   ],

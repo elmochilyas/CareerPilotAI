@@ -12,10 +12,12 @@ import type { JobOpportunity } from '@/features/opportunities/types'
 
 const mocks = vi.hoisted(() => ({
   routeId: '5',
+  push: vi.fn<() => Promise<unknown>>(),
   fetchOpportunity: vi.fn<() => Promise<unknown>>(),
   fetchMatchAnalyses: vi.fn<() => Promise<unknown>>(),
   createMatchAnalysis: vi.fn<(id: number, key: string) => Promise<unknown>>(),
   recalculateMatchAnalysis: vi.fn<(id: number) => Promise<unknown>>(),
+  fetchClarificationSession: vi.fn<() => Promise<unknown>>(),
   extractProblemDetail:
     vi.fn<(error: unknown) => { code?: string | null; detail?: string | null } | null>(),
 }))
@@ -39,6 +41,23 @@ vi.mock('@/features/matching/api', () => ({
   recalculateMatchAnalysis: mocks.recalculateMatchAnalysis,
 }))
 
+vi.mock('@/features/clarification/api', () => ({
+  clarificationKeys: {
+    all: ['clarifications'],
+    session: (analysisId: number) => ['clarifications', 'session', analysisId],
+    question: (questionId: number) => ['clarifications', 'question', questionId],
+  },
+  fetchClarificationSession: mocks.fetchClarificationSession,
+  generateClarificationSession: vi.fn<() => Promise<unknown>>(),
+  answerClarificationQuestion: vi.fn<() => Promise<unknown>>(),
+  reviewClarificationAnswer: vi.fn<() => Promise<unknown>>(),
+  skipClarificationQuestion: vi.fn<() => Promise<unknown>>(),
+}))
+
+vi.mock('@/features/skills/api', () => ({
+  skillKeys: { all: ['skills'], candidate: () => ['candidate-skills'] },
+}))
+
 vi.mock('vue-router', async () => {
   const { h } = await import('vue')
   return {
@@ -49,6 +68,7 @@ vi.mock('vue-router', async () => {
         },
       },
     }),
+    useRouter: () => ({ push: mocks.push }),
     RouterLink: {
       name: 'RouterLink',
       props: ['to'],
@@ -287,6 +307,12 @@ describe('MatchBriefPage with Vue Query', () => {
     mocks.fetchMatchAnalyses.mockResolvedValue(listWith(makeAnalysis()))
     mocks.createMatchAnalysis.mockResolvedValue(makeOperation())
     mocks.recalculateMatchAnalysis.mockResolvedValue(makeOperation({ id: 11 }))
+    mocks.fetchClarificationSession.mockResolvedValue({
+      analysis_id: 9,
+      questions: [],
+      progress: { answered: 0, total: 0 },
+      generable_count: 0,
+    })
     mocks.extractProblemDetail.mockReturnValue(null)
   })
 
@@ -606,5 +632,41 @@ describe('MatchBriefPage with Vue Query', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('navigates to the clarification route from the entry card', async () => {
+    mocks.fetchClarificationSession.mockResolvedValue({
+      analysis_id: 9,
+      questions: [
+        {
+          id: 1,
+          question_no: 1,
+          question_type: 'yes_no',
+          prompt: 'Do you have professional Laravel experience?',
+          detail: null,
+          template_key: 'skill_evidence_confirm',
+          options: null,
+          unit: null,
+          status: 'pending',
+          requirement: { text: 'Laravel (required)', label: 'Required skill' },
+          answer: null,
+        },
+      ],
+      progress: { answered: 0, total: 1 },
+      generable_count: 0,
+    })
+
+    const page = await mountPage()
+
+    await page
+      .findAll('button')
+      .find((button) => button.text() === 'Answer questions')!
+      .trigger('click')
+    await flushPromises()
+
+    expect(mocks.push).toHaveBeenCalledWith({
+      name: 'opportunities-match-clarifications',
+      params: { id: 5 },
+    })
   })
 })

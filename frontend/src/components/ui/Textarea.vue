@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+
 defineProps<{
   modelValue: string
   label?: string
@@ -15,10 +17,18 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
+const textarea = ref<HTMLTextAreaElement | null>(null)
+
 function onInput(e: Event) {
   const target = e.target as HTMLTextAreaElement
   emit('update:modelValue', target.value)
 }
+
+function focus(): void {
+  textarea.value?.focus()
+}
+
+defineExpose({ focus })
 </script>
 
 <template>
@@ -28,6 +38,7 @@ function onInput(e: Event) {
       <span v-if="required" class="text-red-500">*</span>
     </label>
     <textarea
+      ref="textarea"
       :id="name"
       :name="name"
       :value="modelValue"

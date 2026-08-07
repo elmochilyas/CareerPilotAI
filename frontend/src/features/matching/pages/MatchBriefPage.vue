@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { ChevronDown } from '@lucide/vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 import { extractProblemDetail } from '@/api/client'
 import Button from '@/components/ui/Button.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { fetchOpportunity, opportunityKeys } from '@/features/opportunities/api'
+import ClarificationEntryCard from '@/features/clarification/components/ClarificationEntryCard.vue'
 import { useMatchAnalysis } from '../composables/useMatchAnalysis'
 import InsufficientProfileGate from '../components/InsufficientProfileGate.vue'
 import MatchAtAGlance from '../components/MatchAtAGlance.vue'
@@ -22,6 +23,7 @@ import type { MatchFinding, MatchImportance } from '../types'
 import { findingKey } from '../utils/matchPresentation'
 
 const route = useRoute()
+const router = useRouter()
 
 const opportunityId = computed(() => {
   const id = Number(route.params.id)
@@ -98,6 +100,12 @@ function onFullAnalysisToggle(event: Event): void {
 
 function openFullAnalysis(): void {
   fullAnalysisOpen.value = true
+}
+
+function openClarifications(): void {
+  const id = opportunityId.value
+  if (id === null) return
+  void router.push({ name: 'opportunities-match-clarifications', params: { id } })
 }
 
 function viewGaps(): void {
@@ -235,6 +243,13 @@ const filteredFindings = computed(() => {
         @view-gaps="viewGaps"
         @expand-all="viewAll"
         @expand-unknown="viewUnknown"
+      />
+
+      <ClarificationEntryCard
+        v-if="completedAnalysis"
+        class="mt-6"
+        :analysis-id="completedAnalysis.id"
+        @open="openClarifications"
       />
 
       <details

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref } from 'vue'
+
 defineProps<{
   modelValue: string
   label?: string
@@ -17,10 +19,18 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
+const input = ref<HTMLInputElement | null>(null)
+
 function onInput(e: Event) {
   const target = e.target as HTMLInputElement
   emit('update:modelValue', target.value)
 }
+
+function focus(): void {
+  input.value?.focus()
+}
+
+defineExpose({ focus })
 </script>
 
 <template>
@@ -31,6 +41,7 @@ function onInput(e: Event) {
     </label>
     <div class="relative">
       <input
+        ref="input"
         :id="name"
         :name="name"
         :type="type || 'text'"
