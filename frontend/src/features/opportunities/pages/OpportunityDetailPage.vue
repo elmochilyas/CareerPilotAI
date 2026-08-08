@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 import {
@@ -9,15 +9,27 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   CircleAlert,
+  ChevronDown,
   FileCheck2,
   Globe,
   MapPin,
   RefreshCw,
+  Sparkles,
 } from '@lucide/vue'
 import Badge from '@/components/ui/Badge.vue'
+import Button from '@/components/ui/Button.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import { formatDate } from '@/app/utils/date'
 import { fetchOpportunity, opportunityKeys } from '../api'
+import { useMatchAnalysis } from '@/features/matching/composables/useMatchAnalysis'
+import MatchSummaryHero from '@/features/matching/components/MatchSummaryHero.vue'
+import MatchAtAGlance from '@/features/matching/components/MatchAtAGlance.vue'
+import MatchStatusPanel from '@/features/matching/components/MatchStatusPanel.vue'
+import MatchErrorState from '@/features/matching/components/MatchErrorState.vue'
+import StaleNotice from '@/features/matching/components/StaleNotice.vue'
+import MatchScoreDetails from '@/features/matching/components/MatchScoreDetails.vue'
+import type { MatchFinding } from '@/features/matching/types'
+import { findingKey } from '@/features/matching/utils/matchPresentation'
 
 const route = useRoute()
 
@@ -34,6 +46,46 @@ const opportunityQuery = useQuery({
 })
 
 const opportunity = opportunityQuery.data
+
+const {
+  announcement: matchAnnouncement,
+  completedAnalysis,
+  listQuery,
+  isStarting,
+  isRecalculating,
+  recalculateMutation,
+  startAnalysis,
+} = useMatchAnalysis(opportunityId)
+
+const processing = computed(
+  () =>
+    completedAnalysis.value === null &&
+    (listQuery.data.value?.data?.[0]?.status === 'queued' ||
+      listQuery.data.value?.data?.[0]?.status === 'processing' ||
+      isStarting.value),
+)
+
+const failedAnalysis = computed(() => {
+  const list = listQuery.data.value?.data ?? []
+  return list[0]?.status === 'failed' ? list[0] : null
+})
+
+const noAnalyses = computed(() => (listQuery.data.value?.data?.length ?? 0) === 0)
+
+const matchFilter = ref<'all' | 'matched' | 'gap'>('all')
+
+const filteredFindings = computed(() => {
+  const findings = completedAnalysis.value?.findings ?? []
+  if (matchFilter.value === 'all') return findings
+  return findings.filter((finding: MatchFinding) => finding.match_state === matchFilter.value)
+})
+
+function recalculate(): void {
+  const target = completedAnalysis.value
+  if (target !== null && !isRecalculating.value) {
+    recalculateMutation.mutate(target.id)
+  }
+}
 
 const responsibilities = computed(
   () => opportunity.value?.requirements.filter((item) => item.category === 'responsibility') ?? [],
@@ -166,7 +218,7 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
     >
       <CircleAlert class="mx-auto size-8 text-red-500" aria-hidden="true" />
       <h2 class="mt-3 text-sm font-semibold text-red-700">Invalid opportunity identifier</h2>
-      <p class="mt-1 text-sm text-red-600">This opportunity link isn’t valid.</p>
+      <p class="mt-1 text-sm text-red-600">This opportunity link isn't valid.</p>
     </div>
 
     <div
@@ -224,7 +276,7 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
       class="mx-auto mt-16 max-w-md rounded-xl border border-red-200 bg-red-50 p-6 text-center"
     >
       <CircleAlert class="mx-auto size-8 text-red-500" aria-hidden="true" />
-      <h2 class="mt-3 text-sm font-semibold text-red-700">We couldn’t load this opportunity</h2>
+      <h2 class="mt-3 text-sm font-semibold text-red-700">We couldn't load this opportunity</h2>
       <p class="mt-1 text-sm text-red-600">Check your connection and try again.</p>
       <button
         type="button"
@@ -283,7 +335,7 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
       </header>
 
       <div class="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div class="min-w-0">
+        <div class="min-w-0 space-y-8">
           <div class="rounded-xl border border-slate-200 bg-white p-6 sm:p-8">
             <section
               v-if="hasOverview"
@@ -479,6 +531,160 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
               </ul>
             </section>
           </div>
+
+          <!-- Inline Match Brief Section -->
+          <section aria-labelledby="match-heading">
+            <div class="rounded-xl border border-slate-200 bg-white p-6 sm:p-8">
+              <div class="flex items-center justify-between gap-3">
+                <h2
+                  id="match-heading"
+                  class="flex items-center gap-2 text-[1.375rem] font-semibold tracking-tight text-slate-900"
+                >
+                  <Sparkles class="size-5 text-primary-500" aria-hidden="true" />
+                  Match Brief
+                </h2>
+                <RouterLink
+                  v-if="completedAnalysis"
+                  :to="{ name: 'opportunities-match', params: { id: opportunity.id } }"
+                  class="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 transition-colors hover:text-primary-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+                >
+                  View full analysis
+                  <ArrowRight class="size-3.5" aria-hidden="true" />
+                </RouterLink>
+              </div>
+
+              <div class="sr-only" aria-live="polite">{{ matchAnnouncement }}</div>
+
+              <!-- Loading -->
+              <div v-if="listQuery.isLoading.value" class="mt-6 space-y-4">
+                <div class="h-28 animate-pulse rounded-xl border border-slate-200 bg-slate-50" />
+                <div class="h-20 animate-pulse rounded-xl border border-slate-200 bg-slate-50" />
+              </div>
+
+              <!-- Processing -->
+              <MatchStatusPanel
+                v-else-if="processing && !completedAnalysis"
+                class="mt-6"
+                :status="
+                  listQuery.data.value?.data?.[0]?.status === 'processing' ? 'processing' : 'queued'
+                "
+              />
+
+              <!-- Failed -->
+              <MatchErrorState
+                v-else-if="failedAnalysis && !completedAnalysis"
+                class="mt-6"
+                title="Match analysis failed"
+                :detail="failedAnalysis.failure?.reason"
+                :busy="isStarting"
+                @retry="startAnalysis"
+              />
+
+              <!-- No analyses -->
+              <div v-else-if="noAnalyses" class="mt-6 text-center">
+                <p class="text-sm text-slate-500">
+                  Start a match analysis to see how this opportunity aligns with your profile.
+                </p>
+                <Button class="mt-4" :loading="isStarting" @click="startAnalysis">
+                  {{ isStarting ? 'Starting...' : 'Start analysis' }}
+                </Button>
+              </div>
+
+              <!-- Completed analysis -->
+              <template v-else-if="completedAnalysis">
+                <div
+                  v-if="processing"
+                  role="status"
+                  aria-live="polite"
+                  class="mt-6 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"
+                >
+                  A new analysis is running. The previous result stays visible below.
+                </div>
+
+                <StaleNotice
+                  v-if="completedAnalysis.stale"
+                  class="mt-6"
+                  :busy="isRecalculating"
+                  @recalculate="recalculate"
+                />
+
+                <MatchSummaryHero :analysis="completedAnalysis" class="mt-6" />
+
+                <MatchAtAGlance :findings="completedAnalysis.findings" class="mt-4" />
+
+                <details class="group mt-4">
+                  <summary
+                    class="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg border border-slate-200 p-4 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none"
+                  >
+                    <span class="text-sm font-medium text-slate-700">
+                      Full analysis
+                      <span class="text-slate-400">
+                        ({{ completedAnalysis.findings.length }} requirement{{
+                          completedAnalysis.findings.length === 1 ? '' : 's'
+                        }})
+                      </span>
+                    </span>
+                    <ChevronDown
+                      class="size-4 text-slate-400 transition-transform group-open:rotate-180"
+                      aria-hidden="true"
+                    />
+                  </summary>
+
+                  <div class="mt-3 space-y-3">
+                    <div class="flex gap-2">
+                      <button
+                        v-for="filter in ['all', 'matched', 'gap'] as const"
+                        :key="filter"
+                        type="button"
+                        class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+                        :class="
+                          matchFilter === filter
+                            ? 'bg-primary-100 text-primary-700'
+                            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                        "
+                        @click="matchFilter = filter"
+                      >
+                        {{ filter === 'all' ? 'All' : filter === 'matched' ? 'Matched' : 'Gaps' }}
+                      </button>
+                    </div>
+
+                    <ul
+                      v-if="filteredFindings.length"
+                      class="space-y-2"
+                      aria-label="Match requirements"
+                    >
+                      <li v-for="finding in filteredFindings" :key="findingKey(finding)">
+                        <div
+                          class="flex items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50 px-4 py-3"
+                        >
+                          <span class="text-sm text-slate-700">{{
+                            finding.requirement_label
+                          }}</span>
+                          <Badge
+                            :variant="
+                              finding.match_state === 'matched'
+                                ? 'success'
+                                : finding.match_state === 'gap'
+                                  ? 'error'
+                                  : 'default'
+                            "
+                            size="sm"
+                          >
+                            {{ finding.match_state }}
+                          </Badge>
+                        </div>
+                      </li>
+                    </ul>
+                    <p v-else class="py-4 text-center text-sm text-slate-500">
+                      No requirements match these filters.
+                    </p>
+                  </div>
+                </details>
+
+                <MatchScoreDetails :analysis="completedAnalysis" class="mt-4" />
+              </template>
+            </div>
+          </section>
         </div>
 
         <aside class="min-w-0" aria-label="Quick facts">

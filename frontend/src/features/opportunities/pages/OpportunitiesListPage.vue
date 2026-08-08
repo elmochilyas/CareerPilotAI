@@ -1,33 +1,22 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import type { Component } from 'vue'
+import { computed, ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import {
-  ArrowRight,
-  BookmarkCheck,
-  BriefcaseBusiness,
-  CircleAlert,
-  Clock3,
-  RefreshCw,
-  Rows3,
-  SearchX,
-} from '@lucide/vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { Clock3, FileSearch, Plus, RefreshCw, SearchX } from '@lucide/vue'
+import { useRoute, useRouter } from 'vue-router'
 import type { RouteLocationRaw } from 'vue-router'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import SearchInput from '@/components/ui/SearchInput.vue'
+import Tabs from '@/components/ui/Tabs.vue'
+import Pagination from '@/components/ui/Pagination.vue'
+import Button from '@/components/ui/Button.vue'
+import Badge from '@/components/ui/Badge.vue'
 import { fetchIngestions, fetchOpportunities, opportunityKeys } from '../api'
 import type { JobIngestion, JobOpportunity } from '../types'
 import IngestionRow from '../components/IngestionRow.vue'
 import OpportunityCard from '../components/OpportunityCard.vue'
-import OpportunityDashboardHero from '../components/OpportunityDashboardHero.vue'
+import AddOpportunityModal from '../components/AddOpportunityModal.vue'
 
 type PipelineFilter = 'all' | 'attention' | 'active' | 'saved'
-
-interface PipelineFilterOption {
-  key: PipelineFilter
-  label: string
-  count: number
-  icon: Component
-}
 
 type WorkspaceItem =
   | {
@@ -43,8 +32,16 @@ type WorkspaceItem =
       opportunity: JobOpportunity
     }
 
+interface StatusGroup {
+  label: string
+  items: WorkspaceItem[]
+}
+
 const router = useRouter()
 const route = useRoute()
+
+const showAddModal = ref(false)
+const searchQuery = ref('')
 
 const currentPage = computed(() => {
   const page = Number(route.query.page)
@@ -107,74 +104,104 @@ const workspaceItems = computed<WorkspaceItem[]>(() => {
   )
 })
 
-const attentionCount = computed(
-  () =>
-    ingestions.value.filter(
-      (ingestion) => ingestion.status === 'review_ready' || ingestion.status === 'failed',
-    ).length,
-)
-
-const activeCount = computed(
-  () =>
-    ingestions.value.filter((ingestion) =>
-      ['draft', 'queued', 'processing'].includes(ingestion.status),
-    ).length,
-)
+const searchFiltered = computed(() => {
+  const q = searchQuery.value.toLowerCase().trim()
+  if (!q) return workspaceItems.value
+  return workspaceItems.value.filter((item) => {
+    if (item.kind === 'ingestion') {
+      const label = item.ingestion.personal_label ?? ''
+      return (
+        (label.toLowerCase().includes(q) || item.ingestion.source_url?.toLowerCase().includes(q)) ??
+        false
+      )
+    }
+    return (
+      (item.opportunity.title.toLowerCase().includes(q) ||
+        item.opportunity.company_name?.toLowerCase().includes(q)) ??
+      false
+    )
+  })
+})
 
 const filteredItems = computed(() => {
-  if (activeFilter.value === 'all') return workspaceItems.value
+  if (activeFilter.value === 'all') return searchFiltered.value
   if (activeFilter.value === 'saved') {
-    return workspaceItems.value.filter(
+    return searchFiltered.value.filter(
       (item) =>
         item.kind === 'opportunity' ||
         (item.kind === 'ingestion' && item.ingestion.status === 'confirmed'),
     )
   }
-
   if (activeFilter.value === 'attention') {
-    return workspaceItems.value.filter(
+    return searchFiltered.value.filter(
       (item) =>
         item.kind === 'ingestion' &&
         (item.ingestion.status === 'review_ready' || item.ingestion.status === 'failed'),
     )
   }
-
-  return workspaceItems.value.filter(
+  return searchFiltered.value.filter(
     (item) =>
       item.kind === 'ingestion' &&
       ['draft', 'queued', 'processing'].includes(item.ingestion.status),
   )
 })
 
-const filters = computed<PipelineFilterOption[]>(() => [
-  { key: 'all', label: 'All', count: workspaceItems.value.length, icon: Rows3 },
-  {
-    key: 'attention',
-    label: 'Needs review',
-    count: attentionCount.value,
-    icon: CircleAlert,
-  },
-  { key: 'active', label: 'In progress', count: activeCount.value, icon: Clock3 },
-  { key: 'saved', label: 'Saved', count: opportunities.value.length, icon: BookmarkCheck },
-])
+const statusGroups = computed<StatusGroup[]>(() => {
+  const processing: WorkspaceItem[] = []
+  const needsReview: WorkspaceItem[] = []
+  const saved: WorkspaceItem[] = []
 
-const pipelineCountLabel = computed(
-  () =>
-    `${filteredItems.value.length} ${
-      filteredItems.value.length === 1 ? 'opportunity' : 'opportunities'
-    }`,
-)
-
-const pipelineDescription = computed(() => {
-  const descriptions: Record<PipelineFilter, string> = {
-    all: 'All opportunities, ordered by latest activity.',
-    attention: 'Items waiting for your review.',
-    active: 'Imports currently being analyzed.',
-    saved: 'Confirmed opportunities in your shortlist.',
+  for (const item of filteredItems.value) {
+    if (item.kind === 'ingestion') {
+      if (['draft', 'queued', 'processing'].includes(item.ingestion.status)) {
+        processing.push(item)
+      } else if (item.ingestion.status === 'review_ready' || item.ingestion.status === 'failed') {
+        needsReview.push(item)
+      }
+    } else {
+      saved.push(item)
+    }
   }
 
-  return descriptions[activeFilter.value]
+  return [
+    { label: 'Processing', items: processing },
+    { label: 'Needs Review', items: needsReview },
+    { label: 'Saved', items: saved },
+  ].filter((g) => g.items.length > 0)
 })
+
+const allCount = computed(() => searchFiltered.value.length)
+const attentionCount = computed(
+  () =>
+    searchFiltered.value.filter(
+      (item) =>
+        item.kind === 'ingestion' &&
+        (item.ingestion.status === 'review_ready' || item.ingestion.status === 'failed'),
+    ).length,
+)
+const activeCount = computed(
+  () =>
+    searchFiltered.value.filter(
+      (item) =>
+        item.kind === 'ingestion' &&
+        ['draft', 'queued', 'processing'].includes(item.ingestion.status),
+    ).length,
+)
+const savedCount = computed(
+  () =>
+    searchFiltered.value.filter(
+      (item) =>
+        item.kind === 'opportunity' ||
+        (item.kind === 'ingestion' && item.ingestion.status === 'confirmed'),
+    ).length,
+)
+
+const tabItems = computed(() => [
+  { key: 'all', label: `All (${allCount.value})` },
+  { key: 'attention', label: `Needs review (${attentionCount.value})`, icon: FileSearch },
+  { key: 'active', label: `Processing (${activeCount.value})`, icon: Clock3 },
+  { key: 'saved', label: `Saved (${savedCount.value})` },
+])
 
 const isInitialLoading = computed(
   () =>
@@ -191,7 +218,6 @@ function ingestionRoute(ingestion: JobIngestion): RouteLocationRaw {
       params: { id: ingestion.confirmed_opportunity_id },
     }
   }
-
   return {
     name: ingestion.status === 'review_ready' ? 'opportunities-review' : 'opportunities-processing',
     params: { id: ingestion.id },
@@ -202,7 +228,7 @@ function opportunityRoute(opportunity: JobOpportunity): RouteLocationRaw {
   return { name: 'opportunities-detail', params: { id: opportunity.id } }
 }
 
-function selectFilter(filter: PipelineFilter): void {
+function selectFilter(filter: string): void {
   void router.replace({
     query: {
       ...route.query,
@@ -214,7 +240,6 @@ function selectFilter(filter: PipelineFilter): void {
 
 function selectPage(page: number): void {
   const boundedPage = Math.min(Math.max(page, 1), lastPage.value)
-
   void router.push({
     query: {
       ...route.query,
@@ -229,638 +254,128 @@ function retryQueries(): void {
 </script>
 
 <template>
-  <div class="opportunities-page">
-    <OpportunityDashboardHero
-      :saved-count="opportunities.length"
-      :active-count="activeCount"
-      :attention-count="attentionCount"
-      :loading="isInitialLoading"
-    />
+  <div class="mx-auto max-w-5xl space-y-6">
+    <PageHeader title="Opportunities" description="Manage your job opportunity pipeline.">
+      <Button @click="showAddModal = true">
+        <Plus class="size-4" aria-hidden="true" />
+        Add Opportunity
+      </Button>
+    </PageHeader>
 
-    <section class="workspace" aria-labelledby="workspace-title">
-      <header class="workspace-toolbar">
-        <div class="pipeline-heading">
-          <span class="pipeline-heading-icon" aria-hidden="true">
-            <BriefcaseBusiness />
-          </span>
-          <div class="pipeline-heading-copy">
-            <div class="pipeline-heading-row">
-              <h2 id="workspace-title">Pipeline</h2>
-              <span class="pipeline-total">{{ pipelineCountLabel }}</span>
-            </div>
-            <p class="pipeline-description">{{ pipelineDescription }}</p>
-          </div>
-        </div>
+    <SearchInput v-model="searchQuery" placeholder="Search opportunities..." />
 
-        <div class="pipeline-filters" aria-label="Filter opportunity pipeline">
-          <button
-            v-for="filter in filters"
-            :key="filter.key"
-            type="button"
-            class="filter-button"
-            :class="[
-              `filter-tone-${filter.key}`,
-              { 'filter-button-active': activeFilter === filter.key },
-            ]"
-            :aria-pressed="activeFilter === filter.key"
-            @click="selectFilter(filter.key)"
-          >
-            <component :is="filter.icon" class="filter-icon" aria-hidden="true" />
-            <span class="filter-label">{{ filter.label }}</span>
-            <span class="filter-count">{{ filter.count }}</span>
-          </button>
-        </div>
-      </header>
+    <Tabs :model-value="activeFilter" :tabs="tabItems" @update:model-value="selectFilter" />
 
-      <div v-if="hasError" class="query-message" role="alert">
-        <div>
-          <strong>We couldn’t refresh your opportunities.</strong>
-          <p>Your existing items are still shown when available.</p>
-        </div>
-        <button type="button" @click="retryQueries">
-          <RefreshCw class="size-4" aria-hidden="true" />
-          Try again
-        </button>
+    <!-- Error banner -->
+    <div
+      v-if="hasError"
+      role="alert"
+      class="flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+    >
+      <div>
+        <strong>We couldn't refresh your opportunities.</strong>
+        <p class="mt-0.5 text-xs text-red-600">
+          Your existing items are still shown when available.
+        </p>
       </div>
+      <button
+        type="button"
+        class="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+        @click="retryQueries"
+      >
+        <RefreshCw class="size-3.5" aria-hidden="true" />
+        Try again
+      </button>
+    </div>
 
-      <div v-if="isInitialLoading" class="pipeline-loading" aria-live="polite">
-        <span class="sr-only">Loading your opportunities</span>
-        <div v-for="index in 3" :key="index" class="loading-row" aria-hidden="true">
-          <span />
-          <div>
-            <span />
-            <span />
-          </div>
-        </div>
+    <!-- Loading skeleton -->
+    <div v-if="isInitialLoading" class="space-y-3" role="status" aria-live="polite">
+      <span class="sr-only">Loading your opportunities</span>
+      <div
+        v-for="index in 3"
+        :key="index"
+        class="h-20 animate-pulse rounded-lg border border-slate-200 bg-white"
+        aria-hidden="true"
+      />
+    </div>
+
+    <!-- Empty state -->
+    <div
+      v-else-if="workspaceItems.length === 0"
+      class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center"
+    >
+      <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-primary-50">
+        <SearchX class="size-5 text-primary-600" aria-hidden="true" />
       </div>
+      <h3 class="mt-4 text-base font-semibold text-slate-900">Build your shortlist</h3>
+      <p class="mt-1 text-sm text-slate-500">
+        Add a job description to review its details before saving it.
+      </p>
+      <Button class="mt-4" @click="showAddModal = true">
+        <Plus class="size-4" aria-hidden="true" />
+        Add opportunity
+      </Button>
+    </div>
 
-      <div v-else-if="workspaceItems.length === 0" class="empty-state">
-        <span class="empty-state-icon" aria-hidden="true">
-          <SearchX class="size-5" />
-        </span>
-        <h3>Build your shortlist</h3>
-        <p>Add a job description to review its details before saving it.</p>
-        <RouterLink :to="{ name: 'opportunities-import' }" class="empty-state-action">
-          Add opportunity
-          <ArrowRight class="size-4" aria-hidden="true" />
-        </RouterLink>
-      </div>
+    <!-- Filtered empty -->
+    <div
+      v-else-if="filteredItems.length === 0"
+      class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center text-sm text-slate-500"
+    >
+      <p>No opportunities match this filter.</p>
+      <button
+        type="button"
+        class="mt-2 font-medium text-primary-600 hover:text-primary-700"
+        @click="selectFilter('all')"
+      >
+        Show all
+      </button>
+    </div>
 
-      <div v-else-if="filteredItems.length === 0" class="filtered-empty">
-        <p>No opportunities match this filter.</p>
-        <button type="button" @click="selectFilter('all')">Show all</button>
-      </div>
-
-      <div v-else class="pipeline-list" aria-live="polite">
-        <template v-for="item in filteredItems" :key="item.key">
-          <IngestionRow
-            v-if="item.kind === 'ingestion'"
-            :ingestion="item.ingestion"
-            :to="ingestionRoute(item.ingestion)"
-          />
-          <OpportunityCard
-            v-else
-            :opportunity="item.opportunity"
-            :to="opportunityRoute(item.opportunity)"
-          />
-        </template>
-      </div>
-
-      <nav v-if="hasPagination" class="pagination" aria-label="Opportunity pages">
-        <button type="button" :disabled="currentPage <= 1" @click="selectPage(currentPage - 1)">
-          Previous
-        </button>
-        <span>Page {{ currentPage }} of {{ lastPage }}</span>
-        <button
-          type="button"
-          :disabled="currentPage >= lastPage"
-          @click="selectPage(currentPage + 1)"
+    <!-- Pipeline groups -->
+    <div v-else class="space-y-8" aria-live="polite">
+      <section
+        v-for="group in statusGroups"
+        :key="group.label"
+        aria-labelledby="`group-${group.label}`"
+      >
+        <h2
+          :id="`group-${group.label}`"
+          class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400"
         >
-          Next
-        </button>
-      </nav>
-    </section>
+          {{ group.label }}
+          <Badge size="sm" variant="default">{{ group.items.length }}</Badge>
+        </h2>
+
+        <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div class="divide-y divide-slate-100">
+            <template v-for="item in group.items" :key="item.key">
+              <IngestionRow
+                v-if="item.kind === 'ingestion'"
+                :ingestion="item.ingestion"
+                :to="ingestionRoute(item.ingestion)"
+              />
+              <OpportunityCard
+                v-else
+                :opportunity="item.opportunity"
+                :to="opportunityRoute(item.opportunity)"
+              />
+            </template>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Pagination -->
+    <div v-if="hasPagination" class="flex items-center justify-center gap-4 pt-2">
+      <span class="text-sm text-slate-500"> Page {{ currentPage }} of {{ lastPage }} </span>
+      <Pagination
+        :current-page="currentPage"
+        :total-pages="lastPage"
+        @update:current-page="selectPage"
+      />
+    </div>
+
+    <AddOpportunityModal :open="showAddModal" @close="showAddModal = false" />
   </div>
 </template>
-
-<style scoped>
-.opportunities-page {
-  --cp-surface: #ffffff;
-  --cp-surface-subtle: #fafbfc;
-  --cp-surface-muted: #f2f4f7;
-  --cp-ink: #172033;
-  --cp-text: #344054;
-  --cp-text-muted: #667085;
-  --cp-text-faint: #98a2b3;
-  --cp-border: #e4e7ec;
-  --cp-border-strong: #cfd4dc;
-  --cp-primary: #4f46e5;
-  --cp-primary-deep: #4338ca;
-  --cp-primary-hover: #4338ca;
-  --cp-primary-soft: #eef2ff;
-  --cp-info: #4f46e5;
-  --cp-info-soft: #eef2ff;
-  --cp-info-border: #c7d2fe;
-  --cp-success: #087a5b;
-  --cp-success-soft: #ecfdf3;
-  --cp-success-border: #abefc6;
-  --cp-warning: #b54708;
-  --cp-warning-soft: #fffaeb;
-  --cp-warning-border: #fedf89;
-  --cp-danger: #b42318;
-  --cp-danger-soft: #fef3f2;
-  --cp-danger-border: #fecdca;
-  --cp-radius-control: 0.625rem;
-  --cp-radius-surface: 0.75rem;
-  --cp-shadow-soft: 0 0.625rem 1.5rem rgb(16 24 40 / 0.06);
-
-  display: grid;
-  gap: 2rem;
-  color: var(--cp-text);
-  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
-}
-
-.opportunities-page :is(button, a) {
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.workspace {
-  min-width: 0;
-}
-
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 1.25rem;
-  color: var(--cp-text-muted);
-  font-size: 0.8125rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.pagination button {
-  min-height: 2.75rem;
-  border: 1px solid var(--cp-border);
-  border-radius: var(--cp-radius-control);
-  background: var(--cp-surface);
-  padding: 0.5rem 0.875rem;
-  color: var(--cp-text);
-  font-weight: 650;
-  cursor: pointer;
-}
-
-.pagination button:hover:not(:disabled) {
-  border-color: var(--cp-primary);
-  color: var(--cp-primary);
-}
-
-.pagination button:focus-visible {
-  outline: 2px solid var(--cp-primary);
-  outline-offset: 2px;
-}
-
-.pagination button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.workspace-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.5rem;
-  border-bottom: 1px solid var(--cp-border);
-  padding-bottom: 0.625rem;
-}
-
-.pipeline-heading {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 0.625rem;
-}
-
-.pipeline-heading-icon {
-  display: grid;
-  width: 2rem;
-  height: 2rem;
-  flex: 0 0 auto;
-  place-items: center;
-  border: 1px solid var(--cp-info-border);
-  border-radius: 0.5625rem;
-  background: var(--cp-info-soft);
-  color: var(--cp-primary-deep);
-  box-shadow: 0 1px 2px rgb(16 24 40 / 0.05);
-}
-
-.pipeline-heading-icon > svg {
-  width: 1rem;
-  height: 1rem;
-  stroke-width: 2;
-}
-
-.pipeline-heading-copy {
-  min-width: 0;
-}
-
-.pipeline-heading-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.pipeline-heading-row h2 {
-  scroll-margin-top: 5rem;
-  color: var(--cp-ink);
-  font-size: 1.125rem;
-  font-weight: 680;
-  letter-spacing: -0.025em;
-  line-height: 1.5rem;
-}
-
-.pipeline-total {
-  display: inline-flex;
-  min-height: 1.375rem;
-  flex: 0 0 auto;
-  align-items: center;
-  border: 1px solid var(--cp-border);
-  border-radius: 999px;
-  padding: 0.125rem 0.5rem;
-  background: var(--cp-surface-subtle);
-  color: var(--cp-text);
-  font-size: 0.6875rem;
-  font-weight: 680;
-  font-variant-numeric: tabular-nums;
-  line-height: 1rem;
-}
-
-.pipeline-description {
-  max-width: 16rem;
-  margin-top: 0.0625rem;
-  overflow: hidden;
-  color: var(--cp-text-muted);
-  font-size: 0.75rem;
-  line-height: 1rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pipeline-filters {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  border: 1px solid var(--cp-border);
-  border-radius: 0.75rem;
-  padding: 0.25rem;
-  overflow-x: auto;
-  background: var(--cp-surface-muted);
-  box-shadow:
-    inset 0 1px 2px rgb(16 24 40 / 0.05),
-    0 1px 2px rgb(16 24 40 / 0.02);
-  scrollbar-width: thin;
-}
-
-.filter-button {
-  --filter-accent: var(--cp-primary-deep);
-  --filter-soft: var(--cp-primary-soft);
-
-  display: inline-flex;
-  min-height: 2.5rem;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 0.4375rem;
-  border: 1px solid transparent;
-  border-radius: 0.5rem;
-  padding: 0.5rem 0.625rem;
-  color: var(--cp-text-muted);
-  font-size: 0.75rem;
-  font-weight: 620;
-  line-height: 1rem;
-  white-space: nowrap;
-  transition:
-    color 150ms ease,
-    transform 150ms ease;
-}
-
-.filter-tone-attention {
-  --filter-accent: var(--cp-warning);
-  --filter-soft: var(--cp-warning-soft);
-}
-
-.filter-button-active {
-  border-color: rgb(255 255 255 / 0.9);
-  background: var(--cp-surface);
-  color: var(--cp-ink);
-  box-shadow:
-    0 1px 2px rgb(16 24 40 / 0.08),
-    0 0.25rem 0.625rem rgb(16 24 40 / 0.06);
-}
-
-.filter-button-active:hover {
-  color: var(--cp-ink);
-}
-
-.filter-button-active:active {
-  transform: translateY(1px);
-}
-
-.filter-button-active.filter-tone-attention {
-  border-color: var(--cp-warning-border);
-}
-
-.filter-tone-active {
-  --filter-accent: var(--cp-info);
-  --filter-soft: var(--cp-info-soft);
-}
-
-.filter-button-active.filter-tone-active {
-  border-color: var(--cp-info-border);
-}
-
-.filter-tone-saved {
-  --filter-accent: var(--cp-success);
-  --filter-soft: var(--cp-success-soft);
-}
-
-.filter-button-active.filter-tone-saved {
-  border-color: var(--cp-success-border);
-}
-
-.filter-icon {
-  width: 0.9375rem;
-  height: 0.9375rem;
-  flex: 0 0 auto;
-  color: var(--filter-accent);
-  stroke-width: 2;
-}
-
-.filter-label {
-  color: inherit;
-}
-
-.filter-count {
-  display: grid;
-  min-width: 1.25rem;
-  height: 1.25rem;
-  place-items: center;
-  border-radius: 999px;
-  padding: 0 0.3125rem;
-  background: var(--filter-soft);
-  color: var(--filter-accent);
-  font-size: 0.625rem;
-  font-weight: 720;
-  font-variant-numeric: tabular-nums;
-}
-
-.filter-button:hover:not(.filter-button-active) {
-  background: rgb(255 255 255 / 0.58);
-  color: var(--cp-ink);
-}
-
-.filter-button:focus-visible {
-  outline: 2px solid var(--cp-primary);
-  outline-offset: 1px;
-}
-
-.pipeline-list,
-.pipeline-loading {
-  display: grid;
-  gap: 0.625rem;
-  padding-top: 1rem;
-}
-
-.query-message {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 1rem;
-  border: 1px solid var(--cp-danger-border);
-  border-radius: var(--cp-radius-surface);
-  padding: 0.875rem 1rem;
-  background: var(--cp-danger-soft);
-  color: var(--cp-danger);
-}
-
-.query-message strong {
-  display: block;
-  font-size: 0.8125rem;
-  font-weight: 680;
-}
-
-.query-message p {
-  margin-top: 0.125rem;
-  font-size: 0.75rem;
-}
-
-.query-message button {
-  display: inline-flex;
-  min-height: 2.5rem;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 0.375rem;
-  border-radius: var(--cp-radius-control);
-  padding: 0.5rem 0.75rem;
-  background: white;
-  font-size: 0.75rem;
-  font-weight: 680;
-}
-
-.query-message button:hover {
-  background: var(--cp-danger-border);
-}
-
-.query-message button:focus-visible {
-  outline: 2px solid var(--cp-danger);
-  outline-offset: 2px;
-}
-
-.loading-row {
-  display: grid;
-  min-height: 6.25rem;
-  grid-template-columns: 2.5rem minmax(0, 1fr);
-  align-items: center;
-  gap: 1rem;
-  border: 1px solid var(--cp-border);
-  border-radius: var(--cp-radius-surface);
-  padding: 1rem 1.125rem;
-  background: white;
-}
-
-.loading-row > span {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.625rem;
-}
-
-.loading-row > div {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.loading-row > div > span:first-child {
-  width: min(18rem, 70%);
-  height: 0.75rem;
-  border-radius: 999px;
-}
-
-.loading-row > div > span:last-child {
-  width: min(12rem, 50%);
-  height: 0.625rem;
-  border-radius: 999px;
-}
-
-.loading-row span {
-  background: linear-gradient(90deg, #edf0f5 25%, #f7f8fb 50%, #edf0f5 75%);
-  background-size: 200% 100%;
-  animation: opportunity-shimmer 1.4s ease-in-out infinite;
-}
-
-.empty-state,
-.filtered-empty {
-  display: grid;
-  justify-items: center;
-  margin-top: 1rem;
-  border: 1px dashed var(--cp-border-strong);
-  border-radius: var(--cp-radius-surface);
-  padding: 3.5rem 1.5rem;
-  background: var(--cp-surface-subtle);
-  text-align: center;
-}
-
-.empty-state-icon {
-  display: grid;
-  width: 2.75rem;
-  height: 2.75rem;
-  place-items: center;
-  border-radius: 0.625rem;
-  background: var(--cp-primary-soft);
-  color: var(--cp-primary-deep);
-}
-
-.empty-state h3 {
-  margin-top: 1rem;
-  color: var(--cp-ink);
-  font-size: 1.125rem;
-  font-weight: 680;
-  letter-spacing: -0.025em;
-}
-
-.empty-state > p {
-  max-width: 28rem;
-  margin-top: 0.375rem;
-  color: var(--cp-text-muted);
-  font-size: 0.8125rem;
-  line-height: 1.25rem;
-}
-
-.empty-state-action {
-  display: inline-flex;
-  min-height: 2.75rem;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 1.25rem;
-  border-radius: var(--cp-radius-control);
-  padding: 0.625rem 0.875rem;
-  background: var(--cp-primary);
-  color: white;
-  font-size: 0.8125rem;
-  font-weight: 680;
-}
-
-.empty-state-action:hover {
-  background: var(--cp-primary-hover);
-}
-
-.empty-state-action:focus-visible {
-  outline: 2px solid var(--cp-primary);
-  outline-offset: 3px;
-}
-
-.filtered-empty {
-  gap: 0.375rem;
-  padding-block: 2.5rem;
-  color: var(--cp-text-muted);
-  font-size: 0.8125rem;
-}
-
-.filtered-empty button {
-  min-height: 2.75rem;
-  padding: 0.625rem 0.75rem;
-  color: var(--cp-primary-deep);
-  font-weight: 680;
-}
-
-.filtered-empty button:hover {
-  background: var(--cp-primary-soft);
-}
-
-.filtered-empty button:focus-visible {
-  outline: 2px solid var(--cp-primary);
-  outline-offset: 2px;
-}
-
-@keyframes opportunity-shimmer {
-  to {
-    background-position: -200% 0;
-  }
-}
-
-@media (max-width: 47.999rem) {
-  .workspace-toolbar {
-    display: grid;
-    gap: 0.625rem;
-  }
-
-  .pipeline-filters {
-    width: 100%;
-  }
-}
-
-@media (max-width: 39.999rem) {
-  .opportunities-page {
-    gap: 1.5rem;
-  }
-
-  .pipeline-filters {
-    gap: 0.25rem;
-  }
-
-  .filter-button {
-    min-height: 2.75rem;
-    gap: 0.25rem;
-    padding-inline: 0.25rem;
-    font-size: 0.6875rem;
-  }
-
-  .filter-icon {
-    display: none;
-  }
-
-  .filter-count {
-    min-width: 1.125rem;
-    height: 1.125rem;
-    padding-inline: 0.25rem;
-  }
-
-  .query-message {
-    display: grid;
-  }
-
-  .query-message button {
-    justify-self: start;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .opportunities-page *,
-  .opportunities-page *::before,
-  .opportunities-page *::after {
-    scroll-behavior: auto !important;
-    animation: none !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-</style>

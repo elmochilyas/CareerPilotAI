@@ -2,7 +2,18 @@
 import { computed, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import {
+  AlertCircle,
+  ArrowLeft,
+  Check,
+  CheckCircle2,
+  Loader2,
+  RefreshCw,
+  X,
+  XCircle,
+} from '@lucide/vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+import Button from '@/components/ui/Button.vue'
 import { extractProblemDetail } from '@/api/client'
 import {
   deleteIngestion,
@@ -23,7 +34,6 @@ const reanalysisError = shallowRef('')
 const ingestionId = computed<number | null>(() => {
   const routeId = Array.isArray(route.params.id) ? route.params.id[0] : route.params.id
   const parsedId = Number(routeId)
-
   return Number.isInteger(parsedId) && parsedId > 0 ? parsedId : null
 })
 
@@ -43,10 +53,10 @@ const {
 })
 
 const stages = [
-  { key: 'received', label: 'Description received', status: 'complete' as const },
-  { key: 'validating', label: 'Validating', status: 'pending' as const },
-  { key: 'analyzing', label: 'Analyzing job information', status: 'pending' as const },
-  { key: 'preparing', label: 'Preparing review', status: 'pending' as const },
+  { key: 'received', label: 'Description received', icon: Check },
+  { key: 'validating', label: 'Validating', icon: Loader2 },
+  { key: 'analyzing', label: 'Analyzing job information', icon: Loader2 },
+  { key: 'preparing', label: 'Preparing review', icon: Loader2 },
 ]
 
 const currentStage = computed(() => {
@@ -95,7 +105,6 @@ const failureMessage = computed(() => {
     unexpected_processing_failure:
       'We could not complete this analysis safely. No unreviewed information was added.',
   }
-
   return (
     (code && messages[code]) ||
     ingestion.value?.failure_reason ||
@@ -126,10 +135,7 @@ const confirmedOpportunityId = computed(() => ingestion.value?.confirmed_opportu
 
 const cancelMutation = useMutation({
   mutationFn: async () => {
-    if (ingestionId.value === null) {
-      throw new Error('Invalid ingestion identifier.')
-    }
-
+    if (ingestionId.value === null) throw new Error('Invalid ingestion identifier.')
     return deleteIngestion(ingestionId.value)
   },
   onSuccess: async (cancelledIngestion) => {
@@ -148,18 +154,12 @@ const cancelMutation = useMutation({
 
 const reanalyzeMutation = useMutation({
   mutationFn: async () => {
-    if (ingestionId.value === null) {
-      throw new Error('Invalid ingestion identifier.')
-    }
-
+    if (ingestionId.value === null) throw new Error('Invalid ingestion identifier.')
     return reanalyzeIngestion(ingestionId.value)
   },
   onSuccess: async (requeuedIngestion) => {
     queryClient.setQueryData(opportunityKeys.ingestion(requeuedIngestion.id), requeuedIngestion)
-    await queryClient.invalidateQueries({
-      queryKey: opportunityKeys.ingestions(),
-      exact: true,
-    })
+    await queryClient.invalidateQueries({ queryKey: opportunityKeys.ingestions(), exact: true })
     reanalysisError.value = ''
     isReanalyzeDialogOpen.value = false
   },
@@ -168,7 +168,7 @@ const reanalyzeMutation = useMutation({
     reanalysisError.value =
       detail && detail.status < 500
         ? detail.detail
-        : 'We couldn’t restart the analysis. Please try again in a moment.'
+        : "We couldn't restart the analysis. Please try again in a moment."
     isReanalyzeDialogOpen.value = false
   },
 })
@@ -177,205 +177,206 @@ watch(
   [() => ingestion.value?.status, ingestionId],
   ([status, id]) => {
     if (status !== 'review_ready' || id === null) return
-
-    void router.push({
-      name: 'opportunities-review',
-      params: { id },
-    })
+    void router.push({ name: 'opportunities-review', params: { id } })
   },
   { immediate: true },
 )
 
 async function handleRetry(): Promise<void> {
   if (ingestionId.value === null) return
-
   await retryIngestion(ingestionId.value)
 }
 
 function requestCancellation(): void {
   if (ingestionId.value === null || cancelMutation.isPending.value) return
-
   cancellationError.value = ''
   isCancelDialogOpen.value = true
 }
 
 function dismissCancellation(): void {
   if (cancelMutation.isPending.value) return
-
   isCancelDialogOpen.value = false
 }
 
 function confirmCancellation(): void {
   if (cancelMutation.isPending.value) return
-
   cancelMutation.mutate()
 }
 
 function requestReanalysis(): void {
   if (ingestionId.value === null || reanalyzeMutation.isPending.value) return
-
   reanalysisError.value = ''
   isReanalyzeDialogOpen.value = true
 }
 
 function dismissReanalysis(): void {
   if (reanalyzeMutation.isPending.value) return
-
   isReanalyzeDialogOpen.value = false
 }
 
 function confirmReanalysis(): void {
   if (reanalyzeMutation.isPending.value) return
-
   reanalyzeMutation.mutate()
 }
 
 async function viewConfirmedOpportunity(): Promise<void> {
   if (confirmedOpportunityId.value === null) return
-
-  await router.push({
-    name: 'opportunities-detail',
-    params: { id: confirmedOpportunityId.value },
-  })
+  await router.push({ name: 'opportunities-detail', params: { id: confirmedOpportunityId.value } })
 }
 </script>
 
 <template>
   <div class="mx-auto max-w-xl space-y-6">
-    <h1 class="text-2xl font-semibold">Processing job description</h1>
+    <div class="flex items-start justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight text-slate-900">Processing job description</h1>
+        <p class="mt-1 text-sm text-slate-500">AI is analyzing your job description.</p>
+      </div>
+    </div>
 
+    <!-- Invalid ID -->
     <div
       v-if="ingestionId === null"
-      class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+      class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
       role="alert"
     >
       <p>Invalid ingestion identifier.</p>
-      <button
-        class="mt-2 font-medium text-blue-600 hover:text-blue-800 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:outline-none"
+      <Button
+        variant="outline"
+        class="mt-2"
+        size="sm"
         @click="router.push({ name: 'opportunities' })"
       >
+        <ArrowLeft class="size-3.5" aria-hidden="true" />
         Back to opportunities
-      </button>
+      </Button>
     </div>
 
-    <div
-      v-else-if="isPending"
-      class="py-12 text-center text-gray-500"
-      role="status"
-      aria-live="polite"
-    >
-      Loading…
+    <!-- Loading -->
+    <div v-else-if="isPending" class="space-y-3" role="status" aria-live="polite">
+      <span class="sr-only">Loading processing status</span>
+      <div
+        v-for="i in 4"
+        :key="i"
+        class="h-14 animate-pulse rounded-lg border border-slate-200 bg-white"
+        aria-hidden="true"
+      />
     </div>
 
+    <!-- Error -->
     <div
       v-else-if="isError || !ingestion"
-      class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+      class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
     >
       Failed to load ingestion.
     </div>
 
-    <div v-else class="space-y-6">
+    <template v-else>
+      <!-- Confirmed banner -->
       <div
         v-if="isConfirmed"
-        class="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-700"
+        class="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm"
       >
-        <p class="font-medium">Job opportunity confirmed!</p>
+        <div class="flex items-center gap-2 text-emerald-700">
+          <CheckCircle2 class="size-5" aria-hidden="true" />
+          <p class="font-semibold">Job opportunity confirmed!</p>
+        </div>
         <button
           v-if="confirmedOpportunityId !== null"
-          class="mt-2 font-medium text-blue-600 hover:text-blue-800 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:outline-none"
+          class="mt-3 inline-flex items-center gap-1.5 font-medium text-primary-600 hover:text-primary-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
           @click="viewConfirmedOpportunity"
         >
           View opportunity
         </button>
-        <div v-else class="mt-2">
+        <div v-else class="mt-2 text-emerald-600">
           <p>The confirmed opportunity link is temporarily unavailable.</p>
-          <button
-            class="mt-2 font-medium text-blue-600 hover:text-blue-800 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:outline-none"
-            @click="router.push({ name: 'opportunities' })"
-          >
-            Back to opportunities
-          </button>
         </div>
       </div>
 
-      <div class="space-y-3">
-        <div
-          v-for="(stage, i) in stageItems"
-          :key="stage.key"
-          class="flex items-center gap-3 rounded-lg border p-3"
-          :class="{
-            'border-blue-200 bg-blue-50': stage.status === 'active',
-            'border-green-200 bg-green-50': stage.status === 'complete',
-            'border-red-200 bg-red-50': stage.status === 'failed',
-            'border-gray-200 bg-white': stage.status === 'pending',
-          }"
-        >
-          <div
-            class="flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium"
-            :class="{
-              'bg-blue-600 text-white': stage.status === 'active',
-              'bg-green-600 text-white': stage.status === 'complete',
-              'bg-red-600 text-white': stage.status === 'failed',
-              'border border-gray-300 text-gray-400': stage.status === 'pending',
-            }"
-          >
-            <span v-if="stage.status === 'complete'">&check;</span>
-            <span v-else-if="stage.status === 'active'">…</span>
-            <span v-else-if="stage.status === 'failed'">&#10007;</span>
-            <span v-else>{{ i + 1 }}</span>
+      <!-- Stage progress -->
+      <div class="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 class="mb-4 text-sm font-semibold text-slate-900">Progress</h2>
+        <div class="space-y-3">
+          <div v-for="(stage, i) in stageItems" :key="stage.key" class="flex items-center gap-3">
+            <div
+              class="flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition-colors"
+              :class="{
+                'bg-emerald-500 text-white': stage.status === 'complete',
+                'bg-primary-500 text-white': stage.status === 'active',
+                'bg-red-500 text-white': stage.status === 'failed',
+                'border-2 border-slate-200 bg-white text-slate-400': stage.status === 'pending',
+              }"
+              :aria-label="`Stage ${i + 1}: ${stage.label} - ${stage.status}`"
+            >
+              <Check v-if="stage.status === 'complete'" class="size-4" aria-hidden="true" />
+              <Loader2
+                v-else-if="stage.status === 'active'"
+                class="size-4 animate-spin"
+                aria-hidden="true"
+              />
+              <XCircle v-else-if="stage.status === 'failed'" class="size-4" aria-hidden="true" />
+              <span v-else>{{ i + 1 }}</span>
+            </div>
+            <div class="min-w-0 flex-1">
+              <p
+                class="text-sm font-medium"
+                :class="{
+                  'text-emerald-700': stage.status === 'complete',
+                  'text-primary-700': stage.status === 'active',
+                  'text-red-700': stage.status === 'failed',
+                  'text-slate-400': stage.status === 'pending',
+                }"
+              >
+                {{ stage.label }}
+              </p>
+            </div>
+            <span v-if="stage.status === 'active'" class="text-xs font-medium text-primary-600">
+              In progress
+            </span>
+            <span
+              v-else-if="stage.status === 'complete'"
+              class="text-xs font-medium text-emerald-600"
+            >
+              Done
+            </span>
           </div>
-          <span
-            class="text-sm"
-            :class="{
-              'font-medium text-blue-700': stage.status === 'active',
-              'text-green-700': stage.status === 'complete',
-              'font-medium text-red-700': stage.status === 'failed',
-              'text-gray-500': stage.status === 'pending',
-            }"
-          >
-            {{ stage.label }}
-          </span>
         </div>
       </div>
 
+      <!-- Failed state -->
       <div
         v-if="isFailed"
-        class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+        class="rounded-xl border border-red-200 bg-red-50 p-5 text-sm"
         role="alert"
         aria-live="assertive"
       >
-        <p class="font-medium">We couldn’t complete the analysis</p>
-        <p class="mt-1 break-words">
-          {{ failureMessage }}
-        </p>
+        <div class="flex items-center gap-2 text-red-700">
+          <AlertCircle class="size-5" aria-hidden="true" />
+          <p class="font-semibold">We couldn't complete the analysis</p>
+        </div>
+        <p class="mt-2 break-words text-red-600">{{ failureMessage }}</p>
 
-        <div class="mt-3 flex flex-wrap gap-3">
-          <button
-            v-if="isRetryable"
-            class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-            :disabled="isPending"
-            @click="handleRetry"
-          >
+        <div class="mt-4 flex flex-wrap gap-2">
+          <Button v-if="isRetryable" size="sm" :disabled="isPending" @click="handleRetry">
+            <RefreshCw class="size-3.5" aria-hidden="true" />
             Retry
-          </button>
-          <button
-            type="button"
-            class="rounded-lg border border-red-300 px-4 py-2 text-sm text-red-700 hover:bg-red-100 focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             :disabled="cancelMutation.isPending.value"
             @click="requestCancellation"
           >
-            {{ cancelMutation.isPending.value ? 'Cancelling…' : 'Cancel ingestion' }}
-          </button>
-          <button
-            class="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:outline-none"
-            @click="router.push('/opportunities/import')"
-          >
+            <X class="size-3.5" aria-hidden="true" />
+            {{ cancelMutation.isPending.value ? 'Cancelling...' : 'Cancel ingestion' }}
+          </Button>
+          <Button variant="ghost" size="sm" @click="router.push('/opportunities/import')">
             Import a different description
-          </button>
+          </Button>
         </div>
         <details v-if="ingestion.failure_code" class="mt-3 text-xs text-red-600">
           <summary
-            class="cursor-pointer rounded-sm font-medium focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2 focus-visible:outline-none"
+            class="cursor-pointer font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
           >
             Support details
           </summary>
@@ -391,28 +392,25 @@ async function viewConfirmedOpportunity(): Promise<void> {
         </p>
       </div>
 
-      <div
-        v-if="isCancelled"
-        class="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800"
-      >
-        <p class="font-medium">Processing cancelled</p>
-        <p class="mt-1">This job description ingestion was cancelled.</p>
-        <div class="mt-3 flex flex-wrap gap-3">
-          <button
-            type="button"
-            class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+      <!-- Cancelled state -->
+      <div v-if="isCancelled" class="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm">
+        <div class="flex items-center gap-2 text-amber-700">
+          <XCircle class="size-5" aria-hidden="true" />
+          <p class="font-semibold">Processing cancelled</p>
+        </div>
+        <p class="mt-1 text-amber-600">This job description ingestion was cancelled.</p>
+        <div class="mt-4 flex flex-wrap gap-2">
+          <Button
+            size="sm"
             :disabled="reanalyzeMutation.isPending.value"
             @click="requestReanalysis"
           >
-            {{ reanalyzeMutation.isPending.value ? 'Starting analysis…' : 'Reanalyze job' }}
-          </button>
-          <button
-            type="button"
-            class="rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-            @click="router.push({ name: 'opportunities' })"
-          >
+            <RefreshCw class="size-3.5" aria-hidden="true" />
+            {{ reanalyzeMutation.isPending.value ? 'Starting analysis...' : 'Reanalyze job' }}
+          </Button>
+          <Button variant="outline" size="sm" @click="router.push({ name: 'opportunities' })">
             Back to opportunities
-          </button>
+          </Button>
         </div>
         <p
           v-if="reanalysisError"
@@ -424,20 +422,13 @@ async function viewConfirmedOpportunity(): Promise<void> {
         </p>
       </div>
 
+      <!-- Review ready -->
       <div v-if="ingestion.status === 'review_ready'" class="text-center">
-        <button
-          class="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
-          @click="
-            router.push({
-              name: 'opportunities-review',
-              params: { id: ingestionId },
-            })
-          "
-        >
+        <Button @click="router.push({ name: 'opportunities-review', params: { id: ingestionId } })">
           Review extracted information
-        </button>
+        </Button>
       </div>
-    </div>
+    </template>
 
     <ConfirmDialog
       :open="isCancelDialogOpen"
@@ -445,7 +436,7 @@ async function viewConfirmedOpportunity(): Promise<void> {
       title="Cancel this ingestion?"
       description="This stops the current ingestion and removes it from active processing. You can import the description again later."
       confirm-label="Cancel ingestion"
-      busy-label="Cancelling…"
+      busy-label="Cancelling..."
       @confirm="confirmCancellation"
       @cancel="dismissCancellation"
     />
@@ -456,7 +447,7 @@ async function viewConfirmedOpportunity(): Promise<void> {
       title="Reanalyze this job?"
       description="This starts a fresh analysis using the same job description. Previous extracted suggestions will be replaced, and no duplicate opportunity will be created."
       confirm-label="Reanalyze job"
-      busy-label="Starting analysis…"
+      busy-label="Starting analysis..."
       @confirm="confirmReanalysis"
       @cancel="dismissReanalysis"
     />
