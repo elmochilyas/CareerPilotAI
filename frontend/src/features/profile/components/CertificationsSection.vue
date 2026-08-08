@@ -11,17 +11,15 @@ defineEmits<{
 }>()
 </script>
 <template>
-  <div>
-    <ProfileItemsSection
-      title="Certifications"
-      type="certification"
-      variant="achievement"
-      v-bind="$props"
-      @create="$emit('create', $event)"
-      @update="(i, v) => $emit('update', i, v)"
-      @delete="$emit('delete', $event)"
-      @reorder="$emit('reorder', $event)"
-      @dirty="$emit('dirty', $event)"
-    />
-  </div>
+  <ProfileItemsSection
+    title="Certifications"
+    type="certification"
+    variant="achievement"
+    v-bind="$props"
+    @create="$emit('create', $event)"
+    @update="(i, v) => $emit('update', i, v)"
+    @delete="$emit('delete', $event)"
+    @reorder="$emit('reorder', $event)"
+    @dirty="$emit('dirty', $event)"
+  />
 </template>

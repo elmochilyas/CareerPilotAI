@@ -1,11 +1,16 @@
 <script setup lang="ts">
-import { MapPin, CheckCircle } from '@lucide/vue'
+import { MapPin, CheckCircle, Pencil } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 import type { CandidateProfile, ProfileUpdate } from '../types'
 import ProgressRing from '@/components/ui/ProgressRing.vue'
 import Button from '@/components/ui/Button.vue'
 
-const props = defineProps<{ profile: CandidateProfile; saving: boolean }>()
+const props = defineProps<{
+  profile: CandidateProfile
+  saving: boolean
+  completionScore: number
+  completedAreas: { completed: number; total: number }
+}>()
 const emit = defineEmits<{ save: [value: ProfileUpdate]; dirty: [value: boolean] }>()
 
 const editing = ref(false)
@@ -57,43 +62,6 @@ const availabilityLabel: Record<string, string> = {
   within_month: 'Available within a month',
   not_looking: 'Not looking',
 }
-
-const firstMissingAction = computed<{ key: string; action: string } | null>(() => {
-  const missing = props.profile.completion_details.missing_areas[0]
-  if (!missing) return null
-  const map: Record<string, string> = {
-    basic_information: 'Complete basic information',
-    headline: 'Add headline',
-    professional_summary: 'Add professional summary',
-    professional_links: 'Add professional links',
-    target_roles: 'Add target roles',
-    career_preferences: 'Set career preferences',
-    languages: 'Add languages',
-    education: 'Add education',
-    practical_background: 'Add experience or projects',
-  }
-  return { key: missing.key, action: map[missing.key] ?? 'Complete this section' }
-})
-
-function scrollToSection(key: string) {
-  const idMap: Record<string, string> = {
-    basic_information: 'section-summary',
-    headline: 'section-summary',
-    professional_summary: 'section-summary',
-    professional_links: 'section-links',
-    target_roles: 'section-preferences',
-    career_preferences: 'section-preferences',
-    languages: 'section-summary',
-    education: 'section-education',
-    practical_background: 'section-experience',
-  }
-  const id = idMap[key] ?? 'section-summary'
-  const el = document.getElementById(id)
-  if (el) {
-    const top = el.getBoundingClientRect().top + window.scrollY - 130
-    window.scrollTo({ top, behavior: 'smooth' })
-  }
-}
 </script>
 
 <template>
@@ -127,26 +95,19 @@ function scrollToSection(key: string) {
               >
                 Add a professional headline
               </span>
+              <Pencil :size="12" class="text-white/40" />
             </button>
           </div>
         </div>
 
         <div class="flex items-center gap-4 shrink-0">
           <div class="flex flex-col items-center gap-1" aria-label="Profile completion">
-            <ProgressRing :percentage="profile.profile_completion" :size="72" :stroke-width="6" />
+            <ProgressRing :percentage="completionScore" :size="72" :stroke-width="6" />
             <span class="text-xs font-medium text-white/70">Profile strength</span>
           </div>
 
-          <Button
-            v-if="firstMissingAction"
-            variant="secondary"
-            size="sm"
-            @click="scrollToSection(firstMissingAction.key)"
-          >
-            {{ firstMissingAction.action }}
-          </Button>
           <div
-            v-else
+            v-if="completedAreas.completed === completedAreas.total && completedAreas.total > 0"
             class="flex items-center gap-1.5 rounded-lg bg-white/20 px-3 py-2 text-sm font-medium text-white"
           >
             <CheckCircle :size="16" class="text-emerald-300" />
@@ -157,15 +118,14 @@ function scrollToSection(key: string) {
 
       <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
         <span
-          v-if="profile.city || profile.country"
-          class="flex items-center gap-1.5 rounded bg-white/15 px-2 py-1 text-white/80"
+          class="flex items-center gap-1.5 rounded bg-white/15 px-2 py-1"
+          :class="profile.city || profile.country ? 'text-white/80' : 'text-white/60'"
         >
-          <MapPin :size="13" class="text-white/60" />
+          <MapPin
+            :size="13"
+            :class="profile.city || profile.country ? 'text-white/60' : 'text-white/40'"
+          />
           {{ [profile.city, profile.country].filter(Boolean).join(', ') || 'Location not added' }}
-        </span>
-        <span v-else class="flex items-center gap-1.5 rounded bg-white/15 px-2 py-1 text-white/60">
-          <MapPin :size="13" class="text-white/40" />
-          Location not added
         </span>
         <span class="flex items-center gap-1.5 rounded bg-white/15 px-2 py-1 text-white/80">
           <span
@@ -204,7 +164,7 @@ function scrollToSection(key: string) {
         <Button type="submit" :disabled="saving">
           {{ saving ? '...' : 'Save' }}
         </Button>
-        <Button type="button" variant="outline" @click="cancel"> Cancel </Button>
+        <Button type="button" variant="outline" @click="cancel">Cancel</Button>
       </form>
     </div>
   </header>

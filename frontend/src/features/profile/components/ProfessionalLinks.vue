@@ -3,6 +3,7 @@ import { Link, Pencil, ExternalLink } from '@lucide/vue'
 import { computed, reactive, ref, watch } from 'vue'
 import type { CandidateProfile, ProfileUpdate } from '../types'
 import { normalizeUrl } from '../utils/validation'
+import Card from '@/components/ui/Card.vue'
 import Button from '@/components/ui/Button.vue'
 
 const props = defineProps<{ profile: CandidateProfile; saving?: boolean }>()
@@ -94,124 +95,118 @@ function displayUrl(url: string | null): string {
 </script>
 
 <template>
-  <section aria-labelledby="links-heading">
-    <header class="flex items-center justify-between gap-3 border-b border-slate-100 py-4">
+  <Card>
+    <template #header>
       <div class="flex items-center gap-3">
         <div
           class="flex size-9 items-center justify-center rounded-lg bg-primary-100 text-primary-600"
         >
           <Link :size="16" stroke-width="1.5" />
         </div>
-        <h2 id="links-heading" class="text-base font-semibold text-slate-900">
-          Professional links
-        </h2>
+        <h2 class="text-base font-semibold text-slate-900">Professional links</h2>
       </div>
       <Button v-if="hasAny && !editing" variant="outline" size="sm" @click="editing = true">
         <Pencil :size="13" stroke-width="1.5" />
         Edit
       </Button>
-    </header>
+    </template>
 
-    <div>
-      <form
-        v-if="editing"
-        class="grid gap-5 sm:grid-cols-2"
-        @submit.prevent="save"
-        @input="emit('dirty', true)"
+    <form
+      v-if="editing"
+      class="grid gap-5 sm:grid-cols-2"
+      @submit.prevent="save"
+      @input="emit('dirty', true)"
+    >
+      <label
+        v-for="f in fields"
+        :key="f.key"
+        class="grid gap-1.5 text-sm font-medium text-slate-700"
       >
-        <label
-          v-for="f in fields"
-          :key="f.key"
-          class="grid gap-1.5 text-sm font-medium text-slate-700"
-        >
-          <span class="flex items-center gap-2">
-            <span class="flex size-5 items-center justify-center rounded" :class="f.iconBg">
-              <svg
-                viewBox="0 0 16 16"
-                fill="none"
-                class="size-3"
-                stroke="currentColor"
-                stroke-width="1.3"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path :d="f.icon" />
-              </svg>
-            </span>
-            {{ f.label }}
+        <span class="flex items-center gap-2">
+          <span class="flex size-5 items-center justify-center rounded" :class="f.iconBg">
+            <svg
+              viewBox="0 0 16 16"
+              fill="none"
+              class="size-3"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path :d="f.icon" />
+            </svg>
           </span>
-          <input
-            v-model="values[f.key]"
-            type="url"
-            inputmode="url"
-            maxlength="500"
-            class="min-h-11 rounded-lg border border-slate-300 bg-white px-3.5 shadow-sm transition-all focus:border-primary-400 focus:ring-2 focus:ring-primary-500/30"
-            :placeholder="f.placeholder"
-          />
-        </label>
-        <div class="flex justify-end gap-2 sm:col-span-2">
-          <Button variant="outline" type="button" @click="cancel"> Cancel </Button>
-          <Button type="submit" :disabled="saving">
-            {{ saving ? 'Saving...' : 'Save links' }}
-          </Button>
-        </div>
-      </form>
-
-      <div v-else-if="!hasAny" class="flex flex-col items-center py-12 text-center">
-        <div class="flex size-12 items-center justify-center rounded-full bg-primary-100">
-          <Link :size="22" class="text-primary-600" stroke-width="1.3" />
-        </div>
-        <h3 class="mt-4 text-sm font-semibold text-slate-900">
-          Connect your professional presence
-        </h3>
-        <p class="mt-1.5 max-w-xs text-xs leading-relaxed text-slate-500">
-          Add LinkedIn, GitHub or your portfolio website.
-        </p>
-        <div class="mt-5">
-          <Button @click="editing = true">Add professional links</Button>
-        </div>
+          {{ f.label }}
+        </span>
+        <input
+          v-model="values[f.key]"
+          type="url"
+          inputmode="url"
+          maxlength="500"
+          class="min-h-11 rounded-lg border border-slate-300 bg-white px-3.5 shadow-sm transition-all focus:border-primary-400 focus:ring-2 focus:ring-primary-500/30"
+          :placeholder="f.placeholder"
+        />
+      </label>
+      <div class="flex justify-end gap-2 sm:col-span-2">
+        <Button variant="outline" type="button" @click="cancel">Cancel</Button>
+        <Button type="submit" :disabled="saving">
+          {{ saving ? 'Saving...' : 'Save links' }}
+        </Button>
       </div>
+    </form>
 
-      <div v-else class="grid gap-3 pt-2">
-        <template v-for="f in fields" :key="f.key">
-          <div
-            v-if="profile[f.key]"
-            class="group flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-slate-300 hover:shadow-md"
-          >
-            <div
-              class="flex size-10 shrink-0 items-center justify-center rounded-lg shadow-sm"
-              :class="f.iconBg"
-            >
-              <svg
-                viewBox="0 0 16 16"
-                fill="none"
-                class="size-4"
-                stroke="currentColor"
-                stroke-width="1.3"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path :d="f.icon" />
-              </svg>
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="text-sm font-semibold text-slate-900">{{ f.label }}</p>
-              <p class="mt-0.5 truncate text-xs text-slate-500">
-                {{ displayUrl(profile[f.key]!) }}
-              </p>
-            </div>
-            <a
-              :href="profile[f.key]!"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="flex size-9 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-slate-100 hover:text-primary-600"
-              :aria-label="`Open ${f.label}`"
-            >
-              <ExternalLink :size="16" stroke-width="1.5" />
-            </a>
-          </div>
-        </template>
+    <div v-else-if="!hasAny" class="flex flex-col items-center py-12 text-center">
+      <div class="flex size-12 items-center justify-center rounded-full bg-primary-100">
+        <Link :size="22" class="text-primary-600" stroke-width="1.3" />
+      </div>
+      <h3 class="mt-4 text-sm font-semibold text-slate-900">Connect your professional presence</h3>
+      <p class="mt-1.5 max-w-xs text-xs leading-relaxed text-slate-500">
+        Add LinkedIn, GitHub or your portfolio website.
+      </p>
+      <div class="mt-5">
+        <Button @click="editing = true">Add professional links</Button>
       </div>
     </div>
-  </section>
+
+    <div v-else class="grid gap-3">
+      <template v-for="f in fields" :key="f.key">
+        <div
+          v-if="profile[f.key]"
+          class="group flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-slate-300 hover:shadow-md"
+        >
+          <div
+            class="flex size-10 shrink-0 items-center justify-center rounded-lg shadow-sm"
+            :class="f.iconBg"
+          >
+            <svg
+              viewBox="0 0 16 16"
+              fill="none"
+              class="size-4"
+              stroke="currentColor"
+              stroke-width="1.3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path :d="f.icon" />
+            </svg>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold text-slate-900">{{ f.label }}</p>
+            <p class="mt-0.5 truncate text-xs text-slate-500">
+              {{ displayUrl(profile[f.key]!) }}
+            </p>
+          </div>
+          <a
+            :href="profile[f.key]!"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex size-9 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-slate-100 hover:text-primary-600"
+            :aria-label="`Open ${f.label}`"
+          >
+            <ExternalLink :size="16" stroke-width="1.5" />
+          </a>
+        </div>
+      </template>
+    </div>
+  </Card>
 </template>
