@@ -121,7 +121,7 @@ const attentionItems = computed(() => {
       </div>
 
       <!-- Needs Attention -->
-      <Card v-if="attentionItems.length > 0">
+      <Card v-if="attentionItems.length > 0" title="Needs Attention">
         <template #header>
           <div class="flex items-center gap-2">
             <AlertTriangle class="size-4 text-amber-500" aria-hidden="true" />
