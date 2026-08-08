@@ -1,14 +1,23 @@
 <script setup lang="ts">
-defineProps<{
-  title?: string
-  padding?: 'sm' | 'md' | 'lg'
-}>()
+withDefaults(
+  defineProps<{
+    title?: string
+    padding?: 'sm' | 'md' | 'lg'
+    hover?: boolean
+    clickable?: boolean
+  }>(),
+  { hover: false, clickable: false },
+)
 </script>
 
 <template>
   <section
-    class="scroll-mt-28 rounded-lg border border-slate-200 bg-white shadow-sm"
-    :class="padding === 'sm' ? 'p-4' : padding === 'lg' ? 'p-6 sm:p-8' : 'p-5 sm:p-6'"
+    class="scroll-mt-28 rounded-lg border border-slate-200 bg-white shadow-sm transition-all"
+    :class="[
+      padding === 'sm' ? 'p-4' : padding === 'lg' ? 'p-6 sm:p-8' : 'p-5 sm:p-6',
+      hover ? 'hover:shadow-md hover:border-slate-300' : '',
+      clickable ? 'cursor-pointer select-none active:scale-[0.99]' : '',
+    ]"
   >
     <header
       v-if="title || $slots.header"

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { X } from '@lucide/vue'
 import { ref } from 'vue'
 
 const props = defineProps<{
@@ -66,17 +67,7 @@ function onPaste(e: ClipboardEvent) {
         :aria-label="`Remove ${tag}`"
         @click.stop="remove(i)"
       >
-        <svg
-          viewBox="0 0 16 16"
-          fill="none"
-          class="size-3"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        >
-          <line x1="4" y1="4" x2="12" y2="12" />
-          <line x1="12" y1="4" x2="4" y2="12" />
-        </svg>
+        <X :size="12" stroke-width="2" />
       </button>
     </span>
     <input

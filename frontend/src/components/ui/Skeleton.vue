@@ -8,5 +8,5 @@ withDefaults(
 </script>
 
 <template>
-  <div class="animate-shimmer rounded-lg bg-slate-200/60" :class="classes" />
+  <div class="ds-animate-shimmer rounded-lg" :class="classes" />
 </template>
