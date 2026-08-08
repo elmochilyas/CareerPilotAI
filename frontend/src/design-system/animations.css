@@ -1,0 +1,176 @@
+@layer animations {
+  /* ── Shimmer (skeleton loading) ── */
+  @keyframes ds-shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .ds-animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--color-neutral-100) 25%,
+      var(--color-neutral-200) 50%,
+      var(--color-neutral-100) 75%
+    );
+    background-size: 200% 100%;
+    animation: ds-shimmer 1.5s ease-in-out infinite;
+  }
+
+  /* ── Fade in ── */
+  @keyframes ds-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .ds-animate-fade-in {
+    animation: ds-fade-in var(--duration-normal) var(--ease-out) both;
+  }
+
+  /* ── Slide up ── */
+  @keyframes ds-slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .ds-animate-slide-up {
+    animation: ds-slide-up var(--duration-slow) var(--ease-default) both;
+  }
+
+  /* ── Slide down ── */
+  @keyframes ds-slide-down {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .ds-animate-slide-down {
+    animation: ds-slide-down var(--duration-slow) var(--ease-default) both;
+  }
+
+  /* ── Scale in ── */
+  @keyframes ds-scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .ds-animate-scale-in {
+    animation: ds-scale-in var(--duration-normal) var(--ease-spring) both;
+  }
+
+  /* ── Spin ── */
+  @keyframes ds-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .ds-animate-spin {
+    animation: ds-spin 0.75s linear infinite;
+  }
+
+  /* ── Pulse ── */
+  @keyframes ds-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  .ds-animate-pulse {
+    animation: ds-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* ── Toast enter/exit ── */
+  @keyframes ds-toast-in {
+    from {
+      opacity: 0;
+      transform: translateX(100%) translateY(-8px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0) translateY(0) scale(1);
+    }
+  }
+
+  @keyframes ds-toast-out {
+    from {
+      opacity: 1;
+      transform: translateX(0) translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(100%) translateY(-8px) scale(0.96);
+    }
+  }
+
+  /* ── Vue transition classes ── */
+  .ds-transition-fade-enter-active,
+  .ds-transition-fade-leave-active {
+    transition: opacity var(--duration-normal) var(--ease-out);
+  }
+  .ds-transition-fade-enter-from,
+  .ds-transition-fade-leave-to {
+    opacity: 0;
+  }
+
+  .ds-transition-slide-up-enter-active,
+  .ds-transition-slide-up-leave-active {
+    transition:
+      opacity var(--duration-slow) var(--ease-default),
+      transform var(--duration-slow) var(--ease-default);
+  }
+  .ds-transition-slide-up-enter-from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  .ds-transition-slide-up-leave-to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  .ds-transition-scale-enter-active,
+  .ds-transition-scale-leave-active {
+    transition:
+      opacity var(--duration-normal) var(--ease-default),
+      transform var(--duration-normal) var(--ease-default);
+  }
+  .ds-transition-scale-enter-from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  .ds-transition-scale-leave-to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
