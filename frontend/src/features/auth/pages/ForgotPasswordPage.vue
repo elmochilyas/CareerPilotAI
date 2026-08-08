@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { RouterLink } from 'vue-router'
+import { CheckCircle } from '@lucide/vue'
 import { sendForgotPasswordLink, fetchCsrfCookie } from '@/features/auth/api'
 import Button from '@/components/ui/Button.vue'
+import FormField from '@/components/ui/FormField.vue'
 import Input from '@/components/ui/Input.vue'
 
 const email = ref('')
@@ -32,36 +34,42 @@ async function handleSubmit(): Promise<void> {
 </script>
 
 <template>
-  <form @submit.prevent="handleSubmit" class="space-y-4">
-    <h1 class="text-center text-lg font-semibold text-slate-900">Reset your password</h1>
-
-    <p class="text-sm text-slate-600">
-      Enter your email address and we'll send you a link to reset your password.
-    </p>
+  <form @submit.prevent="handleSubmit" class="space-y-5">
+    <div class="text-center">
+      <h1 class="text-lg font-bold tracking-tight text-slate-900">Reset your password</h1>
+      <p class="mt-1 text-sm text-slate-500">
+        Enter your email address and we'll send you a link to reset your password.
+      </p>
+    </div>
 
     <div
       v-if="successMessage"
-      class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700"
+      class="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
     >
+      <CheckCircle class="size-4 shrink-0 text-emerald-500" aria-hidden="true" />
       {{ successMessage }}
     </div>
 
-    <Input
-      v-model="email"
-      name="email"
-      label="Email"
-      type="email"
-      autocomplete="email"
-      required
-      :error="errors.email?.[0]"
-    />
+    <FormField label="Email" :error="errors.email?.[0]" required>
+      <Input
+        v-model="email"
+        name="email"
+        type="email"
+        autocomplete="email"
+        placeholder="you@example.com"
+        required
+      />
+    </FormField>
 
-    <Button type="submit" :disabled="submitting" class="w-full">
-      {{ submitting ? 'Sending...' : 'Send reset link' }}
+    <Button type="submit" :loading="submitting" :disabled="submitting" class="w-full">
+      Send reset link
     </Button>
 
-    <p class="text-center text-sm text-slate-600">
-      <RouterLink :to="{ name: 'login' }" class="text-primary-600 hover:text-primary-500">
+    <p class="text-center text-sm text-slate-500">
+      <RouterLink
+        :to="{ name: 'login' }"
+        class="font-medium text-primary-600 hover:text-primary-500"
+      >
         Back to sign in
       </RouterLink>
     </p>

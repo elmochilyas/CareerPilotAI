@@ -13,6 +13,7 @@ import CvReviewWorkspace from '../components/CvReviewWorkspace.vue'
 import CvImportPreview from '../components/CvImportPreview.vue'
 import CvImportResult from '../components/CvImportResult.vue'
 import Button from '@/components/ui/Button.vue'
+import Card from '@/components/ui/Card.vue'
 import Toast from '@/components/ui/Toast.vue'
 
 const router = useRouter()
@@ -107,7 +108,6 @@ const stageHeading = computed(() => {
   return map[stage.value] ?? { title: 'Import CV', subtitle: '' }
 })
 
-// Restore state from URL query params on mount
 onMounted(() => {
   const q = route.query as Record<string, string | undefined>
   if (q.documentId) {
@@ -132,7 +132,6 @@ onMounted(() => {
   }
 })
 
-// Sync state to URL query params
 watch([stage, activeDocumentId, reviewReadonly, activeStep], () => {
   const query: Record<string, string> = {}
   if (activeDocumentId.value && stage.value !== 'choose_mode') {
@@ -258,38 +257,38 @@ onBeforeRouteLeave(() => {
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl">
-    <!-- Stage progress indicator -->
-    <nav aria-label="Import progress" class="mb-10 mt-2">
-      <ol class="flex items-center justify-between">
+  <div class="mx-auto max-w-3xl space-y-6 py-8">
+    <!-- Horizontal step indicator -->
+    <nav aria-label="Import progress" class="px-2">
+      <ol class="flex items-center gap-0">
         <li
           v-for="(step, i) in visibleSteps"
           :key="step.key"
-          class="flex flex-col items-center"
+          class="flex items-center"
           :class="i < visibleSteps.length - 1 ? 'flex-1' : ''"
         >
           <div class="flex w-full items-center">
             <div
               :class="[
-                'relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-500',
+                'relative z-10 flex size-9 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300',
                 i < currentStepIndex
-                  ? 'border-emerald-500 bg-emerald-50'
+                  ? 'border-primary-600 bg-primary-600 text-white shadow-sm'
                   : i === currentStepIndex
-                    ? 'border-primary-500 bg-primary-50 shadow-lg shadow-primary-200/50'
-                    : 'border-slate-200 bg-white',
+                    ? 'border-primary-600 bg-white text-primary-600 shadow-sm ring-4 ring-primary-50'
+                    : 'border-slate-200 bg-white text-slate-400',
               ]"
             >
               <Check
                 v-if="i < currentStepIndex"
-                class="h-5 w-5 text-emerald-600"
+                class="size-4"
+                stroke-width="3"
                 aria-hidden="true"
               />
               <component
                 :is="step.icon"
                 v-else
                 :class="[
-                  'h-5 w-5',
-                  i === currentStepIndex ? 'text-primary-600' : 'text-slate-300',
+                  'size-4',
                   i === currentStepIndex && stage === 'processing' ? 'animate-spin' : '',
                 ]"
                 aria-hidden="true"
@@ -298,20 +297,16 @@ onBeforeRouteLeave(() => {
             <div
               v-if="i < visibleSteps.length - 1"
               :class="[
-                'mx-2 h-0.5 flex-1 rounded-full transition-colors duration-500',
-                i < currentStepIndex ? 'bg-emerald-400' : 'bg-slate-100',
+                'mx-2 h-0.5 flex-1 rounded-full transition-colors duration-300',
+                i < currentStepIndex ? 'bg-primary-600' : 'bg-slate-200',
               ]"
               aria-hidden="true"
             />
           </div>
           <span
             :class="[
-              'mt-2 text-xs font-medium transition-colors duration-300',
-              i === currentStepIndex
-                ? 'text-primary-700'
-                : i < currentStepIndex
-                  ? 'text-emerald-700'
-                  : 'text-slate-400',
+              'absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] font-medium',
+              i === currentStepIndex ? 'text-primary-700' : 'text-slate-400',
             ]"
           >
             {{ step.label }}
@@ -321,12 +316,12 @@ onBeforeRouteLeave(() => {
     </nav>
 
     <!-- Header -->
-    <div class="mb-8 flex items-start justify-between">
+    <div class="flex items-start justify-between pt-4">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900">
+        <h1 class="text-xl font-bold tracking-tight text-slate-900">
           {{ stageHeading.title }}
         </h1>
-        <p class="mt-1.5 text-sm text-slate-500">
+        <p class="mt-1 text-sm text-slate-500">
           {{ stageHeading.subtitle }}
         </p>
       </div>
@@ -337,52 +332,58 @@ onBeforeRouteLeave(() => {
         class="shrink-0"
         @click="reset"
       >
-        <ArrowLeft class="mr-1 h-4 w-4" aria-hidden="true" />
+        <ArrowLeft class="mr-1 size-4" aria-hidden="true" />
         Start over
       </Button>
     </div>
 
     <!-- Stage content with transitions -->
     <Transition name="stage" mode="out-in">
-      <div :key="stage" class="space-y-6">
+      <div :key="stage" class="space-y-5">
         <!-- Choose mode -->
-        <div v-if="stage === 'choose_mode'" class="space-y-4">
-          <div class="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h2 class="text-lg font-semibold text-slate-900">How would you like to proceed?</h2>
-            <p class="mt-1.5 text-sm text-slate-500">
-              Choose whether to create a new profile or update your existing one.
-            </p>
-            <div class="mt-6 grid gap-4 sm:grid-cols-2">
+        <div v-if="stage === 'choose_mode'" class="space-y-5">
+          <Card padding="lg">
+            <div class="space-y-2">
+              <h2 class="text-base font-semibold text-slate-900">How would you like to proceed?</h2>
+              <p class="text-sm text-slate-500">
+                Choose whether to create a new profile or update your existing one.
+              </p>
+            </div>
+            <div class="mt-6 grid gap-3 sm:grid-cols-2">
               <button
-                class="group rounded-xl border-2 border-slate-200 bg-white p-5 text-left transition-all hover:border-primary-300 hover:bg-primary-50/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500/40"
+                class="group flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left transition-all duration-200 hover:border-primary-300 hover:bg-primary-50/30 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40"
                 @click="chooseMode('create_new')"
               >
                 <div
-                  class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600 transition-colors group-hover:bg-primary-100"
+                  class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600 transition-colors duration-200 group-hover:bg-primary-100"
                 >
-                  <Sparkles class="h-5 w-5" aria-hidden="true" />
+                  <Sparkles class="size-4.5" aria-hidden="true" />
                 </div>
-                <p class="font-semibold text-slate-900">Create new profile</p>
-                <p class="mt-1.5 text-sm leading-relaxed text-slate-500">
-                  Start fresh with a new profile built from your CV.
-                </p>
+                <div>
+                  <p class="text-sm font-semibold text-slate-900">Create new profile</p>
+                  <p class="mt-0.5 text-xs leading-relaxed text-slate-500">
+                    Start fresh with a new profile built from your CV.
+                  </p>
+                </div>
               </button>
               <button
-                class="group rounded-xl border-2 border-slate-200 bg-white p-5 text-left transition-all hover:border-primary-300 hover:bg-primary-50/50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500/40"
+                class="group flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left transition-all duration-200 hover:border-primary-300 hover:bg-primary-50/30 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40"
                 @click="chooseMode('update_existing')"
               >
                 <div
-                  class="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600 transition-colors group-hover:bg-primary-100"
+                  class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600 transition-colors duration-200 group-hover:bg-primary-100"
                 >
-                  <Upload class="h-5 w-5" aria-hidden="true" />
+                  <Upload class="size-4.5" aria-hidden="true" />
                 </div>
-                <p class="font-semibold text-slate-900">Update existing profile</p>
-                <p class="mt-1.5 text-sm leading-relaxed text-slate-500">
-                  Merge CV data into your current profile.
-                </p>
+                <div>
+                  <p class="text-sm font-semibold text-slate-900">Update existing profile</p>
+                  <p class="mt-0.5 text-xs leading-relaxed text-slate-500">
+                    Merge CV data into your current profile.
+                  </p>
+                </div>
               </button>
             </div>
-          </div>
+          </Card>
           <CvDocumentList
             :highlight-id="duplicateCvId"
             @review="handleReviewCv"
@@ -397,7 +398,7 @@ onBeforeRouteLeave(() => {
         <div v-if="stage === 'idle' || stage === 'upload'" class="space-y-4">
           <div
             v-if="uploadError"
-            class="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm shadow-sm"
+            class="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm"
             role="alert"
           >
             <div class="flex-1">
@@ -426,7 +427,7 @@ onBeforeRouteLeave(() => {
               &times;
             </button>
           </div>
-          <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <Card padding="lg">
             <div class="mb-4 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
               <span class="text-xs font-medium uppercase tracking-wider text-slate-500">
                 {{ uploadMode === 'create_new' ? 'Create new profile' : 'Update existing profile' }}
@@ -439,7 +440,7 @@ onBeforeRouteLeave(() => {
               </button>
             </div>
             <CvUploadZone @file-selected="handleFileSelected" />
-          </div>
+          </Card>
           <div
             v-if="isUploading"
             class="overflow-hidden rounded-full bg-slate-100"
@@ -449,7 +450,7 @@ onBeforeRouteLeave(() => {
             aria-valuemax="100"
           >
             <div
-              class="h-2 rounded-full bg-gradient-to-r from-primary-500 to-primary-400 transition-all duration-500 ease-out"
+              class="h-1.5 rounded-full bg-primary-600 transition-all duration-500 ease-out"
               :style="{ width: uploadProgress + '%' }"
             />
           </div>
@@ -457,14 +458,14 @@ onBeforeRouteLeave(() => {
 
         <!-- Processing -->
         <div v-if="stage === 'processing' && document">
-          <div class="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+          <Card padding="lg">
             <CvProcessingStatus
               :document="document"
               @retry="handleRetry"
               @upload-new="handleUploadNew"
               @proceed-to-review="handleProceedToReview"
             />
-          </div>
+          </Card>
         </div>
 
         <!-- Review -->
@@ -490,7 +491,7 @@ onBeforeRouteLeave(() => {
 
         <!-- Import preview -->
         <div v-if="stage === 'import'">
-          <div class="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+          <Card padding="lg">
             <CvImportPreview
               :preview="preview"
               :is-pending="previewQuery.isPending.value"
@@ -498,18 +499,18 @@ onBeforeRouteLeave(() => {
               @confirm="handleConfirmImport"
               @go-back="handleBackToReview"
             />
-          </div>
+          </Card>
         </div>
 
         <!-- Complete -->
         <div v-if="stage === 'complete'">
-          <div class="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+          <Card padding="lg">
             <CvImportResult
               :batch="importMutation.data.value ?? null"
               @upload-another="handleUploadAnother"
               @go-to-profile="handleGoToProfile"
             />
-          </div>
+          </Card>
         </div>
       </div>
     </Transition>
@@ -520,17 +521,17 @@ onBeforeRouteLeave(() => {
 
 <style scoped>
 .stage-enter-active {
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .stage-leave-active {
-  transition: all 0.2s cubic-bezier(0.55, 0, 1, 0.45);
+  transition: all 0.15s cubic-bezier(0.55, 0, 1, 0.45);
 }
 .stage-enter-from {
   opacity: 0;
-  transform: translateY(16px);
+  transform: translateY(12px);
 }
 .stage-leave-to {
   opacity: 0;
-  transform: translateY(-8px);
+  transform: translateY(-6px);
 }
 </style>

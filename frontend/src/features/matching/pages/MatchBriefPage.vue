@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ChevronDown } from '@lucide/vue'
+import { ChevronDown, Loader2 } from '@lucide/vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 import { extractProblemDetail } from '@/api/client'
@@ -160,9 +160,9 @@ const filteredFindings = computed(() => {
 
     <div v-else-if="loading" class="mt-10" role="status">
       <div class="mx-auto max-w-md space-y-4">
-        <div class="h-6 w-40 animate-pulse rounded bg-slate-100" />
-        <div class="h-28 animate-pulse rounded-xl border border-slate-200 bg-white" />
-        <div class="h-40 animate-pulse rounded-xl border border-slate-200 bg-white" />
+        <div class="h-6 w-40 animate-pulse rounded-lg bg-slate-100" />
+        <div class="h-28 animate-pulse rounded-xl border border-slate-200 bg-white shadow-sm" />
+        <div class="h-40 animate-pulse rounded-xl border border-slate-200 bg-white shadow-sm" />
       </div>
       <span class="sr-only">Loading the Career Intelligence Brief…</span>
     </div>
@@ -208,8 +208,9 @@ const filteredFindings = computed(() => {
         v-if="processing"
         role="status"
         aria-live="polite"
-        class="mt-8 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"
+        class="mt-8 flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700"
       >
+        <Loader2 class="size-4 shrink-0 animate-spin text-blue-500" aria-hidden="true" />
         A new analysis is running. The previous result stays visible below.
       </div>
       <div
@@ -254,7 +255,7 @@ const filteredFindings = computed(() => {
 
       <details
         id="full-analysis"
-        class="group mt-6 rounded-2xl border border-slate-200 bg-white"
+        class="group mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
         :open="fullAnalysisOpen"
         @toggle="onFullAnalysisToggle"
       >
