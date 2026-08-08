@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import { Plus, AlertCircle, RefreshCw } from '@lucide/vue'
+import { Plus, AlertCircle, RefreshCw, Wrench } from '@lucide/vue'
 import { fetchProfile } from '@/features/profile/api'
 import { useSkills } from '../composables/useSkills'
 import SkillCard from './SkillCard.vue'
@@ -9,6 +9,7 @@ import AddSkillFlow from './AddSkillFlow.vue'
 import EvidenceSelector from './EvidenceSelector.vue'
 import type { CandidateSkill, EvidenceInput } from '../types'
 import type { ProfileItemOption } from './EvidenceSelector.vue'
+import Card from '@/components/ui/Card.vue'
 import Button from '@/components/ui/Button.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
@@ -135,11 +136,26 @@ function isSaving(skill: CandidateSkill): boolean {
 </script>
 
 <template>
-  <section aria-labelledby="skills-heading" class="mt-10">
-    <h2 id="skills-heading" class="mb-1 text-lg font-semibold text-slate-900">Skills</h2>
-    <p class="mb-5 text-sm text-slate-500">
-      Manage your technical skills, tools, and competencies.
-    </p>
+  <Card>
+    <template #header>
+      <div class="flex items-center gap-3">
+        <div
+          class="flex size-9 items-center justify-center rounded-lg bg-primary-100 text-primary-600"
+        >
+          <Wrench :size="16" stroke-width="1.5" />
+        </div>
+        <div>
+          <h2 class="text-base font-semibold text-slate-900">Skills</h2>
+          <p class="text-xs text-slate-500">
+            Manage your technical skills, tools, and competencies.
+          </p>
+        </div>
+      </div>
+      <Button v-if="!showAddFlow" variant="outline" size="sm" @click="showAddFlow = true">
+        <Plus :size="14" aria-hidden="true" />
+        Add Skill
+      </Button>
+    </template>
 
     <div
       v-if="announcement"
@@ -149,8 +165,10 @@ function isSaving(skill: CandidateSkill): boolean {
       {{ announcement }}
     </div>
 
-    <div v-if="isPending" class="space-y-3">
-      <Skeleton v-for="i in 3" :key="i" classes="h-28" />
+    <div v-if="isPending" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div v-for="i in 3" :key="i" class="rounded-lg border border-slate-200 p-4">
+        <Skeleton classes="h-28" />
+      </div>
     </div>
 
     <div
@@ -175,13 +193,6 @@ function isSaving(skill: CandidateSkill): boolean {
     </EmptyState>
 
     <div v-else>
-      <div v-if="!showAddFlow" class="mb-4">
-        <Button variant="outline" size="sm" @click="showAddFlow = true">
-          <Plus :size="14" aria-hidden="true" />
-          Add Skill
-        </Button>
-      </div>
-
       <AddSkillFlow
         v-if="showAddFlow"
         ref="addFlowRef"
@@ -191,7 +202,7 @@ function isSaving(skill: CandidateSkill): boolean {
         @cancel="showAddFlow = false"
       />
 
-      <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <SkillCard
           v-for="skill in sortedSkills"
           :key="skill.id"
@@ -227,5 +238,5 @@ function isSaving(skill: CandidateSkill): boolean {
         />
       </div>
     </Modal>
-  </section>
+  </Card>
 </template>
