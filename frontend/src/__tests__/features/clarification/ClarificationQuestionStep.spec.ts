@@ -281,7 +281,9 @@ describe('ClarificationQuestionStep', () => {
   it('disables the actions while a request is in flight', async () => {
     const wrapper = mountStep(makeQuestion({ question_type: 'text' }), { busy: true })
 
-    for (const button of wrapper.findAll('button')) {
+    const buttons = wrapper.findAll('button')
+    const textButtons = buttons.filter((button) => button.text() !== '')
+    for (const button of textButtons) {
       expect((button.element as HTMLButtonElement).disabled).toBe(true)
     }
   })

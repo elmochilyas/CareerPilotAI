@@ -101,7 +101,7 @@ describe('ClarificationEntryCard with Vue Query', () => {
 
     const page = await mountCard()
 
-    expect(page.find('.animate-shimmer').exists()).toBe(true)
+    expect(page.find('.ds-animate-shimmer').exists()).toBe(true)
   })
 
   it('shows an error state with a manual retry', async () => {

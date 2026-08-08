@@ -10,11 +10,37 @@ const { opportunityData } = vi.hoisted(() => ({
 }))
 
 vi.mock('@tanstack/vue-query', () => ({
-  useQuery: vi.fn<(...args: unknown[]) => unknown>(() => ({
-    data: ref(opportunityData.value),
+  useQuery: vi.fn<(...args: unknown[]) => unknown>((...queryArgs: unknown[]) => {
+    const options = queryArgs[0] as { queryFn?: () => unknown } | undefined
+    const isMatchQuery =
+      options?.queryFn?.toString().includes('fetchMatchAnalyses') === true
+    if (isMatchQuery) {
+      return {
+        data: ref({ data: [] }),
+        isPending: ref(false),
+        isLoading: ref(false),
+        isSuccess: ref(true),
+        isError: ref(false),
+        refetch: vi.fn<() => void>(),
+      }
+    }
+    return {
+      data: ref(opportunityData.value),
+      isPending: ref(false),
+      isLoading: ref(false),
+      isSuccess: ref(true),
+      isError: ref(false),
+      refetch: vi.fn<() => void>(),
+    }
+  }),
+  useMutation: vi.fn<(...args: unknown[]) => unknown>(() => ({
+    mutate: vi.fn<() => void>(),
     isPending: ref(false),
-    isError: ref(false),
-    refetch: vi.fn<() => void>(),
+    error: ref(null),
+  })),
+  useQueryClient: vi.fn<() => unknown>(() => ({
+    invalidateQueries: vi.fn<() => Promise<void>>(() => Promise.resolve()),
+    setQueryData: vi.fn<() => void>(),
   })),
 }))
 
@@ -23,6 +49,22 @@ vi.mock('@/features/opportunities/api', () => ({
     detail: (id: number) => ['opportunities', 'detail', id],
   },
   fetchOpportunity: vi.fn<(...args: unknown[]) => unknown>(),
+}))
+
+vi.mock('@/features/matching/api', () => ({
+  matchKeys: {
+    list: (id: number) => ['matches', 'list', id],
+  },
+  fetchMatchAnalyses: vi.fn<() => Promise<{ data: unknown[] }>>(() =>
+    Promise.resolve({ data: [] }),
+  ),
+  createMatchAnalysis: vi.fn<() => Promise<unknown>>(() => Promise.resolve({})),
+  recalculateMatchAnalysis: vi.fn<() => Promise<unknown>>(() => Promise.resolve({})),
+}))
+
+vi.mock('@/features/matching/utils/matchPresentation', () => ({
+  findingKey: (f: { skill_name?: string; requirement_text?: string; type: string }) =>
+    f.skill_name ?? f.requirement_text ?? f.type,
 }))
 
 function createOpportunity(): JobOpportunity {

@@ -71,7 +71,8 @@ describe('CvImportPreview', () => {
     const wrapper = mount(CvImportPreview, {
       props: { preview: makePreview(), isPending: false, isApplying: true },
     })
-    expect(wrapper.text()).toContain('Importing...')
+    const confirmBtn = wrapper.findAll('button').find((b) => !b.text().includes('Back'))
+    expect(confirmBtn!.find('.animate-spin').exists()).toBe(true)
     expect(wrapper.text()).not.toContain('Confirm and import')
   })
 
@@ -79,7 +80,7 @@ describe('CvImportPreview', () => {
     const wrapper = mount(CvImportPreview, {
       props: { preview: makePreview(), isPending: false, isApplying: true },
     })
-    const confirmBtn = wrapper.findAll('button').find((b) => b.text().includes('Importing'))
+    const confirmBtn = wrapper.findAll('button').find((b) => !b.text().includes('Back'))
     expect(confirmBtn!.attributes('disabled')).toBeDefined()
   })
 

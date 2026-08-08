@@ -35,20 +35,41 @@ function makeProfile(overrides: Partial<CandidateProfile> = {}): CandidateProfil
 describe('ProfileHeader', () => {
   it('renders name and headline', () => {
     const profile = makeProfile()
-    const wrapper = mount(ProfileHeader, { props: { profile, saving: false } })
+    const wrapper = mount(ProfileHeader, {
+      props: {
+        profile,
+        saving: false,
+        completionScore: 65,
+        completedAreas: { completed: 3, total: 5 },
+      },
+    })
     expect(wrapper.text()).toContain('Jane Doe')
     expect(wrapper.text()).toContain('Senior Engineer')
   })
 
   it('shows completion percentage', () => {
     const profile = makeProfile()
-    const wrapper = mount(ProfileHeader, { props: { profile, saving: false } })
+    const wrapper = mount(ProfileHeader, {
+      props: {
+        profile,
+        saving: false,
+        completionScore: 65,
+        completedAreas: { completed: 3, total: 5 },
+      },
+    })
     expect(wrapper.text()).toContain('65%')
   })
 
   it('shows location and availability', () => {
     const profile = makeProfile()
-    const wrapper = mount(ProfileHeader, { props: { profile, saving: false } })
+    const wrapper = mount(ProfileHeader, {
+      props: {
+        profile,
+        saving: false,
+        completionScore: 65,
+        completedAreas: { completed: 3, total: 5 },
+      },
+    })
     expect(wrapper.text()).toContain('Paris')
     expect(wrapper.text()).toContain('France')
     expect(wrapper.text()).toContain('immediately')
@@ -56,14 +77,28 @@ describe('ProfileHeader', () => {
 
   it('enters editing mode on headline click', async () => {
     const profile = makeProfile()
-    const wrapper = mount(ProfileHeader, { props: { profile, saving: false } })
+    const wrapper = mount(ProfileHeader, {
+      props: {
+        profile,
+        saving: false,
+        completionScore: 65,
+        completedAreas: { completed: 3, total: 5 },
+      },
+    })
     await wrapper.find('button').trigger('click')
     expect(wrapper.find('#profile-headline').exists()).toBe(true)
   })
 
   it('emits save with headline on form submit', async () => {
     const profile = makeProfile()
-    const wrapper = mount(ProfileHeader, { props: { profile, saving: false } })
+    const wrapper = mount(ProfileHeader, {
+      props: {
+        profile,
+        saving: false,
+        completionScore: 65,
+        completedAreas: { completed: 3, total: 5 },
+      },
+    })
     await wrapper.find('button').trigger('click')
     const input = wrapper.find('#profile-headline')
     await input.setValue('Updated headline')
@@ -76,7 +111,14 @@ describe('ProfileHeader', () => {
 
   it('emits dirty on input change', async () => {
     const profile = makeProfile()
-    const wrapper = mount(ProfileHeader, { props: { profile, saving: false } })
+    const wrapper = mount(ProfileHeader, {
+      props: {
+        profile,
+        saving: false,
+        completionScore: 65,
+        completedAreas: { completed: 3, total: 5 },
+      },
+    })
     await wrapper.find('button').trigger('click')
     await wrapper.find('#profile-headline').setValue('something')
     expect(wrapper.emitted('dirty')?.[0]).toEqual([true])

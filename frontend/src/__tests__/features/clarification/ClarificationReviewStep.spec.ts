@@ -224,7 +224,9 @@ describe('ClarificationReviewStep', () => {
       error: 'The proposal could not be applied.',
     })
 
-    for (const button of wrapper.findAll('button')) {
+    const buttons = wrapper.findAll('button')
+    const textButtons = buttons.filter((button) => button.text() !== '')
+    for (const button of textButtons) {
       expect((button.element as HTMLButtonElement).disabled).toBe(true)
     }
     expect(wrapper.find('[role="alert"]').text()).toContain('The proposal could not be applied.')

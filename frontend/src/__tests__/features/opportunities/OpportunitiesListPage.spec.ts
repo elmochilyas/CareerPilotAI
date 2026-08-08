@@ -74,11 +74,12 @@ describe('OpportunitiesListPage pagination', () => {
 
   it('renders API pagination and navigates without losing the active filter', async () => {
     const { router, wrapper } = await mountPage()
-    const pagination = wrapper.get('nav[aria-label="Opportunity pages"]')
-    const previous = pagination.findAll('button')[0]!
-    const next = pagination.findAll('button')[1]!
+    const paginationContainer = wrapper.find('.flex.items-center.justify-center.gap-4')
+    const pagination = wrapper.get('nav[aria-label="Pagination"]')
+    const previous = pagination.get('button[aria-label="Previous page"]')
+    const next = pagination.get('button[aria-label="Next page"]')
 
-    expect(pagination.text()).toContain('Page 1 of 3')
+    expect(paginationContainer.text()).toContain('Page 1 of 3')
     expect(previous.attributes('disabled')).toBeDefined()
 
     await router.replace({ query: { view: 'saved' } })
