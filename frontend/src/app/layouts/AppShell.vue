@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { X } from '@lucide/vue'
+import { X, Menu } from '@lucide/vue'
 import SkipLink from '@/components/ui/SkipLink.vue'
 import Sidebar from '@/components/navigation/Sidebar.vue'
-import TopBar from '@/components/navigation/TopBar.vue'
 
 const mainId = 'main-content'
 
@@ -45,16 +44,27 @@ const sidebarWidth = collapsed.value ? 'var(--sidebar-collapsed-width)' : 'var(-
 
 <template>
   <SkipLink />
-  <TopBar :sidebar-open="sidebarOpen" @toggle-sidebar="toggleSidebar" />
 
-  <div class="flex h-screen pt-[var(--topbar-height)]">
-    <div class="hidden lg:block lg:shrink-0" :style="{ width: sidebarWidth }">
+  <button
+    type="button"
+    class="appshell-hamburger fixed top-3 left-3 z-[var(--z-sticky)] flex size-9 items-center justify-center rounded-xl bg-[var(--surface-primary)] text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] lg:hidden"
+    aria-label="Toggle sidebar"
+    @click="toggleSidebar"
+  >
+    <Menu :size="20" />
+  </button>
+
+  <div class="flex">
+    <div
+      class="hidden lg:block lg:shrink-0 lg:sticky lg:top-0 lg:h-screen lg:relative lg:z-[1]"
+      :style="{ width: sidebarWidth }"
+    >
       <Sidebar class="h-full" />
     </div>
 
     <div
       v-if="!collapsed"
-      class="hidden md:block lg:hidden md:shrink-0"
+      class="hidden md:block lg:hidden md:shrink-0 md:sticky md:top-0 md:h-screen md:relative md:z-[1]"
       :style="{ width: 'var(--sidebar-collapsed-width)' }"
     >
       <Sidebar class="h-full" collapsed />
@@ -64,7 +74,7 @@ const sidebarWidth = collapsed.value ? 'var(--sidebar-collapsed-width)' : 'var(-
       <Transition name="overlay">
         <div
           v-if="sidebarOpen"
-          class="fixed inset-0 z-[var(--z-overlay)] bg-[var(--surface-overlay)] md:hidden"
+          class="fixed inset-0 z-[var(--z-overlay)] bg-[var(--surface-overlay)] backdrop-blur-sm md:hidden"
           @click="closeSidebar"
         />
       </Transition>
@@ -77,7 +87,7 @@ const sidebarWidth = collapsed.value ? 'var(--sidebar-collapsed-width)' : 'var(-
             <Sidebar class="h-full" />
             <button
               type="button"
-              class="absolute top-3 right-3 flex size-8 items-center justify-center rounded-lg text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-secondary)]"
+              class="absolute top-3 right-3 flex size-8 items-center justify-center rounded-xl text-white/70 transition-colors hover:bg-white/10 hover:text-white"
               aria-label="Close sidebar"
               @click="closeSidebar"
             >
@@ -88,21 +98,29 @@ const sidebarWidth = collapsed.value ? 'var(--sidebar-collapsed-width)' : 'var(-
       </Transition>
     </Teleport>
 
-    <main :id="mainId" class="flex-1 overflow-y-auto bg-[var(--surface-page)]" tabindex="-1">
+    <main :id="mainId" class="flex-1 bg-[var(--surface-page)] relative z-0" tabindex="-1">
       <div
         class="mx-auto px-4 py-6 sm:px-6 lg:px-8"
         :style="{ maxWidth: 'var(--content-max-width)' }"
       >
-        <router-view />
+        <router-view v-slot="{ Component }">
+          <Transition name="ds-page" mode="out-in">
+            <component :is="Component" />
+          </Transition>
+        </router-view>
       </div>
     </main>
   </div>
 </template>
 
 <style scoped>
+.appshell-hamburger {
+  box-shadow: var(--shadow-neo-raised-sm);
+}
+
 .overlay-enter-active,
 .overlay-leave-active {
-  transition: opacity var(--duration-normal) var(--ease-default);
+  transition: opacity var(--duration-normal) var(--ease-out-expo);
 }
 .overlay-enter-from,
 .overlay-leave-to {
@@ -111,7 +129,7 @@ const sidebarWidth = collapsed.value ? 'var(--sidebar-collapsed-width)' : 'var(-
 
 .drawer-enter-active,
 .drawer-leave-active {
-  transition: transform var(--duration-normal) var(--ease-default);
+  transition: transform var(--duration-slow) var(--ease-out-expo);
 }
 .drawer-enter-from,
 .drawer-leave-to {

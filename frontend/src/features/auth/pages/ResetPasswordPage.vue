@@ -41,8 +41,12 @@ async function handleSubmit(): Promise<void> {
 <template>
   <form @submit.prevent="handleSubmit" class="space-y-5">
     <div class="text-center">
-      <h1 class="text-lg font-bold tracking-tight text-slate-900">Set new password</h1>
-      <p class="mt-1 text-sm text-slate-500">Enter your new password below.</p>
+      <h1 class="text-[var(--text-xl)] font-semibold tracking-tight text-[var(--text-primary)]">
+        Set new password
+      </h1>
+      <p class="mt-1 text-[var(--text-base)] text-[var(--text-secondary)]">
+        Enter your new password below.
+      </p>
     </div>
 
     <input type="hidden" name="email" :value="form.email" />
@@ -72,10 +76,10 @@ async function handleSubmit(): Promise<void> {
       Reset password
     </Button>
 
-    <p class="text-center text-sm text-slate-500">
+    <p class="text-center text-[var(--text-base)] text-[var(--text-secondary)]">
       <RouterLink
         :to="{ name: 'login' }"
-        class="font-medium text-primary-600 hover:text-primary-500"
+        class="font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-700)]"
       >
         Back to sign in
       </RouterLink>

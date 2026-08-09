@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { LayoutDashboard, User, FileText, Briefcase, LogOut } from '@lucide/vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -10,18 +10,20 @@ defineProps<{
 }>()
 
 const route = useRoute()
+const router = useRouter()
 const auth = useAuthStore()
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/profile', label: 'Profile', icon: User },
-  { to: '/profile/cv', label: 'CV', icon: FileText },
+  { to: '/cv', label: 'CV', icon: FileText },
   { to: '/opportunities', label: 'Opportunities', icon: Briefcase },
 ]
 
 function isActive(href: string): boolean {
   if (href === '/') return route.path === '/'
-  return route.path.startsWith(href)
+  const path = route.path
+  return path === href || path.startsWith(href + '/')
 }
 
 function getInitial(name: string): string {
@@ -30,38 +32,37 @@ function getInitial(name: string): string {
 
 async function handleLogout(): Promise<void> {
   await auth.logout()
+  router.push({ name: 'login' })
 }
 </script>
 
 <template>
   <aside
-    class="flex h-full flex-col border-r bg-[var(--surface-primary)]"
+    class="sidebar flex h-full flex-col"
     :aria-label="collapsed ? 'Navigation (collapsed)' : 'Main navigation'"
   >
-    <div class="flex items-center gap-2 px-4 pt-5 pb-4">
+    <div class="flex items-center gap-3 px-4 pt-6 pb-5">
       <span
-        class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-primary-600)] text-xs font-bold text-[var(--text-on-primary)]"
+        class="sidebar-logo flex size-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white"
       >
         CP
       </span>
       <Transition name="fade">
-        <span v-if="!collapsed" class="text-lg font-bold tracking-tight text-[var(--text-primary)]">
+        <span v-if="!collapsed" class="text-lg font-bold tracking-tight text-white">
           CareerPilot
         </span>
       </Transition>
     </div>
 
-    <nav class="flex-1 space-y-1 px-3 pt-2">
+    <nav class="flex-1 space-y-1.5 px-3 pt-2">
       <router-link
         v-for="item in navItems"
         :key="item.to"
         :to="item.to"
-        class="group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium no-underline transition-colors"
+        class="sidebar-nav-item group flex items-center rounded-xl text-sm font-medium no-underline transition-all duration-200"
         :class="[
-          isActive(item.to)
-            ? 'bg-[var(--color-primary-50)] text-[var(--color-primary-700)]'
-            : 'text-[var(--text-secondary)] hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]',
-          collapsed ? 'justify-center' : 'gap-3',
+          isActive(item.to) ? 'sidebar-nav-item--active text-white' : 'text-white/70 hover:text-white',
+          collapsed ? 'justify-center px-2 py-3' : 'gap-3 px-3 py-3',
         ]"
         :title="collapsed ? item.label : undefined"
       >
@@ -77,22 +78,22 @@ async function handleLogout(): Promise<void> {
       </router-link>
     </nav>
 
-    <div class="border-t px-3 py-4">
+    <div class="mt-auto px-3 py-4">
       <div
-        class="flex items-center gap-3 px-3 pb-3"
-        :class="collapsed ? 'justify-center px-0' : ''"
+        class="sidebar-user-card flex items-center gap-3 px-3 py-3"
+        :class="collapsed ? 'justify-center px-2' : ''"
       >
         <span
-          class="flex size-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-100)] text-sm font-semibold text-[var(--color-primary-700)]"
+          class="sidebar-avatar flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
         >
           {{ auth.user?.full_name ? getInitial(auth.user.full_name) : '?' }}
         </span>
         <Transition name="fade">
           <div v-if="!collapsed" class="min-w-0 flex-1">
-            <p class="truncate text-sm font-medium text-[var(--text-primary)]">
+            <p class="truncate text-sm font-medium text-white">
               {{ auth.user?.full_name }}
             </p>
-            <p class="truncate text-xs text-[var(--text-muted)]">
+            <p class="truncate text-xs text-white/60">
               {{ auth.user?.email }}
             </p>
           </div>
@@ -100,8 +101,8 @@ async function handleLogout(): Promise<void> {
       </div>
       <button
         type="button"
-        class="flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
-        :class="collapsed ? 'justify-center' : 'gap-3'"
+        class="sidebar-logout-btn flex w-full items-center rounded-xl text-sm font-medium text-white/70 transition-all duration-200 hover:text-white"
+        :class="collapsed ? 'justify-center px-2 py-3' : 'gap-3 px-3 py-3'"
         :title="collapsed ? 'Logout' : undefined"
         @click="handleLogout"
       >
@@ -115,6 +116,85 @@ async function handleLogout(): Promise<void> {
 </template>
 
 <style scoped>
+.sidebar {
+  background: linear-gradient(
+    180deg,
+    #4a3ab5 0%,
+    #2a1f6e 100%
+  );
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-neo-sidebar);
+}
+
+.sidebar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0.02) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+}
+
+.sidebar-logo {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: var(--shadow-neo-sidebar);
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.sidebar-logo:hover {
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow:
+    var(--shadow-neo-sidebar),
+    inset 0 1px 2px rgba(255, 255, 255, 0.15);
+}
+
+.sidebar-nav-item {
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: var(--shadow-neo-sidebar);
+  border: none;
+}
+
+.sidebar-nav-item:hover:not(.sidebar-nav-item--active) {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-neo-sidebar);
+}
+
+.sidebar-nav-item--active {
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: var(--shadow-neo-sidebar-inset);
+  color: white;
+}
+
+.sidebar-user-card {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-neo-sidebar);
+  border-radius: var(--radius-xl);
+  border: none;
+}
+
+.sidebar-avatar {
+  background: linear-gradient(135deg, var(--color-primary-400) 0%, var(--color-primary-600) 100%);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    0 0 0 2px rgba(255, 255, 255, 0.15);
+}
+
+.sidebar-logout-btn {
+  background: transparent;
+  box-shadow: none;
+}
+
+.sidebar-logout-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
+}
+
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity var(--duration-fast) var(--ease-default);

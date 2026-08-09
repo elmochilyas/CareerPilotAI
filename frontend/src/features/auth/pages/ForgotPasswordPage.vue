@@ -36,17 +36,20 @@ async function handleSubmit(): Promise<void> {
 <template>
   <form @submit.prevent="handleSubmit" class="space-y-5">
     <div class="text-center">
-      <h1 class="text-lg font-bold tracking-tight text-slate-900">Reset your password</h1>
-      <p class="mt-1 text-sm text-slate-500">
+      <h1 class="text-[var(--text-xl)] font-semibold tracking-tight text-[var(--text-primary)]">
+        Reset your password
+      </h1>
+      <p class="mt-1 text-[var(--text-base)] text-[var(--text-secondary)]">
         Enter your email address and we'll send you a link to reset your password.
       </p>
     </div>
 
     <div
       v-if="successMessage"
-      class="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+      class="flex items-center gap-2 rounded-[var(--radius-xl)] bg-[var(--color-success-50)] px-4 py-3 text-[var(--text-base)] text-[var(--color-success-700)]"
+      style="box-shadow: var(--shadow-neo-inset)"
     >
-      <CheckCircle class="size-4 shrink-0 text-emerald-500" aria-hidden="true" />
+      <CheckCircle class="size-4 shrink-0 text-[var(--color-success-500)]" aria-hidden="true" />
       {{ successMessage }}
     </div>
 
@@ -65,10 +68,10 @@ async function handleSubmit(): Promise<void> {
       Send reset link
     </Button>
 
-    <p class="text-center text-sm text-slate-500">
+    <p class="text-center text-[var(--text-base)] text-[var(--text-secondary)]">
       <RouterLink
         :to="{ name: 'login' }"
-        class="font-medium text-primary-600 hover:text-primary-500"
+        class="font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-700)]"
       >
         Back to sign in
       </RouterLink>

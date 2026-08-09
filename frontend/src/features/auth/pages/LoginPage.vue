@@ -54,23 +54,29 @@ const fieldError = (field: string) => errors.value[field]?.[0]
 <template>
   <form @submit.prevent="handleSubmit" class="space-y-5">
     <div class="text-center">
-      <h1 class="text-lg font-bold tracking-tight text-slate-900">Sign in to your account</h1>
-      <p class="mt-1 text-sm text-slate-500">Welcome back to CareerPilot</p>
+      <h1 class="text-[var(--text-xl)] font-semibold tracking-tight text-[var(--text-primary)]">
+        Sign in to your account
+      </h1>
+      <p class="mt-1 text-[var(--text-sm)] text-[var(--text-secondary)]">
+        Welcome back to CareerPilot
+      </p>
     </div>
 
     <div
       v-if="resetSuccess"
-      class="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+      class="flex items-center gap-2 rounded-[var(--radius-xl)] bg-[var(--color-success-50)] px-4 py-3 text-[var(--text-base)] text-[var(--color-success-700)]"
+      style="box-shadow: var(--shadow-neo-inset)"
     >
-      <CheckCircle class="size-4 shrink-0 text-emerald-500" aria-hidden="true" />
+      <CheckCircle class="size-4 shrink-0 text-[var(--color-success-500)]" aria-hidden="true" />
       Password reset successful. Sign in with your new password.
     </div>
 
     <div
       v-if="serverError"
-      class="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+      class="flex items-center gap-2 rounded-[var(--radius-xl)] bg-[var(--color-error-50)] px-4 py-3 text-[var(--text-base)] text-[var(--color-error-700)]"
+      style="box-shadow: var(--shadow-neo-inset)"
     >
-      <AlertCircle class="size-4 shrink-0 text-red-500" aria-hidden="true" />
+      <AlertCircle class="size-4 shrink-0 text-[var(--color-error-500)]" aria-hidden="true" />
       {{ serverError }}
     </div>
 
@@ -98,7 +104,7 @@ const fieldError = (field: string) => errors.value[field]?.[0]
     <div class="flex items-center justify-end">
       <RouterLink
         :to="{ name: 'forgot-password' }"
-        class="text-sm font-medium text-primary-600 hover:text-primary-500"
+        class="text-[var(--text-sm)] font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-700)]"
       >
         Forgot password?
       </RouterLink>
@@ -108,11 +114,11 @@ const fieldError = (field: string) => errors.value[field]?.[0]
       Sign in
     </Button>
 
-    <p class="text-center text-sm text-slate-500">
+    <p class="text-center text-[var(--text-base)] text-[var(--text-secondary)]">
       Don't have an account?
       <RouterLink
         :to="{ name: 'register' }"
-        class="font-medium text-primary-600 hover:text-primary-500"
+        class="font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-700)]"
       >
         Register
       </RouterLink>

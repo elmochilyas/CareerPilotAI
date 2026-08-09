@@ -28,20 +28,20 @@ const breadcrumbs: Record<string, string> = {
 
 <template>
   <header
-    class="fixed top-0 right-0 z-[var(--z-sticky)] flex h-[var(--topbar-height)] items-center border-b bg-[var(--surface-primary)] px-4"
-    :style="{ left: '0' }"
+    class="topbar fixed top-0 right-0 z-[var(--z-sticky)] flex h-[var(--topbar-height)] items-center bg-[var(--surface-primary)] px-4"
+    style="left: 0"
     role="banner"
   >
     <button
       type="button"
-      class="mr-3 flex size-8 items-center justify-center rounded-lg text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)] lg:hidden"
+      class="topbar-btn mr-3 flex size-8 items-center justify-center rounded-xl bg-[var(--surface-primary)] text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] lg:hidden"
       aria-label="Toggle sidebar"
       @click="$emit('toggleSidebar')"
     >
       <Menu :size="20" />
     </button>
 
-    <div class="flex items-center gap-2 text-sm">
+    <div class="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
       <span class="font-medium text-[var(--text-primary)]">
         {{ breadcrumbs[route.name as string] ?? (route.meta?.title as string) ?? '' }}
       </span>
@@ -50,7 +50,7 @@ const breadcrumbs: Record<string, string> = {
     <div class="ml-auto flex items-center gap-3">
       <button
         type="button"
-        class="relative flex size-8 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-secondary)] hover:text-[var(--text-primary)]"
+        class="topbar-btn topbar-bell relative flex size-8 items-center justify-center rounded-full bg-[var(--surface-secondary)] text-[var(--text-secondary)] transition-colors duration-[120ms] hover:text-[var(--text-primary)]"
         aria-label="Notifications"
       >
         <Bell :size="18" />
@@ -64,3 +64,17 @@ const breadcrumbs: Record<string, string> = {
     </div>
   </header>
 </template>
+
+<style scoped>
+.topbar {
+  box-shadow: 0 4px 12px rgba(203, 198, 208, 0.4);
+}
+
+.topbar-btn {
+  box-shadow: var(--shadow-neo-raised-sm);
+}
+
+.topbar-bell {
+  box-shadow: var(--shadow-neo-raised-sm);
+}
+</style>

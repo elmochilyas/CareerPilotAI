@@ -63,8 +63,12 @@ const fieldError = (field: string) => errors.value[field]?.[0]
 <template>
   <form @submit.prevent="handleSubmit" class="space-y-5">
     <div class="text-center">
-      <h1 class="text-lg font-bold tracking-tight text-slate-900">Create your account</h1>
-      <p class="mt-1 text-sm text-slate-500">Get started with CareerPilot</p>
+      <h1 class="text-[var(--text-xl)] font-semibold tracking-tight text-[var(--text-primary)]">
+        Create your account
+      </h1>
+      <p class="mt-1 text-[var(--text-sm)] text-[var(--text-secondary)]">
+        Get started with CareerPilot
+      </p>
     </div>
 
     <FormField label="Full name" :error="fieldError('full_name')" required>
@@ -98,7 +102,10 @@ const fieldError = (field: string) => errors.value[field]?.[0]
       />
       <div v-if="form.password" class="mt-2 space-y-1.5">
         <div class="flex gap-1">
-          <div class="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-200">
+          <div
+            class="h-1.5 flex-1 overflow-hidden rounded-full bg-[var(--surface-page)]"
+            style="box-shadow: var(--shadow-neo-inset)"
+          >
             <div
               class="h-full rounded-full transition-all duration-300 ease-out"
               :class="passwordStrength.color"
@@ -106,9 +113,9 @@ const fieldError = (field: string) => errors.value[field]?.[0]
             />
           </div>
         </div>
-        <p class="text-xs text-slate-500">
+        <p class="text-[var(--text-sm)] text-[var(--text-secondary)]">
           Password strength:
-          <span class="font-medium text-slate-700">{{ passwordStrength.label }}</span>
+          <span class="font-medium text-[var(--text-primary)]">{{ passwordStrength.label }}</span>
         </p>
       </div>
     </FormField>
@@ -127,11 +134,11 @@ const fieldError = (field: string) => errors.value[field]?.[0]
       Create account
     </Button>
 
-    <p class="text-center text-sm text-slate-500">
+    <p class="text-center text-[var(--text-base)] text-[var(--text-secondary)]">
       Already have an account?
       <RouterLink
         :to="{ name: 'login' }"
-        class="font-medium text-primary-600 hover:text-primary-500"
+        class="font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-700)]"
       >
         Sign in
       </RouterLink>
