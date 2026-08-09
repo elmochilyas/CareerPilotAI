@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterView, RouterLink } from 'vue-router'
 import authBg from '@/assets/images/auth-bg.jpg'
+import logo from '@/assets/images/logo.png'
 </script>
 
 <template>
@@ -10,11 +11,7 @@ import authBg from '@/assets/images/auth-bg.jpg'
 
     <div class="auth-bg__content">
       <RouterLink to="/" class="auth-bg__logo" aria-label="CareerPilot home">
-        <span
-          class="auth-bg__logo-icon flex size-9 items-center justify-center rounded-xl bg-[var(--surface-primary)] text-sm font-bold text-[var(--text-primary)]"
-        >
-          CP
-        </span>
+        <img :src="logo" alt="CareerPilot" class="auth-bg__logo-img" />
         <span class="text-xl font-bold tracking-tight text-white"> CareerPilot </span>
       </RouterLink>
 
@@ -71,9 +68,11 @@ import authBg from '@/assets/images/auth-bg.jpg'
   flex-shrink: 0;
 }
 
-.auth-bg__logo-icon {
+.auth-bg__logo-img {
+  height: 2.25rem;
+  width: auto;
+  border-radius: 0.75rem;
   box-shadow: var(--shadow-neo-raised);
-  border: none;
 }
 
 .auth-bg__card {

@@ -2,6 +2,7 @@
 import { useRoute, useRouter } from 'vue-router'
 import { LayoutDashboard, User, FileText, Briefcase, LogOut } from '@lucide/vue'
 import { useAuthStore } from '@/stores/auth'
+import logo from '@/assets/images/logo.png'
 
 defineOptions({ name: 'AppSidebar' })
 
@@ -42,11 +43,7 @@ async function handleLogout(): Promise<void> {
     :aria-label="collapsed ? 'Navigation (collapsed)' : 'Main navigation'"
   >
     <div class="flex items-center gap-3 px-4 pt-6 pb-5">
-      <span
-        class="sidebar-logo flex size-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white"
-      >
-        CP
-      </span>
+      <img :src="logo" alt="CareerPilot" class="sidebar-logo" />
       <Transition name="fade">
         <span v-if="!collapsed" class="text-lg font-bold tracking-tight text-white">
           CareerPilot
@@ -139,10 +136,12 @@ async function handleLogout(): Promise<void> {
 }
 
 .sidebar-logo {
-  background: rgba(255, 255, 255, 0.12);
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.75rem;
   box-shadow: var(--shadow-neo-sidebar);
-  border: none;
   transition: all 0.2s ease;
+  object-fit: contain;
 }
 
 .sidebar-logo:hover {
