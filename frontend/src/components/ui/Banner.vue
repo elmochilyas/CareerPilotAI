@@ -17,28 +17,28 @@ const variantStyles: Record<
   { bg: string; border: string; icon: string; text: string }
 > = {
   info: {
-    bg: 'bg-blue-50',
-    border: 'border-blue-200',
-    icon: 'text-blue-500',
-    text: 'text-blue-800',
+    bg: 'bg-[var(--color-info-50)]',
+    border: 'border-[var(--color-info-100)]',
+    icon: 'text-[var(--color-info-500)]',
+    text: 'text-[var(--color-info-700)]',
   },
   success: {
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-200',
-    icon: 'text-emerald-500',
-    text: 'text-emerald-800',
+    bg: 'bg-[var(--color-success-50)]',
+    border: 'border-[var(--color-success-100)]',
+    icon: 'text-[var(--color-success-500)]',
+    text: 'text-[var(--color-success-700)]',
   },
   warning: {
-    bg: 'bg-amber-50',
-    border: 'border-amber-200',
-    icon: 'text-amber-500',
-    text: 'text-amber-800',
+    bg: 'bg-[var(--color-warning-50)]',
+    border: 'border-[var(--color-warning-100)]',
+    icon: 'text-[var(--color-warning-500)]',
+    text: 'text-[var(--color-warning-700)]',
   },
   error: {
-    bg: 'bg-red-50',
-    border: 'border-red-200',
-    icon: 'text-red-500',
-    text: 'text-red-800',
+    bg: 'bg-[var(--color-error-50)]',
+    border: 'border-[var(--color-error-100)]',
+    icon: 'text-[var(--color-error-500)]',
+    text: 'text-[var(--color-error-700)]',
   },
 }
 

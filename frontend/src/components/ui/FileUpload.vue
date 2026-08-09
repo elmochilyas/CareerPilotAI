@@ -57,13 +57,13 @@ function validateAndEmit(file: File) {
 <template>
   <div>
     <div
-      class="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-8 text-center transition-colors"
+      class="flex flex-col items-center justify-center gap-2 rounded-xl p-8 text-center transition-all duration-200"
       :class="
         disabled
-          ? 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400'
+          ? 'cursor-not-allowed bg-[var(--surface-sunken)] text-[var(--text-muted)]'
           : isDragging
-            ? 'border-primary-400 bg-primary-50 text-primary-600'
-            : 'cursor-pointer border-slate-300 bg-white text-slate-500 hover:border-primary-300 hover:bg-primary-50/50 hover:text-primary-600'
+            ? 'bg-[var(--color-primary-50)] text-[var(--color-primary-600)] shadow-[var(--shadow-neo-button-pressed)]'
+            : 'cursor-pointer bg-[var(--surface-secondary)] text-[var(--text-secondary)] shadow-[var(--shadow-neo-inset-lg)] hover:bg-[var(--color-primary-25)] hover:text-[var(--color-primary-600)]'
       "
       @dragover="onDragOver"
       @dragleave="onDragLeave"
@@ -73,10 +73,10 @@ function validateAndEmit(file: File) {
       <Upload class="size-8" aria-hidden="true" />
       <div>
         <p class="text-sm font-medium">
-          <span class="text-primary-600">Click to browse</span>
+          <span class="text-[var(--color-primary-600)]">Click to browse</span>
           <span v-if="!disabled"> or drag and drop</span>
         </p>
-        <p v-if="accept" class="mt-1 text-xs text-slate-400">Accepted: {{ accept }}</p>
+        <p v-if="accept" class="mt-1 text-xs text-[var(--text-muted)]">Accepted: {{ accept }}</p>
       </div>
     </div>
     <input
@@ -87,7 +87,7 @@ function validateAndEmit(file: File) {
       class="hidden"
       @change="onFileChange"
     />
-    <p v-if="error" class="mt-1.5 text-xs text-red-600" role="alert">
+    <p v-if="error" class="mt-1.5 text-xs text-[var(--color-error-600)]" role="alert">
       {{ error }}
     </p>
   </div>

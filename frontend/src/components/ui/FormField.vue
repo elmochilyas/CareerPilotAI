@@ -10,15 +10,15 @@ defineProps<{
 
 <template>
   <div class="grid gap-1.5">
-    <label v-if="label" :for="htmlFor" class="text-sm font-medium text-slate-700">
+    <label v-if="label" :for="htmlFor" class="text-sm font-medium text-[var(--text-secondary)]">
       {{ label }}
-      <span v-if="required" class="text-red-500" aria-hidden="true">*</span>
+      <span v-if="required" class="text-[var(--color-error-500)]" aria-hidden="true">*</span>
     </label>
     <slot />
-    <p v-if="error" class="text-xs text-red-600" role="alert">
+    <p v-if="error" class="text-xs text-[var(--color-error-600)]" role="alert">
       {{ error }}
     </p>
-    <p v-else-if="hint" class="text-xs text-slate-500">
+    <p v-else-if="hint" class="text-xs text-[var(--text-muted)]">
       {{ hint }}
     </p>
   </div>

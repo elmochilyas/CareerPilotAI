@@ -43,21 +43,21 @@ function clear() {
 <template>
   <div class="relative">
     <Search
-      class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
+      class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--text-muted)]"
       aria-hidden="true"
     />
     <input
       type="text"
       :value="localValue"
       :placeholder="placeholder"
-      class="min-h-10 w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-9 text-sm shadow-sm transition-all placeholder:text-slate-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+      class="min-h-10 w-full rounded-xl bg-[var(--surface-secondary)] py-2 pl-9 pr-9 text-sm shadow-[var(--shadow-neo-inset)] transition-all duration-200 placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/20 disabled:cursor-not-allowed disabled:opacity-50"
       aria-label="Search"
       @input="onInput"
     />
     <button
       v-if="localValue"
       type="button"
-      class="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500/40"
+      class="absolute right-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-primary)] hover:text-[var(--text-secondary)] hover:shadow-[var(--shadow-neo-raised-sm)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/30"
       aria-label="Clear search"
       @click="clear"
     >

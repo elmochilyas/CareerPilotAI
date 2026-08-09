@@ -58,8 +58,8 @@ function onKeydown(e: KeyboardEvent) {
 <template>
   <div v-if="!isEditing" class="group flex items-center gap-2">
     <span
-      class="cursor-pointer rounded px-1 text-sm transition-colors hover:bg-slate-100"
-      :class="modelValue ? 'text-slate-900' : 'text-slate-400 italic'"
+      class="cursor-pointer rounded-lg px-1.5 py-0.5 text-sm transition-all duration-200 hover:bg-[var(--surface-secondary)] hover:shadow-[var(--shadow-neo-raised-sm)]"
+      :class="modelValue ? 'text-[var(--text-primary)]' : 'text-[var(--text-muted)] italic'"
       role="button"
       tabindex="0"
       @click="startEdit"
@@ -69,7 +69,7 @@ function onKeydown(e: KeyboardEvent) {
     </span>
     <button
       type="button"
-      class="invisible flex size-6 items-center justify-center rounded text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 focus:visible focus:outline-none focus:ring-2 focus:ring-primary-500/40 group-hover:visible"
+      class="invisible flex size-6 items-center justify-center rounded-lg text-[var(--text-muted)] transition-all duration-200 hover:bg-[var(--surface-secondary)] hover:shadow-[var(--shadow-neo-raised-sm)] hover:text-[var(--text-secondary)] focus:visible focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/40 group-hover:visible"
       aria-label="Edit"
       @click="startEdit"
     >
@@ -82,12 +82,12 @@ function onKeydown(e: KeyboardEvent) {
       v-model="localValue"
       type="text"
       :placeholder="placeholder"
-      class="min-h-8 w-full max-w-xs rounded border border-slate-300 px-2 text-sm shadow-sm focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+      class="min-h-8 w-full max-w-xs rounded-xl bg-[var(--surface-secondary)] px-2.5 text-sm shadow-[var(--shadow-neo-inset)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/30"
       @keydown="onKeydown"
     />
     <button
       type="button"
-      class="flex size-7 items-center justify-center rounded text-emerald-600 transition-colors hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
+      class="flex size-7 items-center justify-center rounded-lg text-[var(--color-success-600)] transition-all duration-200 hover:bg-[var(--color-success-50)] hover:shadow-[var(--shadow-neo-raised-sm)] focus:outline-none focus:ring-2 focus:ring-[var(--color-success-500)]/40"
       aria-label="Save"
       @click="saveEdit"
     >
@@ -95,7 +95,7 @@ function onKeydown(e: KeyboardEvent) {
     </button>
     <button
       type="button"
-      class="flex size-7 items-center justify-center rounded text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500/40"
+      class="flex size-7 items-center justify-center rounded-lg text-[var(--text-muted)] transition-all duration-200 hover:bg-[var(--surface-secondary)] hover:shadow-[var(--shadow-neo-raised-sm)] hover:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/40"
       aria-label="Cancel"
       @click="cancelEdit"
     >

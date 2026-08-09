@@ -51,19 +51,19 @@ function onPaste(e: ClipboardEvent) {
 
 <template>
   <div
-    class="flex min-h-[44px] flex-wrap items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-2.5 py-1.5 shadow-sm has-focus:border-primary-400 has-focus:ring-2 has-focus:ring-primary-500/30"
+    class="flex min-h-[44px] flex-wrap items-center gap-1.5 rounded-xl bg-[var(--surface-secondary)] px-2.5 py-1.5 shadow-[var(--shadow-neo-inset)] has-focus:ring-2 has-focus:ring-[var(--color-primary-500)]/30 transition-all duration-200"
     @click="inputEl?.focus()"
   >
     <span
       v-for="(tag, i) in modelValue"
       :key="i"
-      class="inline-flex select-none items-center gap-1 rounded-lg bg-primary-50 px-2.5 py-1 text-sm font-medium text-primary-800"
+      class="inline-flex select-none items-center gap-1 rounded-full bg-[var(--color-primary-50)] px-2.5 py-1 text-sm font-medium text-[var(--color-primary-700)] shadow-[var(--shadow-neo-raised-sm)]"
     >
       {{ tag }}
       <button
         v-if="!disabled"
         type="button"
-        class="-mr-0.5 inline-flex size-4 cursor-pointer items-center justify-center rounded-full text-primary-500 transition-all hover:bg-primary-200 hover:text-primary-900"
+        class="-mr-0.5 inline-flex size-4 cursor-pointer items-center justify-center rounded-full text-[var(--color-primary-400)] transition-all hover:text-[var(--color-primary-600)]"
         :aria-label="`Remove ${tag}`"
         @click.stop="remove(i)"
       >
@@ -79,7 +79,7 @@ function onPaste(e: ClipboardEvent) {
           ? placeholder || 'Type and press Enter'
           : ''
       "
-      class="min-w-[120px] flex-1 border-none bg-transparent px-1 py-1 text-sm outline-none placeholder:text-slate-400 disabled:cursor-not-allowed"
+      class="min-w-[120px] flex-1 border-none bg-transparent px-1 py-1 text-sm outline-none placeholder:text-[var(--text-muted)] disabled:cursor-not-allowed"
       @keydown="onKeydown"
       @paste="onPaste"
     />

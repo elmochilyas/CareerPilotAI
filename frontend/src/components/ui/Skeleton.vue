@@ -8,5 +8,5 @@ withDefaults(
 </script>
 
 <template>
-  <div class="ds-animate-shimmer rounded-lg" :class="classes" />
+  <div class="ds-animate-shimmer rounded-xl" :class="classes" />
 </template>

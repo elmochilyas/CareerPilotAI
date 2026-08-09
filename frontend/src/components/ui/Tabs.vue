@@ -56,7 +56,10 @@ function onKeydown(e: KeyboardEvent, index: number) {
 </script>
 
 <template>
-  <div role="tablist" class="flex gap-1 border-b border-slate-200">
+  <div
+    role="tablist"
+    class="flex gap-1 rounded-xl bg-[var(--surface-secondary)] shadow-[var(--shadow-neo-inset)] p-1"
+  >
     <button
       v-for="(tab, index) in tabs"
       :key="tab.key"
@@ -72,11 +75,11 @@ function onKeydown(e: KeyboardEvent, index: number) {
       :tabindex="modelValue === tab.key ? 0 : -1"
       :disabled="tab.disabled"
       type="button"
-      class="inline-flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+      class="inline-flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium transition-all duration-200 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
       :class="
         modelValue === tab.key
-          ? 'border-primary-600 text-primary-600'
-          : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
+          ? 'bg-[var(--surface-primary)] text-[var(--color-primary-600)] shadow-[var(--shadow-neo-raised-sm)]'
+          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
       "
       @click="selectTab(tab.key, tab.disabled)"
       @keydown="onKeydown($event, index)"

@@ -32,12 +32,12 @@ const placementMap: Record<TooltipPosition, string> = {
   right: 'left-full top-1/2 -translate-y-1/2 ml-2',
 }
 const arrowMap: Record<TooltipPosition, string> = {
-  top: 'left-1/2 -translate-x-1/2 -translate-y-full border-b-slate-800 border-x-transparent border-t-0 border-[5px]',
+  top: 'left-1/2 -translate-x-1/2 -translate-y-full border-b-[var(--color-neutral-800)] border-x-transparent border-t-0 border-[5px]',
   bottom:
-    'left-1/2 -translate-x-1/2 translate-y-full border-t-slate-800 border-x-transparent border-b-0 border-[5px]',
-  left: 'top-1/2 -translate-y-1/2 -translate-x-full border-r-slate-800 border-y-transparent border-l-0 border-[5px]',
+    'left-1/2 -translate-x-1/2 translate-y-full border-t-[var(--color-neutral-800)] border-x-transparent border-b-0 border-[5px]',
+  left: 'top-1/2 -translate-y-1/2 -translate-x-full border-r-[var(--color-neutral-800)] border-y-transparent border-l-0 border-[5px]',
   right:
-    'top-1/2 -translate-y-1/2 translate-x-full border-l-slate-800 border-y-transparent border-r-0 border-[5px]',
+    'top-1/2 -translate-y-1/2 translate-x-full border-l-[var(--color-neutral-800)] border-y-transparent border-r-0 border-[5px]',
 }
 
 function getPlacement(pos: string): string {
@@ -73,7 +73,7 @@ function onMouseleave() {
     <Transition name="tooltip">
       <div
         v-if="visible && text"
-        class="absolute whitespace-nowrap rounded-md bg-slate-800 px-2.5 py-1.5 text-xs font-medium text-white shadow-lg pointer-events-none"
+        class="absolute whitespace-nowrap rounded-xl bg-[var(--color-neutral-800)] px-2.5 py-1.5 text-xs font-medium text-white shadow-[var(--shadow-neo-raised-sm)] pointer-events-none"
         :class="getPlacement(position)"
         role="tooltip"
         style="z-index: var(--z-tooltip)"

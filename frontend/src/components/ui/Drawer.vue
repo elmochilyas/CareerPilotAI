@@ -67,7 +67,7 @@ function onKeydown(e: KeyboardEvent) {
     <Transition name="drawer-backdrop">
       <div
         v-if="open"
-        class="fixed inset-0 bg-slate-950/40"
+        class="fixed inset-0 bg-black/30 backdrop-blur-sm"
         style="z-index: var(--z-modal)"
         @click="closeable ? emit('close') : undefined"
       />
@@ -76,7 +76,7 @@ function onKeydown(e: KeyboardEvent) {
       <div
         v-if="open"
         ref="panelRef"
-        class="fixed inset-y-0 right-0 flex flex-col overflow-hidden bg-white shadow-xl"
+        class="fixed inset-y-0 right-0 flex flex-col overflow-hidden bg-[var(--surface-primary)] shadow-[var(--shadow-neo-raised-lg)]"
         :class="sizeClass[size]"
         style="z-index: var(--z-modal)"
         role="dialog"
@@ -85,17 +85,14 @@ function onKeydown(e: KeyboardEvent) {
         tabindex="-1"
         @keydown="onKeydown"
       >
-        <div
-          v-if="title || closeable"
-          class="flex items-center justify-between border-b border-slate-100 px-6 py-4"
-        >
-          <h2 class="text-lg font-semibold text-slate-900">
+        <div v-if="title || closeable" class="flex items-center justify-between px-6 py-4">
+          <h2 class="text-lg font-semibold text-[var(--text-primary)]">
             {{ title }}
           </h2>
           <button
             v-if="closeable"
             type="button"
-            class="flex size-8 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary-500/40"
+            class="flex size-8 items-center justify-center rounded-xl text-[var(--text-muted)] transition-all hover:bg-[var(--surface-secondary)] hover:shadow-[var(--shadow-neo-raised-sm)] hover:text-[var(--text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/40"
             aria-label="Close"
             @click="emit('close')"
           >
@@ -105,7 +102,7 @@ function onKeydown(e: KeyboardEvent) {
         <div class="flex-1 overflow-y-auto px-6 py-4">
           <slot />
         </div>
-        <div v-if="$slots.footer" class="border-t border-slate-100 px-6 py-4">
+        <div v-if="$slots.footer" class="bg-[var(--surface-secondary)] px-6 py-4">
           <slot name="footer" />
         </div>
       </div>

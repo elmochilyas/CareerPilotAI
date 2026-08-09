@@ -33,20 +33,20 @@ const emit = defineEmits<{
 const variantConfig = {
   danger: {
     icon: Trash2,
-    bg: 'bg-red-100',
-    color: 'text-red-600',
+    bg: 'bg-[var(--color-error-50)]',
+    color: 'text-[var(--color-error-600)]',
     buttonVariant: 'danger' as const,
   },
   warning: {
     icon: AlertTriangle,
-    bg: 'bg-amber-100',
-    color: 'text-amber-600',
+    bg: 'bg-[var(--color-warning-50)]',
+    color: 'text-[var(--color-warning-600)]',
     buttonVariant: 'primary' as const,
   },
   info: {
     icon: Info,
-    bg: 'bg-blue-100',
-    color: 'text-blue-600',
+    bg: 'bg-[var(--color-info-50)]',
+    color: 'text-[var(--color-info-600)]',
     buttonVariant: 'primary' as const,
   },
 }
@@ -57,7 +57,7 @@ const variantConfig = {
     <div class="p-6">
       <div class="flex items-start gap-4">
         <div
-          class="flex size-10 shrink-0 items-center justify-center rounded-full"
+          class="flex size-10 shrink-0 items-center justify-center rounded-full shadow-[var(--shadow-neo-raised-sm)]"
           :class="[variantConfig[variant].bg]"
         >
           <component
@@ -69,13 +69,13 @@ const variantConfig = {
           />
         </div>
         <div>
-          <p class="text-sm text-slate-600">
+          <p class="text-sm text-[var(--text-secondary)]">
             {{ props.description }}
           </p>
         </div>
       </div>
     </div>
-    <div class="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/50 px-6 py-4">
+    <div class="flex justify-end gap-2 bg-[var(--surface-secondary)] px-6 py-4">
       <Button variant="outline" :disabled="props.busy" @click="emit('cancel')">
         {{ props.cancelLabel }}
       </Button>

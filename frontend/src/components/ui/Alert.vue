@@ -15,33 +15,26 @@ const emit = defineEmits<{
 }>()
 
 type VariantKey = 'info' | 'success' | 'warning' | 'error'
-const variantStyles: Record<
-  VariantKey,
-  { bg: string; border: string; icon: string; text: string }
-> = {
+const variantStyles: Record<VariantKey, { bg: string; icon: string; text: string }> = {
   info: {
-    bg: 'bg-blue-50',
-    border: 'border-blue-200',
-    icon: 'text-blue-500',
-    text: 'text-blue-800',
+    bg: 'bg-[var(--color-info-50)]',
+    icon: 'text-[var(--color-info-500)]',
+    text: 'text-[var(--color-info-700)]',
   },
   success: {
-    bg: 'bg-emerald-50',
-    border: 'border-emerald-200',
-    icon: 'text-emerald-500',
-    text: 'text-emerald-800',
+    bg: 'bg-[var(--color-success-50)]',
+    icon: 'text-[var(--color-success-500)]',
+    text: 'text-[var(--color-success-700)]',
   },
   warning: {
-    bg: 'bg-amber-50',
-    border: 'border-amber-200',
-    icon: 'text-amber-500',
-    text: 'text-amber-800',
+    bg: 'bg-[var(--color-warning-50)]',
+    icon: 'text-[var(--color-warning-500)]',
+    text: 'text-[var(--color-warning-700)]',
   },
   error: {
-    bg: 'bg-red-50',
-    border: 'border-red-200',
-    icon: 'text-red-500',
-    text: 'text-red-800',
+    bg: 'bg-[var(--color-error-50)]',
+    icon: 'text-[var(--color-error-500)]',
+    text: 'text-[var(--color-error-700)]',
   },
 }
 </script>
@@ -49,8 +42,8 @@ const variantStyles: Record<
 <template>
   <div
     role="alert"
-    class="flex items-start gap-3 rounded-lg border p-4"
-    :class="[variantStyles[variant as VariantKey].bg, variantStyles[variant as VariantKey].border]"
+    class="flex items-start gap-3 rounded-xl shadow-[var(--shadow-neo-raised-sm)] p-4"
+    :class="[variantStyles[variant as VariantKey].bg]"
   >
     <component
       :is="
@@ -81,7 +74,7 @@ const variantStyles: Record<
     <button
       v-if="closable"
       type="button"
-      class="shrink-0 rounded-md p-1 opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-current"
+      class="shrink-0 rounded-lg p-1 opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-current"
       :class="variantStyles[variant as VariantKey].text"
       aria-label="Dismiss"
       @click="emit('close')"

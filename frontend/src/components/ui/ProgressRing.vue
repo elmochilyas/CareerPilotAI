@@ -18,32 +18,34 @@ const offset = computed(
 </script>
 
 <template>
-  <div class="relative inline-flex items-center justify-center">
+  <div
+    class="relative inline-flex items-center justify-center rounded-full shadow-[var(--shadow-neo-raised-sm)]"
+  >
     <svg :width="size" :height="size" :viewBox="`0 0 ${size} ${size}`" class="-rotate-90">
       <circle
         :cx="size / 2"
         :cy="size / 2"
         :r="radius"
         fill="none"
-        stroke="currentColor"
+        stroke="var(--color-neutral-200)"
         :stroke-width="strokeWidth"
-        class="text-slate-100"
       />
       <circle
         :cx="size / 2"
         :cy="size / 2"
         :r="radius"
         fill="none"
-        stroke="currentColor"
+        stroke="var(--color-primary-600)"
         :stroke-width="strokeWidth"
         stroke-linecap="round"
         :stroke-dasharray="circumference"
         :stroke-dashoffset="offset"
-        class="text-primary-500 transition-[stroke-dashoffset] duration-700 motion-reduce:transition-none"
+        class="transition-[stroke-dashoffset] duration-700 motion-reduce:transition-none"
       />
     </svg>
-    <span class="absolute text-sm font-bold text-slate-900">
-      {{ Math.round(percentage) }}<span class="text-xs font-normal text-slate-400">%</span>
+    <span class="absolute text-sm font-bold text-[var(--text-primary)]">
+      {{ Math.round(percentage)
+      }}<span class="text-xs font-normal text-[var(--text-muted)]">%</span>
     </span>
   </div>
 </template>

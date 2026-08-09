@@ -60,8 +60,12 @@ function goTo(page: number) {
     <button
       type="button"
       :disabled="currentPage <= 1"
-      class="inline-flex size-9 items-center justify-center rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/40 disabled:cursor-not-allowed disabled:opacity-50"
-      :class="currentPage <= 1 ? 'text-slate-300' : 'text-slate-600 hover:bg-slate-100'"
+      class="inline-flex size-9 items-center justify-center rounded-xl text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/30 disabled:cursor-not-allowed disabled:opacity-50"
+      :class="
+        currentPage <= 1
+          ? 'text-[var(--text-muted)]'
+          : 'text-[var(--text-secondary)] bg-[var(--surface-secondary)] shadow-[var(--shadow-neo-inset)] hover:shadow-[var(--shadow-neo-raised-sm)]'
+      "
       aria-label="Previous page"
       @click="goTo(currentPage - 1)"
     >
@@ -70,7 +74,7 @@ function goTo(page: number) {
     <template v-for="(page, index) in pages" :key="index">
       <span
         v-if="typeof page === 'string'"
-        class="flex size-9 items-center justify-center text-sm text-slate-400"
+        class="flex size-9 items-center justify-center text-sm text-[var(--text-muted)]"
         aria-hidden="true"
       >
         ...
@@ -78,11 +82,11 @@ function goTo(page: number) {
       <button
         v-else
         type="button"
-        class="inline-flex size-9 items-center justify-center rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/40"
+        class="inline-flex size-9 items-center justify-center rounded-xl text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/30"
         :class="
           page === currentPage
-            ? 'bg-primary-600 text-white shadow-sm'
-            : 'text-slate-600 hover:bg-slate-100'
+            ? 'bg-[var(--color-primary-600)] text-white shadow-[var(--shadow-neo-button)]'
+            : 'text-[var(--text-secondary)] bg-[var(--surface-secondary)] shadow-[var(--shadow-neo-inset)] hover:shadow-[var(--shadow-neo-raised-sm)]'
         "
         :aria-current="page === currentPage ? 'page' : undefined"
         @click="goTo(page)"
@@ -93,8 +97,12 @@ function goTo(page: number) {
     <button
       type="button"
       :disabled="currentPage >= totalPages"
-      class="inline-flex size-9 items-center justify-center rounded-lg text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500/40 disabled:cursor-not-allowed disabled:opacity-50"
-      :class="currentPage >= totalPages ? 'text-slate-300' : 'text-slate-600 hover:bg-slate-100'"
+      class="inline-flex size-9 items-center justify-center rounded-xl text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/30 disabled:cursor-not-allowed disabled:opacity-50"
+      :class="
+        currentPage >= totalPages
+          ? 'text-[var(--text-muted)]'
+          : 'text-[var(--text-secondary)] bg-[var(--surface-secondary)] shadow-[var(--shadow-neo-inset)] hover:shadow-[var(--shadow-neo-raised-sm)]'
+      "
       aria-label="Next page"
       @click="goTo(currentPage + 1)"
     >

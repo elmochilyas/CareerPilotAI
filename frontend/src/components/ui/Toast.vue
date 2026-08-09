@@ -24,7 +24,7 @@ const variantStyles: Record<ToastVariant, { icon: typeof CheckCircle; color: str
         <div
           v-for="t in toasts"
           :key="t.id"
-          class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-lg ring-1 ring-slate-900/5"
+          class="w-full rounded-xl bg-[var(--surface-primary)] px-4 py-3 shadow-[var(--shadow-neo-raised-lg)]"
           role="status"
         >
           <div class="flex items-start gap-3">
@@ -34,10 +34,10 @@ const variantStyles: Record<ToastVariant, { icon: typeof CheckCircle; color: str
               class="mt-0.5 shrink-0"
               :class="variantStyles[t.variant].color"
             />
-            <p class="flex-1 text-sm text-slate-800">{{ t.message }}</p>
+            <p class="flex-1 text-sm text-[var(--text-primary)]">{{ t.message }}</p>
             <button
               type="button"
-              class="ml-1 shrink-0 text-slate-400 hover:text-slate-600"
+              class="ml-1 shrink-0 text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
               aria-label="Dismiss"
               @click="dismiss(t.id)"
             >
