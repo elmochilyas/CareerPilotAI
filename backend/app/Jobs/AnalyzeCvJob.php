@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Domain\CvIngestion\Actions\AnalyzeCvTextAction;
 use App\Domain\CvIngestion\Enums\CvDocumentStatus;
+use App\Domain\CvIngestion\Enums\CvProcessingRunStatus;
 use App\Models\CvDocument;
 use App\Models\CvProcessingRun;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -22,7 +23,6 @@ class AnalyzeCvJob implements ShouldQueue
     public function __construct(
         public int $cvDocumentId,
         public string $idempotencyKey,
-        public string $extractedText,
     ) {
         $this->onQueue(Config::get('cv-ingestion.queue', 'cv-ingestion'));
     }
@@ -47,8 +47,26 @@ class AnalyzeCvJob implements ShouldQueue
             return;
         }
 
+        $extractedText = $document->metadata['extracted_text'] ?? null;
+
+        if ($extractedText === null || $extractedText === '') {
+            $document->update([
+                'status' => CvDocumentStatus::Failed,
+                'failure_reason' => 'Extracted text not found in document metadata.',
+                'failure_code' => 'extracted_text_missing',
+            ]);
+            $run->update([
+                'status' => CvProcessingRunStatus::Failed,
+                'failure_reason' => 'Extracted text not found in metadata',
+                'failure_code' => 'extracted_text_missing',
+                'completed_at' => now(),
+            ]);
+
+            return;
+        }
+
         try {
-            $analyzeAction->execute($document, $run, $this->extractedText);
+            $analyzeAction->execute($document, $run, $extractedText);
         } catch (\Throwable $e) {
             $document->update([
                 'status' => CvDocumentStatus::Failed,
@@ -56,7 +74,7 @@ class AnalyzeCvJob implements ShouldQueue
                 'failure_code' => 'analysis_error',
             ]);
             $run->update([
-                'status' => 'failed',
+                'status' => CvProcessingRunStatus::Failed,
                 'failure_reason' => $e->getMessage(),
                 'failure_code' => 'analysis_error',
                 'completed_at' => now(),

@@ -12,10 +12,14 @@ import type { JobOpportunity } from '@/features/opportunities/types'
 
 const mocks = vi.hoisted(() => ({
   routeId: '5',
+  routeQuery: {} as Record<string, string>,
+  push: vi.fn<() => Promise<unknown>>(),
+  replace: vi.fn<() => Promise<unknown>>(),
   fetchOpportunity: vi.fn<() => Promise<unknown>>(),
   fetchMatchAnalyses: vi.fn<() => Promise<unknown>>(),
   createMatchAnalysis: vi.fn<(id: number, key: string) => Promise<unknown>>(),
   recalculateMatchAnalysis: vi.fn<(id: number) => Promise<unknown>>(),
+  fetchClarificationSession: vi.fn<() => Promise<unknown>>(),
   extractProblemDetail:
     vi.fn<(error: unknown) => { code?: string | null; detail?: string | null } | null>(),
 }))
@@ -39,6 +43,23 @@ vi.mock('@/features/matching/api', () => ({
   recalculateMatchAnalysis: mocks.recalculateMatchAnalysis,
 }))
 
+vi.mock('@/features/clarification/api', () => ({
+  clarificationKeys: {
+    all: ['clarifications'],
+    session: (analysisId: number) => ['clarifications', 'session', analysisId],
+    question: (questionId: number) => ['clarifications', 'question', questionId],
+  },
+  fetchClarificationSession: mocks.fetchClarificationSession,
+  generateClarificationSession: vi.fn<() => Promise<unknown>>(),
+  answerClarificationQuestion: vi.fn<() => Promise<unknown>>(),
+  reviewClarificationAnswer: vi.fn<() => Promise<unknown>>(),
+  skipClarificationQuestion: vi.fn<() => Promise<unknown>>(),
+}))
+
+vi.mock('@/features/skills/api', () => ({
+  skillKeys: { all: ['skills'], candidate: () => ['candidate-skills'] },
+}))
+
 vi.mock('vue-router', async () => {
   const { h } = await import('vue')
   return {
@@ -48,7 +69,11 @@ vi.mock('vue-router', async () => {
           return mocks.routeId
         },
       },
+      get query() {
+        return mocks.routeQuery
+      },
     }),
+    useRouter: () => ({ push: mocks.push, replace: mocks.replace }),
     RouterLink: {
       name: 'RouterLink',
       props: ['to'],
@@ -283,10 +308,17 @@ describe('MatchBriefPage with Vue Query', () => {
       randomUUID: () => '00000000-0000-4000-8000-000000000000',
     })
     mocks.routeId = '5'
+    mocks.routeQuery = {}
     mocks.fetchOpportunity.mockResolvedValue(makeOpportunity())
     mocks.fetchMatchAnalyses.mockResolvedValue(listWith(makeAnalysis()))
     mocks.createMatchAnalysis.mockResolvedValue(makeOperation())
     mocks.recalculateMatchAnalysis.mockResolvedValue(makeOperation({ id: 11 }))
+    mocks.fetchClarificationSession.mockResolvedValue({
+      analysis_id: 9,
+      questions: [],
+      progress: { answered: 0, total: 0 },
+      generable_count: 0,
+    })
     mocks.extractProblemDetail.mockReturnValue(null)
   })
 
@@ -351,10 +383,10 @@ describe('MatchBriefPage with Vue Query', () => {
     expect(page.find('#full-analysis').attributes('open')).toBeDefined()
 
     const pills = page.find('[aria-label="Filter by result"]').findAll('button')
-    const needsAttention = pills.find((button) => button.text().startsWith('Needs attention'))!
+    const gapsPill = pills.find((button) => button.text().startsWith('Gaps'))!
     const allPill = pills.find((button) => button.text() === 'All')!
 
-    await needsAttention.trigger('click')
+    await gapsPill.trigger('click')
     let workspace = page.find('[aria-label="Match requirements"]')
     expect(workspace.text()).toContain('API design')
     expect(workspace.text()).not.toContain('Laravel')
@@ -606,5 +638,269 @@ describe('MatchBriefPage with Vue Query', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('navigates to the clarification route from the entry card', async () => {
+    mocks.fetchClarificationSession.mockResolvedValue({
+      analysis_id: 9,
+      questions: [
+        {
+          id: 1,
+          question_no: 1,
+          question_type: 'yes_no',
+          prompt: 'Do you have professional Laravel experience?',
+          detail: null,
+          template_key: 'skill_evidence_confirm',
+          options: null,
+          unit: null,
+          status: 'pending',
+          requirement: { text: 'Laravel (required)', label: 'Required skill' },
+          answer: null,
+        },
+      ],
+      progress: { answered: 0, total: 1 },
+      generable_count: 0,
+    })
+
+    const page = await mountPage()
+
+    await page
+      .findAll('button')
+      .find((button) => button.text() === 'Answer questions')!
+      .trigger('click')
+    await flushPromises()
+
+    expect(mocks.push).toHaveBeenCalledWith({
+      name: 'opportunities-match-clarifications',
+      params: { id: 5 },
+    })
+  })
+
+  it('initializes the gap filter when the URL contains filter=gaps', async () => {
+    mocks.routeId = '5'
+    mocks.routeQuery = { filter: 'gaps' }
+
+    const page = await mountPage()
+
+    await page.find('#full-analysis summary').trigger('click')
+
+    const gapsPill = page
+      .find('[aria-label="Filter by result"]')
+      .findAll('button')
+      .find((button) => button.text().startsWith('Gaps'))!
+    expect(gapsPill.attributes('aria-pressed')).toBe('true')
+
+    mocks.routeQuery = {}
+  })
+
+  it('opens the full analysis section when view=analysis is in the URL', async () => {
+    mocks.routeQuery = { view: 'analysis' }
+
+    const page = await mountPage()
+
+    expect(page.find('#full-analysis').attributes('open')).toBeDefined()
+  })
+
+  it('opens full analysis and activates gap filter when view=analysis and filter=gaps', async () => {
+    mocks.routeQuery = { view: 'analysis', filter: 'gaps' }
+
+    const page = await mountPage()
+
+    expect(page.text()).toContain('Gaps to review')
+    expect(page.text()).toContain('requirement need attention')
+    expect(page.find('#full-analysis').exists()).toBe(false)
+    expect(page.find('[aria-labelledby="match-summary"]').exists()).toBe(false)
+    expect(page.find('[aria-labelledby="at-a-glance"]').exists()).toBe(false)
+
+    expect(page.text()).toContain('API design')
+    expect(page.text()).toContain('Gaps to review')
+  })
+
+  it('produces the correct URL when viewGaps is triggered from the opportunity page', async () => {
+    mocks.routeQuery = {}
+
+    const page = await mountPage()
+
+    await page
+      .find('[aria-labelledby="at-a-glance"]')
+      .findAll('button')
+      .find((button) => button.text().includes('Review gaps'))!
+      .trigger('click')
+    await flushPromises()
+
+    expect(mocks.replace).toHaveBeenCalledWith({
+      query: { view: 'analysis', filter: 'gaps' },
+    })
+  })
+
+  it('produces the correct URL when viewAll is triggered from gap review mode', async () => {
+    mocks.fetchMatchAnalyses.mockResolvedValue(
+      listWith(
+        makeAnalysis({
+          findings: [
+            makeFinding({
+              source_id: 1,
+              requirement_text: 'Laravel',
+              match_state: 'matched',
+              factor: 1,
+              evidence_refs: [{ type: 'candidate_skill', id: 7, label: 'Laravel' }],
+            }),
+            makeFinding({
+              source_id: 5,
+              requirement_text: 'Kubernetes',
+              match_state: 'gap',
+              factor: 0,
+              evidence_refs: [],
+            }),
+          ],
+        }),
+      ),
+    )
+    mocks.routeQuery = { view: 'analysis', filter: 'gaps' }
+
+    const page = await mountPage()
+
+    const viewAllLink = page.findAll('a').find((a) => a.text().includes('View full analysis'))!
+    expect(viewAllLink).toBeDefined()
+    expect(viewAllLink.text()).toContain('View full analysis')
+  })
+
+  it('preserves view=analysis state on refresh', async () => {
+    mocks.routeQuery = { view: 'analysis' }
+
+    const page = await mountPage()
+
+    expect(page.find('#full-analysis').attributes('open')).toBeDefined()
+    expect(page.text()).toContain('Full analysis')
+  })
+
+  describe('Gap review mode', () => {
+    it('renders focused gap review when URL has view=analysis and filter=gaps', async () => {
+      mocks.routeQuery = { view: 'analysis', filter: 'gaps' }
+
+      const page = await mountPage()
+
+      expect(page.text()).toContain('Gaps to review')
+      expect(page.text()).toContain('requirement need attention')
+      expect(page.find('#full-analysis').exists()).toBe(false)
+      expect(page.find('[aria-labelledby="match-summary"]').exists()).toBe(false)
+      expect(page.find('[aria-labelledby="at-a-glance"]').exists()).toBe(false)
+    })
+
+    it('hides hero, at-a-glance, and clarification card in gap review mode', async () => {
+      mocks.routeQuery = { view: 'analysis', filter: 'gaps' }
+
+      const page = await mountPage()
+
+      expect(page.find('[aria-labelledby="match-summary"]').exists()).toBe(false)
+      expect(page.find('[aria-labelledby="at-a-glance"]').exists()).toBe(false)
+      expect(page.find('[aria-label="Clarification entry"]').exists()).toBe(false)
+      expect(page.find('#full-analysis').exists()).toBe(false)
+    })
+
+    it('shows gap count summary with plural form', async () => {
+      mocks.fetchMatchAnalyses.mockResolvedValue(
+        listWith(
+          makeAnalysis({
+            findings: [
+              makeFinding({ source_id: 1, match_state: 'gap', evidence_refs: [] }),
+              makeFinding({ source_id: 2, match_state: 'gap', evidence_refs: [] }),
+              makeFinding({ source_id: 3, match_state: 'gap', evidence_refs: [] }),
+              makeFinding({
+                source_id: 4,
+                match_state: 'matched',
+                factor: 1,
+                evidence_refs: [{ type: 'candidate_skill', id: 7, label: 'Laravel' }],
+              }),
+            ],
+          }),
+        ),
+      )
+      mocks.routeQuery = { view: 'analysis', filter: 'gaps' }
+
+      const page = await mountPage()
+
+      expect(page.text()).toContain('3 requirements need attention')
+    })
+
+    it('shows singular form when only one gap exists', async () => {
+      mocks.routeQuery = { view: 'analysis', filter: 'gaps' }
+
+      const page = await mountPage()
+
+      expect(page.text()).toContain('1 requirement need attention')
+    })
+
+    it('shows only gap findings in gap review mode', async () => {
+      mocks.routeQuery = { view: 'analysis', filter: 'gaps' }
+
+      const page = await mountPage()
+
+      expect(page.text()).toContain('API design')
+      expect(page.text()).toContain('Gaps to review')
+      expect(page.text()).toContain('Gap')
+    })
+
+    it('does not show filter controls in gap review mode', async () => {
+      mocks.routeQuery = { view: 'analysis', filter: 'gaps' }
+
+      const page = await mountPage()
+
+      expect(page.find('[aria-label="Filter by result"]').exists()).toBe(false)
+    })
+
+    it('shows View full analysis link in gap review mode', async () => {
+      mocks.routeQuery = { view: 'analysis', filter: 'gaps' }
+
+      const page = await mountPage()
+
+      const viewAllLink = page.findAll('a').find((a) => a.text().includes('View full analysis'))!
+      expect(viewAllLink).toBeDefined()
+    })
+
+    it('preserves gap review mode on refresh', async () => {
+      mocks.routeQuery = { view: 'analysis', filter: 'gaps' }
+
+      const page = await mountPage()
+
+      expect(page.text()).toContain('Gaps to review')
+      expect(page.text()).toContain('requirement need attention')
+      expect(page.find('#full-analysis').exists()).toBe(false)
+    })
+
+    it('shows full analysis mode when URL has view=analysis without filter', async () => {
+      mocks.routeQuery = { view: 'analysis' }
+
+      const page = await mountPage()
+
+      expect(page.text()).not.toContain('Gaps to review')
+      expect(page.find('#full-analysis').exists()).toBe(true)
+      expect(page.find('#full-analysis').attributes('open')).toBeDefined()
+      expect(page.find('[aria-labelledby="match-summary"]').exists()).toBe(true)
+      expect(page.find('[aria-labelledby="at-a-glance"]').exists()).toBe(true)
+    })
+
+    it('shows empty state when no gap findings exist in gap review mode', async () => {
+      mocks.fetchMatchAnalyses.mockResolvedValue(
+        listWith(
+          makeAnalysis({
+            findings: [
+              makeFinding({
+                source_id: 1,
+                match_state: 'matched',
+                factor: 1,
+                evidence_refs: [{ type: 'candidate_skill', id: 7, label: 'Laravel' }],
+              }),
+            ],
+          }),
+        ),
+      )
+      mocks.routeQuery = { view: 'analysis', filter: 'gaps' }
+
+      const page = await mountPage()
+
+      expect(page.text()).toContain('0 requirements need attention')
+      expect(page.text()).toContain('No gaps to review')
+    })
   })
 })

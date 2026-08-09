@@ -16,7 +16,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $skill_id
  * @property string|null $custom_skill_name
  * @property SkillState $state
- * @property ProficiencyLevel $proficiency_level
+ * @property ProficiencyLevel|null $proficiency_level
  * @property float|null $years_experience
  * @property Carbon|null $last_used_at
  * @property array|null $evidence

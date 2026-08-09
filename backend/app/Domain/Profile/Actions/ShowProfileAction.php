@@ -10,6 +10,9 @@ class ShowProfileAction
     public function execute(User $user): CandidateProfile
     {
         return $user->candidateProfile()->with('items')->first()
-            ?? new CandidateProfile(['user_id' => $user->id, 'profile_completion' => 0]);
+            ?? tap(new CandidateProfile, function ($profile) use ($user) {
+                $profile->user_id = $user->id;
+                $profile->profile_completion = '0';
+            });
     }
 }

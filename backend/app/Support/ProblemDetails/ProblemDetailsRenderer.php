@@ -61,10 +61,12 @@ class ProblemDetailsRenderer
         }
 
         if ($e instanceof ProblemDetailsException) {
+            $title = Str::headline($e->getErrorCode());
+
             return $this->buildResponse(
                 $e->getStatusCode(),
-                class_basename($e),
-                $e->getMessage() ?: class_basename($e),
+                $title,
+                $e->getMessage() ?: $title,
                 $e->getErrorCode(),
                 $e->getErrorBag(),
             );

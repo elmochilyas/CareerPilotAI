@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { CheckCircle, AlertCircle } from '@lucide/vue'
 import { useAuthStore } from '@/stores/auth'
 import type { LoginCredentials } from '@/features/auth/types'
 import Button from '@/components/ui/Button.vue'
+import FormField from '@/components/ui/FormField.vue'
 import Input from '@/components/ui/Input.vue'
 
 const route = useRoute()
@@ -22,18 +24,29 @@ async function handleSubmit(): Promise<void> {
   submitting.value = true
   try {
     await auth.login(form.value)
+    const rawRedirect = route.query.redirect
     const redirect =
-      typeof route.query.redirect === 'string' ? route.query.redirect : { name: 'home' }
+      typeof rawRedirect === 'string' &&
+      rawRedirect.startsWith('/') &&
+      !rawRedirect.startsWith('//')
+        ? rawRedirect
+        : { name: 'home' }
     await router.push(redirect)
   } catch (e: unknown) {
     if (e && typeof e === 'object' && 'response' in e) {
       const error = e as {
-        response?: { data?: { errors?: Record<string, string[]>; detail?: string } }
+        response?: {
+          status?: number
+          data?: { errors?: Record<string, string[]>; detail?: string }
+        }
       }
       if (error.response?.data?.errors) {
         errors.value = error.response.data.errors
       } else if (error.response?.data?.detail) {
-        serverError.value = error.response.data.detail
+        serverError.value =
+          error.response.status && error.response.status >= 500
+            ? 'An unexpected error occurred. Please try again.'
+            : error.response.data.detail
       }
     }
   } finally {
@@ -45,59 +58,74 @@ const fieldError = (field: string) => errors.value[field]?.[0]
 </script>
 
 <template>
-  <form @submit.prevent="handleSubmit" class="space-y-4">
-    <h1 class="text-center text-lg font-semibold text-slate-900">Sign in to your account</h1>
+  <form @submit.prevent="handleSubmit" class="space-y-5">
+    <div class="text-center">
+      <h1 class="text-[var(--text-xl)] font-semibold tracking-tight text-[var(--text-primary)]">
+        Sign in to your account
+      </h1>
+      <p class="mt-1 text-[var(--text-sm)] text-[var(--text-secondary)]">
+        Welcome back to CareerPilot
+      </p>
+    </div>
 
     <div
       v-if="resetSuccess"
-      class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700"
+      class="flex items-center gap-2 rounded-[var(--radius-xl)] bg-[var(--color-success-50)] px-4 py-3 text-[var(--text-base)] text-[var(--color-success-700)]"
+      style="box-shadow: var(--shadow-neo-inset)"
     >
+      <CheckCircle class="size-4 shrink-0 text-[var(--color-success-500)]" aria-hidden="true" />
       Password reset successful. Sign in with your new password.
     </div>
 
     <div
       v-if="serverError"
-      class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
+      class="flex items-center gap-2 rounded-[var(--radius-xl)] bg-[var(--color-error-50)] px-4 py-3 text-[var(--text-base)] text-[var(--color-error-700)]"
+      style="box-shadow: var(--shadow-neo-inset)"
     >
+      <AlertCircle class="size-4 shrink-0 text-[var(--color-error-500)]" aria-hidden="true" />
       {{ serverError }}
     </div>
 
-    <Input
-      v-model="form.email"
-      name="email"
-      label="Email"
-      type="email"
-      autocomplete="email"
-      required
-      :error="fieldError('email')"
-    />
+    <FormField label="Email" :error="fieldError('email')" required>
+      <Input
+        v-model="form.email"
+        name="email"
+        type="email"
+        autocomplete="email"
+        placeholder="you@example.com"
+        required
+      />
+    </FormField>
 
-    <Input
-      v-model="form.password"
-      name="password"
-      label="Password"
-      type="password"
-      autocomplete="current-password"
-      required
-      :error="fieldError('password')"
-    />
+    <FormField label="Password" :error="fieldError('password')" required>
+      <Input
+        v-model="form.password"
+        name="password"
+        type="password"
+        autocomplete="current-password"
+        required
+      />
+    </FormField>
 
-    <div class="flex items-center justify-between">
+    <div class="flex items-center justify-end">
       <RouterLink
         :to="{ name: 'forgot-password' }"
-        class="text-sm text-primary-600 hover:text-primary-500"
+        class="text-[var(--text-sm)] font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-700)]"
       >
         Forgot password?
       </RouterLink>
     </div>
 
-    <Button type="submit" :disabled="submitting" class="w-full">
-      {{ submitting ? 'Signing in...' : 'Sign in' }}
+    <Button type="submit" :loading="submitting" :disabled="submitting" class="w-full">
+      Sign in
     </Button>
 
-    <p class="text-center text-sm text-slate-600">
+    <p class="text-center text-[var(--text-base)] text-[var(--text-secondary)]">
       Don't have an account?
-      <RouterLink :to="{ name: 'register' }" class="text-primary-600 hover:text-primary-500">
+      <RouterLink
+        :to="{ name: 'register' }"
+        class="font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-700)]"
+      >
         Register
       </RouterLink>
     </p>

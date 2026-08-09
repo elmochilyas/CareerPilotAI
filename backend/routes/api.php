@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CandidateSkillController;
+use App\Http\Controllers\Api\V1\ClarificationController;
 use App\Http\Controllers\Api\V1\CvIngestion\CvDocumentController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\JobOpportunityConfirmedController;
@@ -13,7 +14,7 @@ use App\Http\Controllers\Api\V1\SkillController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
-    Route::get('/health', [HealthController::class, 'show']);
+    Route::get('/health', [HealthController::class, 'show'])->middleware('throttle:30,1');
 
     Route::post('/auth/register', [AuthController::class, 'register'])
         ->middleware('throttle:10,1');
@@ -113,5 +114,20 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/matches/{matchAnalysis}/recalculate', [MatchAnalysisController::class, 'recalculate'])
             ->middleware('throttle:matching-recalculate')
             ->name('matches.recalculate');
+
+        Route::get('/matches/{matchAnalysis}/clarifications', [ClarificationController::class, 'index'])
+            ->name('matches.clarifications');
+        Route::post('/matches/{matchAnalysis}/clarifications', [ClarificationController::class, 'generate'])
+            ->middleware('throttle:clarification-generate')
+            ->name('matches.clarifications.generate');
+        Route::post('/clarifications/{clarificationQuestion}/answer', [ClarificationController::class, 'answer'])
+            ->middleware('throttle:clarification-write')
+            ->name('clarifications.answer');
+        Route::post('/clarifications/{clarificationQuestion}/review', [ClarificationController::class, 'review'])
+            ->middleware('throttle:clarification-write')
+            ->name('clarifications.review');
+        Route::post('/clarifications/{clarificationQuestion}/skip', [ClarificationController::class, 'skip'])
+            ->middleware('throttle:clarification-write')
+            ->name('clarifications.skip');
     });
 });

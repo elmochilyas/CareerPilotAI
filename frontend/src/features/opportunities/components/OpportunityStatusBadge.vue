@@ -48,6 +48,8 @@ const config = computed<BadgeConfig>(() => {
   font-weight: 620;
   line-height: 1rem;
   white-space: nowrap;
+  box-shadow: var(--shadow-neo-raised-sm);
+  background: var(--surface-page);
 }
 
 .status-compact {
@@ -63,27 +65,27 @@ const config = computed<BadgeConfig>(() => {
 }
 
 .status-neutral {
-  background: var(--cp-surface-muted);
-  color: var(--cp-text-muted);
+  background: var(--surface-secondary);
+  color: var(--text-muted);
 }
 
 .status-info {
-  background: var(--cp-info-soft);
-  color: var(--cp-info);
+  background: var(--color-info-50);
+  color: var(--color-info-600);
 }
 
 .status-attention {
-  background: var(--cp-warning-soft);
-  color: var(--cp-warning);
+  background: var(--color-warning-50);
+  color: var(--color-warning-600);
 }
 
 .status-success {
-  background: var(--cp-success-soft);
-  color: var(--cp-success);
+  background: var(--color-success-50);
+  color: var(--color-success-600);
 }
 
 .status-danger {
-  background: var(--cp-danger-soft);
-  color: var(--cp-danger);
+  background: var(--color-error-50);
+  color: var(--color-error-600);
 }
 </style>

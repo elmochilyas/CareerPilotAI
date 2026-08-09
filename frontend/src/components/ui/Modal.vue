@@ -2,11 +2,15 @@
 import { X } from '@lucide/vue'
 import { nextTick, ref, watch } from 'vue'
 
-const props = defineProps<{
-  open: boolean
-  title?: string
-  size?: 'sm' | 'md' | 'lg'
-}>()
+const props = withDefaults(
+  defineProps<{
+    open: boolean
+    title?: string
+    size?: 'sm' | 'md' | 'lg'
+    closeable?: boolean
+  }>(),
+  { closeable: true },
+)
 
 const emit = defineEmits<{
   close: []
@@ -29,7 +33,7 @@ watch(
 )
 
 function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') emit('close')
+  if (e.key === 'Escape' && props.closeable) emit('close')
   if (e.key === 'Tab') {
     const root = e.currentTarget as HTMLElement
     const buttons = [
@@ -52,28 +56,26 @@ function onKeydown(e: KeyboardEvent) {
       <div
         v-if="open"
         ref="dialogRef"
-        class="fixed inset-0 z-40 grid place-items-center overflow-y-auto bg-slate-950/40 p-4"
+        class="fixed inset-0 z-[300] grid place-items-center overflow-y-auto p-4 backdrop-blur-sm bg-black/30"
         role="dialog"
         aria-modal="true"
         :aria-label="title"
         tabindex="-1"
         @keydown="onKeydown"
-        @click.self="emit('close')"
+        @click.self="closeable && emit('close')"
       >
         <div
-          class="my-4 w-full rounded-lg bg-white shadow-xl ring-1 ring-slate-900/5"
+          class="my-4 w-full rounded-2xl bg-[var(--surface-primary)] shadow-[var(--shadow-neo-raised-lg)]"
           :class="size === 'sm' ? 'max-w-md' : size === 'lg' ? 'max-w-2xl' : 'max-w-xl'"
         >
-          <div
-            v-if="title"
-            class="flex items-center justify-between border-b border-slate-100 px-6 py-4"
-          >
-            <h2 class="text-lg font-semibold text-slate-900">
+          <div v-if="title || closeable" class="flex items-center justify-between px-6 py-4">
+            <h2 class="text-lg font-semibold text-[var(--text-primary)]">
               {{ title }}
             </h2>
             <button
+              v-if="closeable"
               type="button"
-              class="flex size-8 items-center justify-center rounded-lg text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-600"
+              class="flex size-8 items-center justify-center rounded-[var(--radius-md)] text-[var(--text-muted)] transition-all hover:bg-[var(--surface-secondary)] hover:shadow-[var(--shadow-neo-raised-sm)] hover:text-[var(--text-secondary)]"
               aria-label="Close"
               @click="emit('close')"
             >
@@ -81,6 +83,9 @@ function onKeydown(e: KeyboardEvent) {
             </button>
           </div>
           <slot />
+          <div v-if="$slots.footer" class="bg-[var(--surface-secondary)] px-6 py-4">
+            <slot name="footer" />
+          </div>
         </div>
       </div>
     </Transition>
@@ -89,20 +94,20 @@ function onKeydown(e: KeyboardEvent) {
 
 <style scoped>
 .modal-enter-active {
-  transition: opacity 0.2s ease-out;
+  transition: opacity var(--duration-normal) var(--ease-out);
 }
 .modal-enter-active > div {
   transition:
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 0.2s ease-out;
+    transform var(--duration-normal) var(--ease-spring),
+    opacity var(--duration-normal) var(--ease-out);
 }
 .modal-leave-active {
-  transition: opacity 0.15s ease-in;
+  transition: opacity var(--duration-fast) var(--ease-in);
 }
 .modal-leave-active > div {
   transition:
-    transform 0.15s ease-in,
-    opacity 0.15s ease-in;
+    transform var(--duration-fast) var(--ease-in),
+    opacity var(--duration-fast) var(--ease-in);
 }
 .modal-enter-from {
   opacity: 0;

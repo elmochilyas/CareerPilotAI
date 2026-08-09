@@ -131,7 +131,7 @@ Il définit les tables, colonnes, types SQL, clés, contraintes et règles de su
 | `id` | BIGINT UNSIGNED | NO | PK |
 | `candidate_profile_id` | BIGINT UNSIGNED | NO | FK |
 | `skill_id` | BIGINT UNSIGNED | NO | FK |
-| `proficiency_level` | VARCHAR(30) | NO | |
+| `proficiency_level` | VARCHAR(30) | YES | |
 | `years_experience` | DECIMAL(4,1) | YES | |
 | `last_used_at` | DATE | YES | |
 | `evidence` | JSON | YES | |
@@ -234,7 +234,7 @@ L'ancienne table fusionnée `opportunity_analyses` regroupait l'analyse d'offre,
 - `match_scores` — scores déterministes par catégorie, normalisés.
 - `match_findings` — résultats par exigence, normalisés.
 
-L'analyse d'offre (`job_analyses`) et les exigences (`job_requirements`, `job_opportunity_skills`) restent des tables séparées appartenant à leurs changements respectifs. Les tables de clarification appartiennent au futur changement « clarification workflow » et ne sont pas créées ici.
+L'analyse d'offre (`job_analyses`) et les exigences (`job_requirements`, `job_opportunity_skills`) restent des tables séparées appartenant à leurs changements respectifs. Les tables de clarification (`clarification_questions`, `clarification_answers`, `clarification_proposals`, `clarification_audit_events`) sont définies par le changement `clarification-workflow`.
 
 ## `match_analyses`
 
@@ -357,6 +357,134 @@ L'analyse d'offre (`job_analyses`) et les exigences (`job_requirements`, `job_op
 - CHECK(factor IN (0, 0.2, 0.5, 1))
 
 **Remarque :** Facteurs approuvés : verified 1.00, claimed 0.50, learning 0.20, missing 0.00. L'état `unknown` est exclu des points et ne constitue pas une lacune. `evidence_refs` (JSON) référence les preuves candidat (`profile_items`, `candidate_skills`, `resumes`, `files`).
+
+---
+
+## `clarification_questions`
+
+| Colonne | Type | NULL | Clé / défaut |
+|---|---|---:|---:|
+| `id` | BIGINT UNSIGNED | NO | PK |
+| `match_analysis_id` | BIGINT UNSIGNED | NO | FK |
+| `match_finding_id` | BIGINT UNSIGNED | YES | FK |
+| `question_no` | SMALLINT UNSIGNED | NO | |
+| `question_type` | VARCHAR(30) | NO | |
+| `prompt` | VARCHAR(500) | NO | |
+| `detail` | VARCHAR(1000) | YES | |
+| `template_key` | VARCHAR(100) | NO | |
+| `options_json` | JSON | YES | |
+| `unit` | VARCHAR(30) | YES | |
+| `status` | VARCHAR(20) | NO | |
+| `ai_metadata` | JSON | YES | |
+| `created_at` | TIMESTAMP | NO | |
+| `updated_at` | TIMESTAMP | NO | |
+
+**Clés étrangères :**
+- `match_analysis_id` → `match_analyses.id` (CASCADE)
+- `match_finding_id` → `match_findings.id` (CASCADE)
+
+**Contraintes et index :**
+- INDEX(match_analysis_id, status)
+- INDEX(match_analysis_id, match_finding_id)
+- CHECK(question_type IN ('yes_no', 'yes_no_with_details', 'text', 'select', 'number'))
+- CHECK(status IN ('pending', 'answered', 'skipped', 'expired'))
+
+**Remarque :** Une question par résultat incertain à fort impact (`partial`/`gap` avec facteur 0.00/0.50, sans réponse de confiance déjà présente), composée depuis un template déterministe versionné (`template_key`) ; au plus trois questions par passe et une seule réponse par question. `status` défaut `pending`. `ai_metadata` (JSON) enregistre la provenance du classement/reformulation de l'assistant ou la raison de repli déterministe.
+
+---
+
+## `clarification_answers`
+
+| Colonne | Type | NULL | Clé / défaut |
+|---|---|---:|---:|
+| `id` | BIGINT UNSIGNED | NO | PK |
+| `user_id` | BIGINT UNSIGNED | NO | FK |
+| `question_id` | BIGINT UNSIGNED | NO | FK, UNIQUE |
+| `answer_type` | VARCHAR(30) | NO | |
+| `value` | TEXT | NO | |
+| `acknowledged_no_evidence` | BOOLEAN | NO | |
+| `status` | VARCHAR(20) | NO | |
+| `proposal_id` | BIGINT UNSIGNED | YES | FK |
+| `created_at` | TIMESTAMP | NO | |
+| `updated_at` | TIMESTAMP | NO | |
+
+**Clés étrangères :**
+- `user_id` → `users.id` (CASCADE)
+- `question_id` → `clarification_questions.id` (CASCADE)
+- `proposal_id` → `clarification_proposals.id` (NULL ON DELETE)
+
+**Contraintes et index :**
+- UNIQUE(question_id)
+- INDEX(user_id)
+- INDEX(user_id, status)
+- INDEX(proposal_id)
+- CHECK(answer_type IN ('yes', 'no', 'no_with_ack', 'text', 'select_option', 'number'))
+- CHECK(status IN ('pending', 'accepted', 'rejected', 'skipped', 'expired'))
+
+**Remarque :** Une réponse est une saisie candidat avec statut explicite, jamais une donnée de confiance par défaut. `acknowledged_no_evidence` (défaut `false`) est la reconnaissance explicite d'absence de preuve : avec `yes` elle produit `claimed` (0.50), jamais `verified`. `proposal_id` relie la réponse à sa proposition (0..1) après revue.
+
+---
+
+## `clarification_proposals`
+
+| Colonne | Type | NULL | Clé / défaut |
+|---|---|---:|---:|
+| `id` | BIGINT UNSIGNED | NO | PK |
+| `answer_id` | BIGINT UNSIGNED | NO | FK, UNIQUE |
+| `target_type` | VARCHAR(40) | NO | |
+| `target_id` | BIGINT UNSIGNED | YES | |
+| `field` | VARCHAR(60) | NO | |
+| `before_value` | JSON | YES | |
+| `after_value` | JSON | YES | |
+| `status` | VARCHAR(20) | NO | |
+| `created_at` | TIMESTAMP | NO | |
+| `updated_at` | TIMESTAMP | NO | |
+
+**Clés étrangères :**
+- `answer_id` → `clarification_answers.id` (CASCADE)
+
+**Contraintes et index :**
+- UNIQUE(answer_id)
+- INDEX(target_type, target_id)
+- INDEX(status)
+- CHECK(target_type IN ('candidate_skill', 'profile_item'))
+- CHECK(status IN ('proposed', 'accepted', 'rejected', 'skipped'))
+
+**Remarque :** Une proposition décrit une mutation concrète (entité cible, champ, avant → après) issue d'une réponse d'origine ; une proposition au plus par réponse. Une fois `accepted`, la proposition est immuable et auditable ; seule son acceptation explicite produit une mutation des données de confiance. `status` défaut `proposed`. `target_id` référence l'entité cible (polymorphe) selon `target_type`.
+
+---
+
+## `clarification_audit_events`
+
+| Colonne | Type | NULL | Clé / défaut |
+|---|---|---:|---:|
+| `id` | BIGINT UNSIGNED | NO | PK |
+| `answer_id` | BIGINT UNSIGNED | YES | FK |
+| `proposal_id` | BIGINT UNSIGNED | YES | FK |
+| `user_id` | BIGINT UNSIGNED | NO | FK |
+| `match_analysis_id` | BIGINT UNSIGNED | YES | FK |
+| `target_type` | VARCHAR(40) | YES | |
+| `target_id` | BIGINT UNSIGNED | YES | |
+| `field` | VARCHAR(60) | YES | |
+| `before_value` | JSON | YES | |
+| `after_value` | JSON | YES | |
+| `metadata` | JSON | YES | |
+| `created_at` | TIMESTAMP | NO | |
+| `updated_at` | TIMESTAMP | NO | |
+
+**Clés étrangères :**
+- `answer_id` → `clarification_answers.id` (NULL ON DELETE)
+- `proposal_id` → `clarification_proposals.id` (NULL ON DELETE)
+- `user_id` → `users.id` (CASCADE)
+- `match_analysis_id` → `match_analyses.id` (NULL ON DELETE)
+
+**Contraintes et index :**
+- INDEX(answer_id, proposal_id)
+- INDEX(user_id, created_at)
+- INDEX(match_analysis_id)
+- CHECK(target_type IN ('candidate_skill', 'profile_item'))
+
+**Remarque :** Écrit lors de l'acceptation d'une proposition (réponse d'origine, cible, avant/après, métadonnées) de manière best-effort et non bloquante ; les références sont conservées (NULL ON DELETE) pour préserver l'historique.
 
 ---
 
@@ -586,7 +714,10 @@ Utiliser le schéma fourni par le framework pour la version Laravel installée, 
 | `match_analyses` | Table `match_analyses` normalisée (snapshots versionnés) |
 | `match_scores` | Table `match_scores` normalisée |
 | `match_findings` | Table `match_findings` normalisée |
-| `clarifications` | Reporté au futur changement clarification-workflow |
+| `clarification_questions` | Table `clarification_questions` (changement clarification-workflow) |
+| `clarification_answers` | Table `clarification_answers` (changement clarification-workflow) |
+| `clarification_proposals` | Table `clarification_proposals` (changement clarification-workflow) |
+| `clarification_audit_events` | Table `clarification_audit_events` (changement clarification-workflow) |
 | `resume_versions` | Colonne JSON `content` dans `resumes` |
 | `resume_exports` | Clé étrangère `file_id` dans `resumes` |
 | `application_status_histories` | `application_activities` avec type `status_change` |

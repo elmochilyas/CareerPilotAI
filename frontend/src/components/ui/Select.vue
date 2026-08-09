@@ -23,7 +23,7 @@ function onChange(e: Event) {
 
 <template>
   <div class="grid gap-1.5">
-    <label v-if="label" :for="name" class="text-sm font-medium text-slate-700">
+    <label v-if="label" :for="name" class="text-sm font-medium text-[var(--text-secondary)]">
       {{ label }}
     </label>
     <div class="relative">
@@ -34,11 +34,11 @@ function onChange(e: Event) {
         :disabled="disabled"
         :aria-invalid="!!error"
         :aria-describedby="error ? `${name}-error` : undefined"
-        class="min-h-11 w-full appearance-none rounded-lg border bg-white px-3.5 pr-10 text-sm shadow-sm transition-all focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400"
+        class="min-h-11 w-full appearance-none rounded-xl bg-[var(--surface-secondary)] px-3.5 pr-10 text-sm shadow-[var(--shadow-neo-inset)] transition-all duration-200 focus:outline-none focus:ring-2 disabled:cursor-not-allowed disabled:opacity-50"
         :class="
           error
-            ? 'border-red-300 focus:border-red-400 focus:ring-red-500/30'
-            : 'border-slate-300 focus:border-primary-400 focus:ring-primary-500/30'
+            ? 'focus:ring-[var(--color-error-500)]/30'
+            : 'focus:ring-[var(--color-primary-500)]/20'
         "
         @change="onChange"
       >
@@ -48,10 +48,15 @@ function onChange(e: Event) {
         </option>
       </select>
       <ChevronDown
-        class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
+        class="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[var(--text-muted)]"
       />
     </div>
-    <p v-if="error" :id="`${name}-error`" class="text-xs text-red-600" role="alert">
+    <p
+      v-if="error"
+      :id="`${name}-error`"
+      class="text-xs text-[var(--color-error-600)]"
+      role="alert"
+    >
       {{ error }}
     </p>
   </div>

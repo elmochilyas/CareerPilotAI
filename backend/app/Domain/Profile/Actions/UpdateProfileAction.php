@@ -20,7 +20,8 @@ class UpdateProfileAction
             if ($profile && $data->updatedAt !== null && ! $profile->updated_at->equalTo($data->updatedAt)) {
                 throw new ProblemDetailsException(409, 'The profile changed since it was loaded.', 'profile_conflict');
             }
-            $profile ??= new CandidateProfile(['user_id' => $user->id]);
+            $profile ??= new CandidateProfile;
+            $profile->user_id = $user->id;
             $profile->fill($data->attributes)->save();
             $profile->load('items');
             $this->completion->persist($profile);

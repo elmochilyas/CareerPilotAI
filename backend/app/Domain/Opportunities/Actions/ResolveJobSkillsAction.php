@@ -8,6 +8,8 @@ use App\Models\JobOpportunityIngestion;
 use App\Models\JobOpportunitySuggestion;
 use App\Models\Skill;
 use App\Models\SkillAlias;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class ResolveJobSkillsAction
 {
@@ -17,6 +19,9 @@ class ResolveJobSkillsAction
             ->whereIn('type', [SuggestionType::RequiredSkill->value, SuggestionType::PreferredSkill->value])
             ->whereNull('resolution')
             ->get();
+
+        $allSkills = Skill::all()->keyBy(fn (Skill $s) => $s->normalized_name);
+        $allAliases = SkillAlias::all()->keyBy(fn (SkillAlias $a) => $a->alias);
 
         $resolved = [];
 
@@ -29,7 +34,7 @@ class ResolveJobSkillsAction
 
             $normalized = $this->normalizeLabel($label);
 
-            $resolution = $this->resolveSkill($normalized, $suggestion);
+            $resolution = $this->resolveSkill($normalized, $suggestion, $allSkills, $allAliases);
 
             $suggestion->update([
                 'resolution' => $resolution['state'],
@@ -75,14 +80,16 @@ class ResolveJobSkillsAction
     private function resolveSkill(
         string $normalized,
         JobOpportunitySuggestion $suggestion,
+        Collection $allSkills,
+        Collection $allAliases,
     ): array {
-        $exact = Skill::where('normalized_name', $normalized)->first();
+        $exact = $allSkills->get($normalized);
 
         if ($exact !== null) {
             return ['state' => SkillResolutionState::Exact, 'skill_id' => $exact->id];
         }
 
-        $alias = SkillAlias::where('alias', $normalized)->first();
+        $alias = $allAliases->get($normalized);
 
         if ($alias !== null) {
             return ['state' => SkillResolutionState::Alias, 'skill_id' => $alias->skill_id];
@@ -91,10 +98,20 @@ class ResolveJobSkillsAction
         $extracted = $suggestion->extracted_value;
         $extractedLabel = $extracted['label'] ?? $extracted['name'] ?? null;
         $label = is_string($extractedLabel) ? $extractedLabel : $normalized;
-        $partialMatches = Skill::where('normalized_name', 'like', "%{$normalized}%")
-            ->orWhere('name', 'like', "%{$label}%")
-            ->limit(5)
-            ->get();
+
+        if (DB::getDriverName() === 'mysql') {
+            $partialMatches = Skill::whereFullText(['normalized_name', 'name'], $label, ['mode' => 'natural'])
+                ->limit(5)
+                ->get();
+        } else {
+            $partialMatches = collect();
+        }
+
+        if ($partialMatches->count() === 0) {
+            $partialMatches = $allSkills->filter(
+                fn (Skill $s) => str_contains($s->normalized_name, $normalized)
+            )->take(5)->values();
+        }
 
         if ($partialMatches->count() === 1) {
             return ['state' => SkillResolutionState::Alias, 'skill_id' => $partialMatches->first()->id];

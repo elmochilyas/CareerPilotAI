@@ -30,7 +30,6 @@ export function useSkills() {
   const candidateQuery = useQuery({
     queryKey: skillKeys.candidate(),
     queryFn: () => fetchCandidateSkills(),
-    retry: 1,
   })
 
   const refreshCandidate = () => queryClient.invalidateQueries({ queryKey: skillKeys.candidate() })

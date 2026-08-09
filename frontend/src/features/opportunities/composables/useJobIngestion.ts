@@ -43,13 +43,11 @@ export function useJobIngestion() {
       const s = ingestionQuery.data.value?.status
       return s === 'review_ready' && activeIngestionId.value !== null
     }),
-    retry: 1,
   })
 
   const opportunitiesQuery = useQuery({
     queryKey: opportunityKeys.list(),
     queryFn: () => fetchOpportunities(),
-    retry: 1,
   })
 
   const ingestion = computed(() => ingestionQuery.data.value ?? null)

@@ -3,6 +3,7 @@ import { User, Briefcase, MapPin, DollarSign, Pencil } from '@lucide/vue'
 import { reactive, ref, watch } from 'vue'
 import type { CandidateProfile, ContractType, ProfileUpdate, WorkMode } from '../types'
 import TagInput from '@/components/ui/TagInput.vue'
+import Card from '@/components/ui/Card.vue'
 import Button from '@/components/ui/Button.vue'
 
 const props = defineProps<{ profile: CandidateProfile; saving?: boolean }>()
@@ -128,299 +129,304 @@ watch(
 </script>
 
 <template>
-  <section aria-labelledby="preferences-heading">
-    <header class="flex items-center justify-between gap-3 border-b border-slate-100 py-4">
+  <Card>
+    <template #header>
       <div class="flex items-center gap-3">
         <div
-          class="flex size-9 items-center justify-center rounded-lg bg-primary-100 text-primary-600"
+          class="flex size-9 items-center justify-center rounded-lg bg-[var(--color-primary-100)] text-[var(--color-primary-600)]"
         >
           <User :size="16" stroke-width="1.5" />
         </div>
-        <h2 id="preferences-heading" class="text-base font-semibold text-slate-900">
-          Career preferences
-        </h2>
+        <h2 class="text-base font-semibold text-[var(--text-primary)]">Career preferences</h2>
       </div>
       <Button v-if="hasAnyData && !editing" variant="outline" size="sm" @click="editing = true">
         <Pencil :size="13" stroke-width="1.5" />
         Edit
       </Button>
-    </header>
+    </template>
 
-    <div>
-      <form v-if="editing" class="grid gap-5 sm:grid-cols-2" @submit.prevent="save">
-        <label class="grid gap-1.5 text-sm font-medium text-slate-700">
-          Target roles
-          <TagInput
-            v-model="values.target_roles"
-            placeholder="Add a role and press Enter"
-            :max="10"
-            :disabled="saving"
-            @update:model-value="emit('dirty', true)"
-          />
-        </label>
-        <label class="grid gap-1.5 text-sm font-medium text-slate-700">
-          Preferred locations
-          <TagInput
-            v-model="values.preferred_locations"
-            placeholder="Add a location and press Enter"
-            :max="10"
-            :disabled="saving"
-            @update:model-value="emit('dirty', true)"
-          />
-        </label>
+    <form v-if="editing" class="grid gap-5 sm:grid-cols-2" @submit.prevent="save">
+      <label class="grid gap-1.5 text-sm font-medium text-[var(--text-secondary)]">
+        Target roles
+        <TagInput
+          v-model="values.target_roles"
+          placeholder="Add a role and press Enter"
+          :max="10"
+          :disabled="saving"
+          @update:model-value="emit('dirty', true)"
+        />
+      </label>
+      <label class="grid gap-1.5 text-sm font-medium text-[var(--text-secondary)]">
+        Preferred locations
+        <TagInput
+          v-model="values.preferred_locations"
+          placeholder="Add a location and press Enter"
+          :max="10"
+          :disabled="saving"
+          @update:model-value="emit('dirty', true)"
+        />
+      </label>
 
-        <fieldset class="grid gap-2.5 sm:col-span-2">
-          <legend class="text-sm font-medium text-slate-700">Work modes</legend>
-          <div class="flex flex-wrap gap-3">
-            <label
-              v-for="m in workModeOptions"
-              :key="m.value"
-              class="flex cursor-pointer select-none items-center gap-2.5 rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium shadow-sm transition-all has-checked:border-primary-400 has-checked:bg-primary-50 has-checked:text-primary-700 hover:border-slate-300"
-            >
-              <div class="relative flex items-center justify-center">
-                <input
-                  type="checkbox"
-                  :checked="values.work_modes.includes(m.value)"
-                  class="size-4 cursor-pointer appearance-none rounded border-2 border-slate-300 bg-white transition-all checked:border-primary-600 checked:bg-primary-600 focus:ring-2 focus:ring-primary-500/30"
-                  @change="toggleWorkMode(m.value)"
-                />
-                <svg
-                  v-if="values.work_modes.includes(m.value)"
-                  class="pointer-events-none absolute size-3 text-white"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="3"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <polyline points="3,8 6,11 13,4" />
-                </svg>
-              </div>
-              {{ m.label }}
-            </label>
-          </div>
-        </fieldset>
-
-        <label class="grid gap-1.5 text-sm font-medium text-slate-700">
-          Contract types
-          <TagInput
-            v-model="values.contract_types"
-            placeholder="Add type and press Enter"
-            :max="5"
-            :disabled="saving"
-            @update:model-value="emit('dirty', true)"
-          />
-        </label>
-
-        <div class="grid gap-1.5 text-sm font-medium text-slate-700">
-          Salary expectations
-          <div class="grid grid-cols-2 gap-2">
-            <div class="relative">
-              <span
-                class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-400"
-                >$</span
-              >
+      <fieldset class="grid gap-2.5 sm:col-span-2">
+        <legend class="text-sm font-medium text-[var(--text-secondary)]">Work modes</legend>
+        <div class="flex flex-wrap gap-3">
+          <label
+            v-for="m in workModeOptions"
+            :key="m.value"
+            class="flex cursor-pointer select-none items-center gap-2.5 rounded-xl bg-[var(--surface-primary)] px-4 py-2.5 text-sm font-medium shadow-[var(--shadow-neo-raised-sm)] transition-all has-checked:bg-[var(--color-primary-50)] has-checked:text-[var(--color-primary-700)] has-checked:shadow-[var(--shadow-neo-inset)] hover:shadow-[var(--shadow-neo-raised)]"
+          >
+            <div class="relative flex items-center justify-center">
               <input
-                v-model.number="values.salary_min"
-                type="number"
-                min="0"
-                class="min-h-11 w-full rounded-lg border border-slate-300 bg-white pl-7 pr-3.5 shadow-sm transition-all focus:border-primary-400 focus:ring-2 focus:ring-primary-500/30"
-                placeholder="Min"
-                :disabled="saving"
-                @input="emit('dirty', true)"
+                type="checkbox"
+                :checked="values.work_modes.includes(m.value)"
+                class="size-4 cursor-pointer appearance-none rounded-lg border-2 border-[var(--border-default)] bg-white transition-all checked:border-[var(--color-primary-600)] checked:bg-[var(--color-primary-600)] focus:ring-2 focus:ring-[var(--color-primary-500)]/30"
+                @change="toggleWorkMode(m.value)"
               />
-            </div>
-            <div class="relative">
-              <span
-                class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-slate-400"
-                >$</span
+              <svg
+                v-if="values.work_modes.includes(m.value)"
+                class="pointer-events-none absolute size-3 text-white"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
               >
-              <input
-                v-model.number="values.salary_max"
-                type="number"
-                min="0"
-                class="min-h-11 w-full rounded-lg border border-slate-300 bg-white pl-7 pr-3.5 shadow-sm transition-all focus:border-primary-400 focus:ring-2 focus:ring-primary-500/30"
-                placeholder="Max"
-                :disabled="saving"
-                @input="emit('dirty', true)"
-              />
+                <polyline points="3,8 6,11 13,4" />
+              </svg>
             </div>
-          </div>
-          <div class="flex gap-2">
-            <select
-              v-model="values.salary_currency"
-              class="min-h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-500/30"
-              :disabled="saving"
-              @change="emit('dirty', true)"
-            >
-              <option value="">Currency</option>
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="GBP">GBP</option>
-              <option value="MAD">MAD</option>
-            </select>
-            <select
-              v-model="values.salary_period"
-              class="min-h-10 flex-1 rounded-lg border border-slate-300 bg-white px-3 text-sm shadow-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-500/30"
-              :disabled="saving"
-              @change="emit('dirty', true)"
-            >
-              <option value="">Period</option>
-              <option value="yearly">Yearly</option>
-              <option value="monthly">Monthly</option>
-              <option value="hourly">Hourly</option>
-            </select>
-          </div>
+            {{ m.label }}
+          </label>
         </div>
+      </fieldset>
 
-        <div class="flex justify-end gap-2 sm:col-span-2">
-          <Button variant="outline" type="button" @click="cancel"> Cancel </Button>
-          <Button type="submit" :disabled="saving">
-            {{ saving ? 'Saving...' : 'Save preferences' }}
-          </Button>
-        </div>
-      </form>
+      <label class="grid gap-1.5 text-sm font-medium text-[var(--text-secondary)]">
+        Contract types
+        <TagInput
+          v-model="values.contract_types"
+          placeholder="Add type and press Enter"
+          :max="5"
+          :disabled="saving"
+          @update:model-value="emit('dirty', true)"
+        />
+      </label>
 
-      <div v-else-if="!hasAnyData" class="flex flex-col items-center py-12 text-center">
-        <div class="flex size-12 items-center justify-center rounded-full bg-primary-100">
-          <User :size="22" class="text-primary-600" stroke-width="1.3" />
+      <div class="grid gap-1.5 text-sm font-medium text-[var(--text-secondary)]">
+        Salary expectations
+        <div class="grid grid-cols-2 gap-2">
+          <div class="relative">
+            <span
+              class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-[var(--text-muted)]"
+              >$</span
+            >
+            <input
+              v-model.number="values.salary_min"
+              type="number"
+              min="0"
+              class="min-h-11 w-full rounded-xl bg-[var(--surface-inset)] pl-7 pr-3.5 shadow-[var(--shadow-neo-inset)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/30"
+              placeholder="Min"
+              :disabled="saving"
+              @input="emit('dirty', true)"
+            />
+          </div>
+          <div class="relative">
+            <span
+              class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-[var(--text-muted)]"
+              >$</span
+            >
+            <input
+              v-model.number="values.salary_max"
+              type="number"
+              min="0"
+              class="min-h-11 w-full rounded-xl bg-[var(--surface-inset)] pl-7 pr-3.5 shadow-[var(--shadow-neo-inset)] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/30"
+              placeholder="Max"
+              :disabled="saving"
+              @input="emit('dirty', true)"
+            />
+          </div>
         </div>
-        <h3 class="mt-4 text-sm font-semibold text-slate-900">Define your career direction</h3>
-        <p class="mt-1.5 max-w-xs text-xs leading-relaxed text-slate-500">
-          Tell CareerPilot what roles and work conditions you prefer.
-        </p>
-        <div class="mt-5">
-          <Button @click="editing = true">Add career preferences</Button>
+        <div class="flex gap-2">
+          <select
+            v-model="values.salary_currency"
+            class="min-h-10 rounded-xl bg-[var(--surface-inset)] px-3 text-sm shadow-[var(--shadow-neo-inset)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/30"
+            :disabled="saving"
+            @change="emit('dirty', true)"
+          >
+            <option value="">Currency</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+            <option value="MAD">MAD</option>
+          </select>
+          <select
+            v-model="values.salary_period"
+            class="min-h-10 flex-1 rounded-xl bg-[var(--surface-inset)] px-3 text-sm shadow-[var(--shadow-neo-inset)] text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/30"
+            :disabled="saving"
+            @change="emit('dirty', true)"
+          >
+            <option value="">Period</option>
+            <option value="yearly">Yearly</option>
+            <option value="monthly">Monthly</option>
+            <option value="hourly">Hourly</option>
+          </select>
         </div>
       </div>
 
-      <div v-else class="space-y-5 pt-2">
-        <div v-if="profile.target_roles.length" class="flex flex-wrap items-center gap-2.5">
-          <div
-            class="flex size-7 items-center justify-center rounded bg-primary-100 text-primary-600"
-          >
-            <User :size="14" stroke-width="1.5" />
-          </div>
-          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400"
-            >Target roles</span
-          >
-          <div class="flex flex-wrap gap-1.5">
-            <span
-              v-for="role in profile.target_roles"
-              :key="role"
-              class="rounded bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700"
-              >{{ role }}</span
-            >
-          </div>
-        </div>
+      <div class="flex justify-end gap-2 sm:col-span-2">
+        <Button variant="outline" type="button" @click="cancel">Cancel</Button>
+        <Button type="submit" :disabled="saving">
+          {{ saving ? 'Saving...' : 'Save preferences' }}
+        </Button>
+      </div>
+    </form>
 
-        <div
-          v-if="profile.work_modes.length || profile.contract_types.length"
-          class="flex flex-wrap items-center gap-2.5"
-        >
-          <div
-            class="flex size-7 items-center justify-center rounded bg-primary-100 text-primary-600"
-          >
-            <Briefcase :size="14" stroke-width="1.5" />
-          </div>
-          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400"
-            >Work preference</span
-          >
-          <span
-            v-for="wm in profile.work_modes"
-            :key="wm"
-            class="rounded bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
-            >{{ wm.charAt(0).toUpperCase() + wm.slice(1).replace('_', ' ') }}</span
-          >
-          <span
-            v-for="ct in profile.contract_types"
-            :key="ct"
-            class="rounded bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700"
-            >{{ contractLabels[ct] ?? ct }}</span
-          >
-        </div>
-
-        <div v-if="profile.preferred_locations.length" class="flex flex-wrap items-center gap-2.5">
-          <div
-            class="flex size-7 items-center justify-center rounded bg-primary-100 text-primary-600"
-          >
-            <MapPin :size="14" stroke-width="1.5" />
-          </div>
-          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400"
-            >Preferred locations</span
-          >
-          <span class="text-sm font-medium text-slate-800">{{
-            profile.preferred_locations.join(', ')
-          }}</span>
-        </div>
-
-        <div v-if="profile.availability_status" class="flex flex-wrap items-center gap-2.5">
-          <span
-            class="inline-block size-2.5 rounded-full"
-            :class="{
-              'bg-emerald-500': profile.availability_status === 'immediately',
-              'bg-amber-400': profile.availability_status === 'within_2_weeks',
-              'bg-blue-400': profile.availability_status === 'within_month',
-              'bg-slate-400': profile.availability_status === 'not_looking',
-            }"
-          />
-          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400"
-            >Availability</span
-          >
-          <span class="rounded bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">{{
-            availabilityLabel[profile.availability_status] ?? profile.availability_status
-          }}</span>
-        </div>
-
-        <div v-if="profile.availability_date" class="flex flex-wrap items-center gap-2.5">
-          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400"
-            >Available from</span
-          >
-          <span class="text-sm font-medium text-slate-800">{{
-            new Date(profile.availability_date + 'T00:00:00').toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-            })
-          }}</span>
-        </div>
-
-        <div
-          v-if="profile.salary_min || profile.salary_max"
-          class="flex flex-wrap items-center gap-2.5"
-        >
-          <div
-            class="flex size-7 items-center justify-center rounded bg-primary-100 text-primary-600"
-          >
-            <DollarSign :size="14" stroke-width="1.5" />
-          </div>
-          <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400"
-            >Salary range</span
-          >
-          <span class="rounded bg-primary-50 px-3 py-1 text-sm font-bold text-primary-800">
-            {{ profile.salary_min ? formatSalary(profile.salary_min) : '—' }}
-            <span v-if="profile.salary_min && profile.salary_max" class="mx-1 text-primary-300"
-              >–</span
-            >
-            {{
-              profile.salary_max
-                ? formatSalary(profile.salary_max)
-                : profile.salary_min
-                  ? 'Uncapped'
-                  : ''
-            }}
-          </span>
-          <span
-            v-if="profile.salary_currency"
-            class="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600"
-            >{{ profile.salary_currency }}</span
-          >
-          <span v-if="profile.salary_period" class="text-xs text-slate-500"
-            >/{{ profile.salary_period }}</span
-          >
-        </div>
+    <div v-else-if="!hasAnyData" class="flex flex-col items-center py-12 text-center">
+      <div
+        class="flex size-12 items-center justify-center rounded-full bg-[var(--color-primary-100)] shadow-[var(--shadow-neo-inset)]"
+      >
+        <User :size="22" class="text-[var(--color-primary-600)]" stroke-width="1.3" />
+      </div>
+      <h3 class="mt-4 text-sm font-semibold text-[var(--text-primary)]">
+        Define your career direction
+      </h3>
+      <p class="mt-1.5 max-w-xs text-xs leading-relaxed text-[var(--text-muted)]">
+        Tell CareerPilot what roles and work conditions you prefer.
+      </p>
+      <div class="mt-5">
+        <Button @click="editing = true">Add career preferences</Button>
       </div>
     </div>
-  </section>
+
+    <div v-else class="space-y-5">
+      <div v-if="profile.target_roles.length" class="flex flex-wrap items-center gap-2.5">
+        <div
+          class="flex size-7 items-center justify-center rounded-lg bg-[var(--color-primary-100)] text-[var(--color-primary-600)]"
+        >
+          <User :size="14" stroke-width="1.5" />
+        </div>
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]"
+          >Target roles</span
+        >
+        <div class="flex flex-wrap gap-1.5">
+          <span
+            v-for="role in profile.target_roles"
+            :key="role"
+            class="rounded-lg bg-[var(--color-primary-50)] px-2.5 py-1 text-xs font-medium text-[var(--color-primary-700)]"
+            >{{ role }}</span
+          >
+        </div>
+      </div>
+
+      <div
+        v-if="profile.work_modes.length || profile.contract_types.length"
+        class="flex flex-wrap items-center gap-2.5"
+      >
+        <div
+          class="flex size-7 items-center justify-center rounded-lg bg-[var(--color-primary-100)] text-[var(--color-primary-600)]"
+        >
+          <Briefcase :size="14" stroke-width="1.5" />
+        </div>
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]"
+          >Work preference</span
+        >
+        <span
+          v-for="wm in profile.work_modes"
+          :key="wm"
+          class="rounded-lg bg-[var(--surface-secondary)] px-2.5 py-1 text-xs font-medium text-[var(--text-secondary)]"
+          >{{ wm.charAt(0).toUpperCase() + wm.slice(1).replace('_', ' ') }}</span
+        >
+        <span
+          v-for="ct in profile.contract_types"
+          :key="ct"
+          class="rounded-lg bg-[var(--color-primary-50)] px-2.5 py-1 text-xs font-medium text-[var(--color-primary-700)]"
+          >{{ contractLabels[ct] ?? ct }}</span
+        >
+      </div>
+
+      <div v-if="profile.preferred_locations.length" class="flex flex-wrap items-center gap-2.5">
+        <div
+          class="flex size-7 items-center justify-center rounded-lg bg-[var(--color-primary-100)] text-[var(--color-primary-600)]"
+        >
+          <MapPin :size="14" stroke-width="1.5" />
+        </div>
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]"
+          >Preferred locations</span
+        >
+        <span class="text-sm font-medium text-[var(--text-primary)]">{{
+          profile.preferred_locations.join(', ')
+        }}</span>
+      </div>
+
+      <div v-if="profile.availability_status" class="flex flex-wrap items-center gap-2.5">
+        <span
+          class="inline-block size-2.5 rounded-full"
+          :class="{
+            'bg-[var(--color-success-500)]': profile.availability_status === 'immediately',
+            'bg-[var(--color-warning-400)]': profile.availability_status === 'within_2_weeks',
+            'bg-[var(--color-info-400)]': profile.availability_status === 'within_month',
+            'bg-[var(--text-muted)]': profile.availability_status === 'not_looking',
+          }"
+        />
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]"
+          >Availability</span
+        >
+        <span
+          class="rounded-lg bg-[var(--surface-secondary)] px-2.5 py-1 text-xs font-medium text-[var(--text-secondary)]"
+          >{{ availabilityLabel[profile.availability_status] ?? profile.availability_status }}</span
+        >
+      </div>
+
+      <div v-if="profile.availability_date" class="flex flex-wrap items-center gap-2.5">
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]"
+          >Available from</span
+        >
+        <span class="text-sm font-medium text-[var(--text-primary)]">{{
+          new Date(profile.availability_date + 'T00:00:00').toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          })
+        }}</span>
+      </div>
+
+      <div
+        v-if="profile.salary_min || profile.salary_max"
+        class="flex flex-wrap items-center gap-2.5"
+      >
+        <div
+          class="flex size-7 items-center justify-center rounded-lg bg-[var(--color-primary-100)] text-[var(--color-primary-600)]"
+        >
+          <DollarSign :size="14" stroke-width="1.5" />
+        </div>
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]"
+          >Salary range</span
+        >
+        <span
+          class="rounded-lg bg-[var(--color-primary-50)] px-3 py-1 text-sm font-bold text-[var(--color-primary-800)]"
+        >
+          {{ profile.salary_min ? formatSalary(profile.salary_min) : '—' }}
+          <span
+            v-if="profile.salary_min && profile.salary_max"
+            class="mx-1 text-[var(--color-primary-300)]"
+            >–</span
+          >
+          {{
+            profile.salary_max
+              ? formatSalary(profile.salary_max)
+              : profile.salary_min
+                ? 'Uncapped'
+                : ''
+          }}
+        </span>
+        <span
+          v-if="profile.salary_currency"
+          class="rounded-lg bg-[var(--surface-secondary)] px-1.5 py-0.5 text-xs font-medium text-[var(--text-secondary)]"
+          >{{ profile.salary_currency }}</span
+        >
+        <span v-if="profile.salary_period" class="text-xs text-[var(--text-muted)]"
+          >/{{ profile.salary_period }}</span
+        >
+      </div>
+    </div>
+  </Card>
 </template>

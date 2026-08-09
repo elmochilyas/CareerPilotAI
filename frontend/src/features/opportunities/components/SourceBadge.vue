@@ -43,7 +43,7 @@ withDefaults(
   list-style: none;
   align-items: center;
   gap: 0.625rem;
-  border-radius: var(--cp-radius-control);
+  border-radius: var(--radius-md);
   padding-right: 0.375rem;
   transition: opacity 170ms ease;
 }
@@ -53,19 +53,19 @@ withDefaults(
 }
 
 .source-summary:focus-visible {
-  outline: 2px solid var(--cp-primary);
+  outline: 2px solid var(--color-primary-500);
   outline-offset: 2px;
 }
 
 .source-summary:hover {
-  background: var(--cp-primary-soft);
+  background: var(--color-primary-50);
 }
 
 .source-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
   font-size: 0.75rem;
   font-weight: 610;
   line-height: 1.125rem;
@@ -74,12 +74,12 @@ withDefaults(
 .source-icon {
   width: 0.875rem;
   height: 0.875rem;
-  color: var(--cp-primary);
+  color: var(--color-primary-500);
   stroke-width: 2;
 }
 
 .source-action {
-  color: var(--cp-primary-deep);
+  color: var(--color-primary-600);
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -87,14 +87,14 @@ withDefaults(
 .source-excerpt {
   max-width: 42rem;
   margin-top: 0.5rem;
-  border-left: 2px solid var(--cp-primary-bright);
-  border-radius: 0 var(--cp-radius-control) var(--cp-radius-control) 0;
-  background: var(--cp-surface-violet);
+  border-left: 2px solid var(--color-primary-400);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: var(--color-primary-50);
   padding-top: 0.625rem;
   padding-right: 0.75rem;
   padding-bottom: 0.625rem;
   padding-left: 0.75rem;
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
   font-size: 0.8125rem;
   line-height: 1.375rem;
 }

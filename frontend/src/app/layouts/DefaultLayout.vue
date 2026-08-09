@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import AppLayout from '@/components/ui/AppLayout.vue'
+import AppShell from './AppShell.vue'
 </script>
 
 <template>
-  <AppLayout>
+  <AppShell>
     <router-view />
-  </AppLayout>
+  </AppShell>
 </template>

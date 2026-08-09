@@ -107,17 +107,15 @@ class AnalyzeJobAction
             ->where('review_decision', ReviewDecision::Pending)
             ->delete();
 
-        $existingTypes = $ingestion->suggestions()->pluck('type')->map(fn ($t) => $t->value)->toArray();
+        $existingByType = $ingestion->suggestions()->get()->keyBy('type');
 
         foreach ($validAnalysis['suggestions'] as $suggestionData) {
-            if (in_array($suggestionData->type, $existingTypes, true)) {
-                /** @var JobOpportunitySuggestion|null $matching */
-                $matching = $ingestion->suggestions()->where('type', $suggestionData->type)->first();
-                if ($matching !== null) {
-                    $this->updateSuggestionRow($matching, $suggestionData);
+            $matching = $existingByType->get($suggestionData->type);
 
-                    continue;
-                }
+            if ($matching !== null) {
+                $this->updateSuggestionRow($matching, $suggestionData);
+
+                continue;
             }
 
             JobOpportunitySuggestion::create([

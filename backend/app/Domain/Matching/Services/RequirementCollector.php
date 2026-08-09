@@ -20,7 +20,7 @@ final class RequirementCollector
 
         $opportunity->loadMissing('requirements', 'skills.skill');
 
-        foreach ($opportunity->requirements()->orderBy('display_order')->get() as $jobRequirement) {
+        foreach ($opportunity->requirements->sortBy('display_order') as $jobRequirement) {
             $category = $this->categoryForRequirement($jobRequirement->category);
 
             if ($category === null) {
@@ -42,7 +42,7 @@ final class RequirementCollector
             );
         }
 
-        foreach ($opportunity->skills()->with('skill')->orderBy('display_order')->get() as $opportunitySkill) {
+        foreach ($opportunity->skills->sortBy('display_order') as $opportunitySkill) {
             $importance = $opportunitySkill->classification === 'preferred'
                 ? MatchImportance::Preferred
                 : MatchImportance::Required;

@@ -31,7 +31,7 @@ export function useProfile() {
   const queryClient = useQueryClient()
   const dirtySections = ref(new Set<string>())
   const announcement = ref('')
-  const query = useQuery({ queryKey: profileKeys.detail(), queryFn: fetchProfile, retry: 1 })
+  const query = useQuery({ queryKey: profileKeys.detail(), queryFn: fetchProfile })
   const refresh = () => queryClient.invalidateQueries({ queryKey: profileKeys.all })
   const conflictCount = ref(0)
   function handleConflictIfPresent(error: unknown): boolean {

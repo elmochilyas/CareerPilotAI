@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { CheckCircle } from '@lucide/vue'
 import { useAuthStore } from '@/stores/auth'
 import { resendVerificationEmail, fetchCsrfCookie } from '@/features/auth/api'
 import Button from '@/components/ui/Button.vue'
@@ -50,20 +51,26 @@ async function goHome(): Promise<void> {
 
 <template>
   <div class="space-y-6 text-center">
-    <h1 class="text-lg font-semibold text-slate-900">Email Verification</h1>
+    <h1 class="text-[var(--text-xl)] font-semibold tracking-tight text-[var(--text-primary)]">
+      Email Verification
+    </h1>
 
     <div v-if="status === 'verifying'" class="space-y-4">
-      <p class="text-sm text-slate-600">Please check your email for a verification link.</p>
+      <p class="text-[var(--text-base)] text-[var(--text-secondary)]">
+        Please check your email for a verification link.
+      </p>
       <div
         v-if="resentMessage"
-        class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700"
+        class="flex items-center justify-center gap-2 rounded-[var(--radius-xl)] bg-[var(--color-success-50)] px-4 py-3 text-[var(--text-base)] text-[var(--color-success-700)]"
+        style="box-shadow: var(--shadow-neo-inset)"
       >
+        <CheckCircle class="size-4 shrink-0 text-[var(--color-success-500)]" aria-hidden="true" />
         {{ resentMessage }}
       </div>
       <button
         type="button"
         :disabled="resending"
-        class="text-sm text-primary-600 hover:text-primary-500 disabled:opacity-50"
+        class="text-[var(--text-sm)] font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-700)] disabled:opacity-50"
         @click="resend"
       >
         {{ resending ? 'Sending...' : 'Resend verification email' }}
@@ -72,20 +79,25 @@ async function goHome(): Promise<void> {
 
     <div
       v-if="status === 'verified'"
-      class="rounded-lg border border-emerald-200 bg-emerald-50 p-4"
+      class="rounded-[var(--radius-xl)] bg-[var(--color-success-50)] px-4 py-5"
+      style="box-shadow: var(--shadow-neo-raised)"
     >
-      <p class="text-sm text-emerald-700">{{ message }}</p>
+      <p class="text-[var(--text-base)] text-[var(--color-success-700)]">{{ message }}</p>
       <div class="mt-4">
         <Button @click="goHome">Go to home</Button>
       </div>
     </div>
 
-    <div v-if="status === 'error'" class="rounded-lg border border-red-200 bg-red-50 p-4">
-      <p class="text-sm text-red-700">{{ message }}</p>
+    <div
+      v-if="status === 'error'"
+      class="rounded-[var(--radius-xl)] bg-[var(--color-error-50)] px-4 py-5"
+      style="box-shadow: var(--shadow-neo-raised)"
+    >
+      <p class="text-[var(--text-base)] text-[var(--color-error-700)]">{{ message }}</p>
       <button
         type="button"
         :disabled="resending"
-        class="mt-4 text-sm text-primary-600 hover:text-primary-500 disabled:opacity-50"
+        class="mt-4 text-[var(--text-sm)] font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-700)] disabled:opacity-50"
         @click="resend"
       >
         {{ resending ? 'Sending...' : 'Resend verification email' }}

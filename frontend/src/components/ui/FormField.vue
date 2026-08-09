@@ -1,0 +1,25 @@
+<script setup lang="ts">
+defineProps<{
+  label?: string
+  error?: string
+  hint?: string
+  required?: boolean
+  htmlFor?: string
+}>()
+</script>
+
+<template>
+  <div class="grid gap-1.5">
+    <label v-if="label" :for="htmlFor" class="text-sm font-medium text-[var(--text-secondary)]">
+      {{ label }}
+      <span v-if="required" class="text-[var(--color-error-500)]" aria-hidden="true">*</span>
+    </label>
+    <slot />
+    <p v-if="error" class="text-xs text-[var(--color-error-600)]" role="alert">
+      {{ error }}
+    </p>
+    <p v-else-if="hint" class="text-xs text-[var(--text-muted)]">
+      {{ hint }}
+    </p>
+  </div>
+</template>

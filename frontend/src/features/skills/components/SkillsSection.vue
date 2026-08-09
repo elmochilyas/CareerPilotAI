@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
-import { Plus, AlertCircle, RefreshCw } from '@lucide/vue'
+import { Plus, AlertCircle, RefreshCw, Wrench } from '@lucide/vue'
 import { fetchProfile } from '@/features/profile/api'
 import { useSkills } from '../composables/useSkills'
+import { profileKeys } from '@/features/profile/api'
 import SkillCard from './SkillCard.vue'
 import AddSkillFlow from './AddSkillFlow.vue'
 import EvidenceSelector from './EvidenceSelector.vue'
 import type { CandidateSkill, EvidenceInput } from '../types'
 import type { ProfileItemOption } from './EvidenceSelector.vue'
+import Card from '@/components/ui/Card.vue'
 import Button from '@/components/ui/Button.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
@@ -29,7 +31,7 @@ const {
 } = useSkills()
 
 const profileQuery = useQuery({
-  queryKey: ['profile', 'detail'],
+  queryKey: profileKeys.detail(),
   queryFn: fetchProfile,
 })
 
@@ -135,27 +137,48 @@ function isSaving(skill: CandidateSkill): boolean {
 </script>
 
 <template>
-  <section aria-labelledby="skills-heading" class="mt-10">
-    <h2 id="skills-heading" class="mb-1 text-lg font-semibold text-slate-900">Skills</h2>
-    <p class="mb-5 text-sm text-slate-500">
-      Manage your technical skills, tools, and competencies.
-    </p>
+  <Card>
+    <template #header>
+      <div class="flex items-center gap-3">
+        <div
+          class="flex size-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-100)] text-[var(--color-primary-600)] shadow-[var(--shadow-neo-inset)]"
+        >
+          <Wrench :size="16" stroke-width="1.5" />
+        </div>
+        <div>
+          <h2 class="text-base font-semibold text-slate-900">Skills</h2>
+          <p class="text-xs text-slate-500">
+            Manage your technical skills, tools, and competencies.
+          </p>
+        </div>
+      </div>
+      <Button v-if="!showAddFlow" variant="outline" size="sm" @click="showAddFlow = true">
+        <Plus :size="14" aria-hidden="true" />
+        Add Skill
+      </Button>
+    </template>
 
     <div
       v-if="announcement"
-      class="mb-4 rounded-lg bg-primary-50 px-4 py-3 text-sm text-primary-700"
+      class="mb-4 rounded-[var(--radius-md)] bg-[var(--color-primary-50)] px-4 py-3 text-sm text-[var(--color-primary-700)] shadow-[var(--shadow-neo-raised-sm)]"
       role="status"
     >
       {{ announcement }}
     </div>
 
-    <div v-if="isPending" class="space-y-3">
-      <Skeleton v-for="i in 3" :key="i" classes="h-28" />
+    <div v-if="isPending" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div
+        v-for="i in 3"
+        :key="i"
+        class="rounded-[var(--radius-xl)] bg-[var(--surface-primary)] p-4 shadow-[var(--shadow-neo-raised)]"
+      >
+        <Skeleton classes="h-28" />
+      </div>
     </div>
 
     <div
       v-else-if="isError"
-      class="flex flex-col items-center rounded-lg border border-red-200 bg-red-50 p-8 text-center"
+      class="flex flex-col items-center rounded-[var(--radius-xl)] bg-red-50 p-8 text-center shadow-[var(--shadow-neo-raised)]"
     >
       <AlertCircle class="size-8 text-red-400" aria-hidden="true" />
       <p class="mt-2 text-sm text-red-700">Could not load your skills.</p>
@@ -175,13 +198,6 @@ function isSaving(skill: CandidateSkill): boolean {
     </EmptyState>
 
     <div v-else>
-      <div v-if="!showAddFlow" class="mb-4">
-        <Button variant="outline" size="sm" @click="showAddFlow = true">
-          <Plus :size="14" aria-hidden="true" />
-          Add Skill
-        </Button>
-      </div>
-
       <AddSkillFlow
         v-if="showAddFlow"
         ref="addFlowRef"
@@ -191,7 +207,7 @@ function isSaving(skill: CandidateSkill): boolean {
         @cancel="showAddFlow = false"
       />
 
-      <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <SkillCard
           v-for="skill in sortedSkills"
           :key="skill.id"
@@ -227,5 +243,5 @@ function isSaving(skill: CandidateSkill): boolean {
         />
       </div>
     </Modal>
-  </section>
+  </Card>
 </template>

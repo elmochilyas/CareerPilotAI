@@ -307,6 +307,273 @@ paths:
                     $ref: '#/components/schemas/ImportResult'
         '404':
           description: Import result not found
+  /matches/{id}/clarifications:
+    get:
+      operationId: listClarifications
+      summary: List the open clarification session for a match analysis
+      description: Returns the actionable clarification questions for an analysis with progress. A cross-user or nonexistent analysis is reported as not found.
+      tags:
+        - Clarifications
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Clarification session
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ClarificationSession'
+        '404':
+          description: Match analysis not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    post:
+      operationId: generateClarifications
+      summary: Generate the clarification session for a match analysis
+      description: Builds the open clarification session from eligible uncertain findings on demand. Existing findings are never duplicated, so regenerating returns the current session. A cross-user or nonexistent analysis is reported as not found.
+      tags:
+        - Clarifications
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Existing clarification session (no new questions)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ClarificationSession'
+        '201':
+          description: Clarification session generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ClarificationSession'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Match analysis not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+  /clarifications/{id}/answer:
+    post:
+      operationId: answerClarification
+      summary: Record an answer to a clarification question
+      description: Records the candidate's answer as pending input. A proposal must be built and explicitly accepted before trusted profile data changes.
+      tags:
+        - Clarifications
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+              schema:
+                type: object
+                properties:
+                  answer_type:
+                    type: string
+                    enum: [yes, no, no_with_ack, text, select_option, number]
+                  value:
+                    type: string
+                    nullable: true
+                    maxLength: 2000
+                    description: Required for number, select_option, and yes without a no-evidence acknowledgement. For yes without acknowledgement it must be an HTTPS evidence URL. Omitted or empty for no, no_with_ack, and yes with a no-evidence acknowledgement.
+                  acknowledged_no_evidence:
+                    type: boolean
+              required:
+                - answer_type
+      responses:
+        '201':
+          description: Answer recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ClarificationAnswer'
+        '401':
+          description: Unauthenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '409':
+          description: Answer already exists or session expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '422':
+          description: Validation error or invalid evidence URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+  /clarifications/{id}/review:
+    post:
+      operationId: reviewClarification
+      summary: Review a pending answer's proposal
+      description: Without a decision, builds (when missing) and returns the proposal for preview with no mutation. An accept or edit applies the trusted change; a reject or skip records the rejection without any profile change.
+      tags:
+        - Clarifications
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                decision:
+                  $ref: '#/components/schemas/ReviewDecision'
+                edited_value:
+                  type: string
+                  maxLength: 2000
+      responses:
+        '200':
+          description: Answer with embedded proposal
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/ClarificationAnswer'
+        '404':
+          description: No answer exists for the question
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '409':
+          description: Proposal or answer is no longer reviewable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '422':
+          description: Validation error or invalid review edit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+  /clarifications/{id}/skip:
+    post:
+      operationId: skipClarification
+      summary: Skip a clarification question
+      description: Skips an open question without creating an answer or proposal. Skipping an already-skipped or expired question is idempotent.
+      tags:
+        - Clarifications
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Question skipped
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                      status:
+                        type: string
+                    required:
+                      - id
+                      - status
+        '404':
+          description: Question not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '409':
+          description: Question already has an answer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
 components:
   parameters:
     RequestId:
@@ -570,3 +837,164 @@ components:
               type: integer
             skipped:
               type: integer
+    ClarificationSession:
+      type: object
+      description: >
+        Open clarification session for an analysis. `questions` contains only
+        actionable items (pending or answered with a pending review); `progress`
+        counts all questions. `generable_count` is how many additional questions
+        a generate call would create right now; zero means generation would be a
+        dead end.
+      properties:
+        analysis_id:
+          type: integer
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClarificationQuestion'
+        progress:
+          $ref: '#/components/schemas/ClarificationProgress'
+        generable_count:
+          type: integer
+          description: Number of questions a generate call would create right now.
+      required:
+        - analysis_id
+        - questions
+        - progress
+        - generable_count
+    ClarificationProgress:
+      type: object
+      description: >
+        Progress over all clarification questions for the analysis, not only the
+        open subset. `total` is the full question count and stays fixed as
+        questions are resolved; `answered` counts questions that have an answer.
+      properties:
+        answered:
+          type: integer
+        total:
+          type: integer
+      required:
+        - answered
+        - total
+    ClarificationQuestion:
+      type: object
+      properties:
+        id:
+          type: integer
+        question_no:
+          type: integer
+        question_type:
+          type: string
+        prompt:
+          type: string
+        detail:
+          type: string
+          nullable: true
+        template_key:
+          type: string
+        options:
+          type: array
+          nullable: true
+          items:
+            type: string
+        unit:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [pending, answered, skipped, expired]
+        requirement:
+          type: object
+          properties:
+            text:
+              type: string
+              nullable: true
+            label:
+              type: string
+              nullable: true
+          required:
+            - text
+            - label
+        answer:
+          anyOf:
+            - $ref: '#/components/schemas/ClarificationAnswer'
+            - type: 'null'
+      required:
+        - id
+        - question_no
+        - question_type
+        - prompt
+        - detail
+        - template_key
+        - options
+        - unit
+        - status
+        - requirement
+        - answer
+    ClarificationAnswer:
+      type: object
+      properties:
+        id:
+          type: integer
+        question_id:
+          type: integer
+        answer_type:
+          type: string
+          enum: [yes, no, no_with_ack, text, select_option, number]
+        value:
+          type: string
+        acknowledged_no_evidence:
+          type: boolean
+        status:
+          type: string
+        proposal:
+          anyOf:
+            - $ref: '#/components/schemas/ClarificationProposal'
+            - type: 'null'
+      required:
+        - id
+        - question_id
+        - answer_type
+        - value
+        - acknowledged_no_evidence
+        - status
+        - proposal
+    ClarificationProposal:
+      type: object
+      properties:
+        id:
+          type: integer
+        answer_id:
+          type: integer
+        target:
+          type: object
+          properties:
+            type:
+              type: string
+            id:
+              type: integer
+              nullable: true
+          required:
+            - type
+            - id
+        field:
+          type: string
+        before_value:
+          type: object
+          nullable: true
+        after_value:
+          type: object
+          nullable: true
+        status:
+          type: string
+      required:
+        - id
+        - answer_id
+        - target
+        - field
+        - before_value
+        - after_value
+        - status
+    ReviewDecision:
+      type: string
+      enum: [accept, edit, reject, skip]

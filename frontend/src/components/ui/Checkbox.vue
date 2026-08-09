@@ -26,7 +26,12 @@ function onChange(e: Event) {
         type="checkbox"
         :checked="modelValue"
         :disabled="disabled"
-        class="peer size-4 cursor-pointer appearance-none rounded border-2 border-slate-300 bg-white transition-all checked:border-primary-600 checked:bg-primary-600 focus:ring-2 focus:ring-primary-500/30 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+        class="peer size-4.5 cursor-pointer appearance-none rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/30 focus:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50"
+        :class="
+          modelValue
+            ? 'bg-[var(--color-primary-600)] shadow-[var(--shadow-neo-button-pressed)]'
+            : 'bg-[var(--surface-secondary)] shadow-[var(--shadow-neo-inset)]'
+        "
         @change="onChange"
       />
       <Check
@@ -35,7 +40,11 @@ function onChange(e: Event) {
         stroke-width="3"
       />
     </div>
-    <label v-if="label" :for="id" class="cursor-pointer select-none text-sm text-slate-700">
+    <label
+      v-if="label"
+      :for="id"
+      class="cursor-pointer select-none text-sm text-[var(--text-secondary)]"
+    >
       {{ label }}
     </label>
   </div>

@@ -27,17 +27,14 @@ withDefaults(
   min-height: 1.75rem;
   align-items: center;
   gap: 0.375rem;
-  border: 1px solid color-mix(in srgb, var(--cp-border) 76%, var(--cp-text-faint));
   border-radius: 999px;
   padding: 0.25rem 0.625rem;
-  background: linear-gradient(180deg, var(--cp-surface-lifted), var(--cp-surface-subtle));
-  color: var(--cp-text-muted);
+  background: var(--surface-page);
+  color: var(--text-muted);
   font-size: 0.75rem;
   font-weight: 620;
   line-height: 1.125rem;
-  box-shadow:
-    0 1px 0 rgb(255 255 255 / 0.9) inset,
-    0 0.125rem 0.375rem rgb(16 24 40 / 0.035);
+  box-shadow: var(--shadow-neo-raised-sm);
 }
 
 .metadata-chip-icon {
@@ -47,20 +44,17 @@ withDefaults(
 }
 
 .metadata-chip-primary {
-  border-color: var(--cp-primary-border);
-  background: linear-gradient(180deg, var(--cp-surface-violet), var(--cp-primary-soft));
-  color: var(--cp-primary-hover);
+  background: var(--color-primary-50);
+  color: var(--color-primary-600);
 }
 
 .metadata-chip-success {
-  border-color: var(--cp-success-border);
-  background: var(--cp-success-soft);
-  color: var(--cp-success);
+  background: var(--color-success-50);
+  color: var(--color-success-600);
 }
 
 .metadata-chip-warning {
-  border-color: var(--cp-warning-border);
-  background: var(--cp-warning-soft);
-  color: var(--cp-warning);
+  background: var(--color-warning-50);
+  color: var(--color-warning-600);
 }
 </style>

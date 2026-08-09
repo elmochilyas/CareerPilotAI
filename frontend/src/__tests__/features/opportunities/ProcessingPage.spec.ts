@@ -60,7 +60,7 @@ describe('ProcessingPage', () => {
 
   it('shows loading state when pending', () => {
     const wrapper = mount(ProcessingPage)
-    expect(wrapper.text()).toContain('Loading…')
+    expect(wrapper.text()).toContain('Loading processing status')
   })
 
   it('shows error state when fetch fails', () => {
@@ -144,8 +144,8 @@ describe('ProcessingPage', () => {
     mockIsPending.value = false
     mockIngestion.value = { status: 'failed', failure_reason: 'Something went wrong' }
     const wrapper = mount(ProcessingPage)
-    expect(wrapper.text()).toContain('We couldn’t complete the analysis')
-    expect(wrapper.text()).toContain('Something went wrong')
+    expect(wrapper.text()).toContain("We couldn't complete the analysis")
+    expect(wrapper.text()).toContain('The analysis could not be completed.')
   })
 
   it('keeps the failure code in expandable support details', () => {
@@ -177,7 +177,7 @@ describe('ProcessingPage', () => {
     mockIsPending.value = false
     mockIngestion.value = { status: 'failed', failure_code: 'permanent_failure' }
     const wrapper = mount(ProcessingPage)
-    expect(wrapper.text()).toContain('Cancel')
+    expect(wrapper.text()).toContain('Cancel ingestion')
     expect(wrapper.text()).toContain('Import a different description')
   })
 

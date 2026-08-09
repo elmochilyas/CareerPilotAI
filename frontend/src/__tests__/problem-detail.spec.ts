@@ -4,6 +4,11 @@ import { extractProblemDetail } from '@/api/client/problem-detail'
 import type { ProblemDetail } from '@/types/problem-detail'
 
 describe('extractProblemDetail', () => {
+  it('returns null when no error is present', () => {
+    expect(extractProblemDetail(null)).toBeNull()
+    expect(extractProblemDetail(undefined)).toBeNull()
+  })
+
   it('returns null when no response data', () => {
     const error = { response: undefined } as AxiosError<ProblemDetail>
     expect(extractProblemDetail(error)).toBeNull()

@@ -72,8 +72,7 @@ class UploadCvAction
                 $existing->update(['status' => CvDocumentStatus::Queued]);
 
                 ProcessCvDocumentJob::dispatch($existing->id)
-                    ->onQueue(config('cv-ingestion.queue', 'cv-ingestion'))
-                    ->delay(now()->addSeconds(3));
+                    ->onQueue(config('cv-ingestion.queue', 'cv-ingestion'));
 
                 return $existing->fresh();
             }
@@ -104,8 +103,7 @@ class UploadCvAction
         $document->update(['status' => CvDocumentStatus::Queued]);
 
         ProcessCvDocumentJob::dispatch($document->id)
-            ->onQueue(config('cv-ingestion.queue', 'cv-ingestion'))
-            ->delay(now()->addSeconds(3));
+            ->onQueue(config('cv-ingestion.queue', 'cv-ingestion'));
 
         return $document->fresh();
     }

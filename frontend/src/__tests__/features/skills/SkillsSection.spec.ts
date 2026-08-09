@@ -95,7 +95,6 @@ describe('SkillsSection', () => {
     const wrapper = mount(SkillsSection, {
       global: { plugins: [VueQueryPlugin], stubs },
     })
-    expect(wrapper.find('[aria-labelledby="skills-heading"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('Skills')
     expect(wrapper.text()).toContain('Manage your technical skills, tools, and competencies.')
   })

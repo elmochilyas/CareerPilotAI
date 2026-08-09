@@ -12,7 +12,7 @@ readonly class CandidateSkillData
         public ?int $skillId,
         public ?string $customSkillName,
         public SkillState $state,
-        public ProficiencyLevel $proficiencyLevel,
+        public ?ProficiencyLevel $proficiencyLevel,
         public ?float $yearsExperience,
         public ?CarbonImmutable $lastUsedAt,
         public ?array $evidence,

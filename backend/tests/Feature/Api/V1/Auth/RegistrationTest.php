@@ -13,8 +13,8 @@ it('registers a new user successfully', function () {
     $response = $this->postJson('/api/v1/auth/register', [
         'full_name' => 'Jane Doe',
         'email' => 'jane@example.com',
-        'password' => 'secret123',
-        'password_confirmation' => 'secret123',
+        'password' => 'Secret12345!',
+        'password_confirmation' => 'Secret12345!',
     ]);
 
     $response->assertStatus(201);
@@ -36,8 +36,8 @@ it('rejects duplicate email on registration', function () {
     $response = $this->postJson('/api/v1/auth/register', [
         'full_name' => 'Jane Doe',
         'email' => 'jane@example.com',
-        'password' => 'secret123',
-        'password_confirmation' => 'secret123',
+        'password' => 'Secret12345!',
+        'password_confirmation' => 'Secret12345!',
     ]);
 
     $response->assertStatus(422);
@@ -68,8 +68,8 @@ it('hits rate limit after 10 registration attempts in one minute', function () {
         $response = $this->postJson('/api/v1/auth/register', [
             'full_name' => "User $i",
             'email' => "user$i@example.com",
-            'password' => 'password123',
-            'password_confirmation' => 'password123',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
         ]);
         $response->assertStatus(201);
     }
@@ -77,8 +77,8 @@ it('hits rate limit after 10 registration attempts in one minute', function () {
     $response = $this->postJson('/api/v1/auth/register', [
         'full_name' => 'Extra User',
         'email' => 'extra@example.com',
-        'password' => 'password123',
-        'password_confirmation' => 'password123',
+        'password' => 'Password123!',
+        'password_confirmation' => 'Password123!',
     ]);
     $response->assertStatus(429);
 });
@@ -87,7 +87,7 @@ it('rejects registration with non-matching passwords', function () {
     $response = $this->postJson('/api/v1/auth/register', [
         'full_name' => 'Jane Doe',
         'email' => 'jane@example.com',
-        'password' => 'secret123',
+        'password' => 'Secret12345!',
         'password_confirmation' => 'different',
     ]);
 

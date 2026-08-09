@@ -1,0 +1,240 @@
+@layer animations {
+  /* ── Shimmer (skeleton loading — lavender base) ── */
+  @keyframes ds-shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .ds-animate-shimmer {
+    background: linear-gradient(90deg, #f0ecf4 25%, #f8f5fc 50%, #f0ecf4 75%);
+    background-size: 200% 100%;
+    animation: ds-shimmer 1.8s ease-in-out infinite;
+  }
+
+  /* ── Fade in ── */
+  @keyframes ds-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .ds-animate-fade-in {
+    animation: ds-fade-in var(--duration-normal) var(--ease-out-expo) both;
+  }
+
+  /* ── Slide up ── */
+  @keyframes ds-slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .ds-animate-slide-up {
+    animation: ds-slide-up var(--duration-slow) var(--ease-out-expo) both;
+  }
+
+  /* ── Slide down ── */
+  @keyframes ds-slide-down {
+    from {
+      opacity: 0;
+      transform: translateY(-12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .ds-animate-slide-down {
+    animation: ds-slide-down var(--duration-slow) var(--ease-out-expo) both;
+  }
+
+  /* ── Scale in ── */
+  @keyframes ds-scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .ds-animate-scale-in {
+    animation: ds-scale-in var(--duration-normal) var(--ease-spring) both;
+  }
+
+  /* ── Spin ── */
+  @keyframes ds-spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .ds-animate-spin {
+    animation: ds-spin 0.75s linear infinite;
+  }
+
+  /* ── Pulse ── */
+  @keyframes ds-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  .ds-animate-pulse {
+    animation: ds-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* ── Neumorphic glow pulse (for active/loading states) ── */
+  @keyframes ds-glow-pulse {
+    0%,
+    100% {
+      box-shadow: var(--shadow-neo-raised);
+    }
+    50% {
+      box-shadow: var(--shadow-neo-raised-lg);
+    }
+  }
+
+  .ds-animate-glow {
+    animation: ds-glow-pulse 2s ease-in-out infinite;
+  }
+
+  /* ── Toast enter/exit ── */
+  @keyframes ds-toast-in {
+    from {
+      opacity: 0;
+      transform: translateX(100%) translateY(-8px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0) translateY(0) scale(1);
+    }
+  }
+
+  @keyframes ds-toast-out {
+    from {
+      opacity: 1;
+      transform: translateX(0) translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(100%) translateY(-8px) scale(0.96);
+    }
+  }
+
+  /* ── Stagger children ── */
+  .ds-stagger-children > * {
+    animation: ds-slide-up var(--duration-slow) var(--ease-out-expo) both;
+  }
+  .ds-stagger-children > *:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .ds-stagger-children > *:nth-child(2) {
+    animation-delay: 50ms;
+  }
+  .ds-stagger-children > *:nth-child(3) {
+    animation-delay: 100ms;
+  }
+  .ds-stagger-children > *:nth-child(4) {
+    animation-delay: 150ms;
+  }
+  .ds-stagger-children > *:nth-child(5) {
+    animation-delay: 200ms;
+  }
+  .ds-stagger-children > *:nth-child(6) {
+    animation-delay: 250ms;
+  }
+
+  /* ── Vue transition classes ── */
+  .ds-transition-fade-enter-active,
+  .ds-transition-fade-leave-active {
+    transition: opacity var(--duration-normal) var(--ease-out);
+  }
+  .ds-transition-fade-enter-from,
+  .ds-transition-fade-leave-to {
+    opacity: 0;
+  }
+
+  .ds-transition-slide-up-enter-active,
+  .ds-transition-slide-up-leave-active {
+    transition:
+      opacity var(--duration-slow) var(--ease-out-expo),
+      transform var(--duration-slow) var(--ease-out-expo);
+  }
+  .ds-transition-slide-up-enter-from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  .ds-transition-slide-up-leave-to {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+
+  .ds-transition-slide-right-enter-active,
+  .ds-transition-slide-right-leave-active {
+    transition:
+      opacity var(--duration-normal) var(--ease-out-expo),
+      transform var(--duration-normal) var(--ease-out-expo);
+  }
+  .ds-transition-slide-right-enter-from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  .ds-transition-slide-right-leave-to {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+
+  .ds-transition-scale-enter-active,
+  .ds-transition-scale-leave-active {
+    transition:
+      opacity var(--duration-normal) var(--ease-spring),
+      transform var(--duration-normal) var(--ease-spring);
+  }
+  .ds-transition-scale-enter-from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  .ds-transition-scale-leave-to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  /* ── Page transition ── */
+  .ds-page-enter-active,
+  .ds-page-leave-active {
+    transition:
+      opacity var(--duration-slow) var(--ease-out-expo),
+      transform var(--duration-slow) var(--ease-out-expo);
+  }
+  .ds-page-enter-from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  .ds-page-leave-to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}

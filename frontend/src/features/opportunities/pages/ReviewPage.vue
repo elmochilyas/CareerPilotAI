@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, shallowRef } from 'vue'
+import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import OpportunityPageHeader from '../components/OpportunityPageHeader.vue'
@@ -254,7 +254,20 @@ const ambiguousCount = computed(
     ).length,
 )
 
+const suggestionsByStep = computed(() => {
+  const map = new Map<string, typeof visibleSuggestions.value>()
+  for (const step of STEP_DEFINITIONS) {
+    map.set(
+      step.key,
+      visibleSuggestions.value.filter((s) => (step.types as readonly string[]).includes(s.type)),
+    )
+  }
+  return map
+})
+
 function getSuggestionsByGroup(types: readonly string[]) {
+  const key = STEP_DEFINITIONS.find((s) => JSON.stringify(s.types) === JSON.stringify(types))?.key
+  if (key) return suggestionsByStep.value.get(key) ?? []
   return visibleSuggestions.value.filter((s) => types.includes(s.type))
 }
 
@@ -577,6 +590,10 @@ onMounted(() => {
   }
 
   void refetchSuggestions()
+})
+
+onUnmounted(() => {
+  disarmAcceptAll()
 })
 
 const primaryButtonLabel = computed(() => {
@@ -1089,54 +1106,10 @@ const isPrimaryDisabled = computed(() => {
 
 <style scoped>
 .review-page {
-  --cp-bg: #f7f8fa;
-  --cp-surface: #ffffff;
-  --cp-surface-subtle: #fafafa;
-  --cp-surface-muted: #f2f4f7;
-  --cp-ink: #111827;
-  --cp-text: #263244;
-  --cp-text-muted: #667085;
-  --cp-text-faint: #98a2b3;
-  --cp-text-inverse: #ffffff;
-  --cp-border: #e4e7ec;
-  --cp-border-strong: #d0d5dd;
-  --cp-divider: #eaecf0;
-  --cp-primary: #315ee7;
-  --cp-primary-hover: #2449bc;
-  --cp-primary-soft: #eef2ff;
-  --cp-primary-border: #c7d2fe;
-  --cp-success: #18705a;
-  --cp-success-soft: #edf8f4;
-  --cp-success-border: #acd6c8;
-  --cp-warning: #b54708;
-  --cp-warning-soft: #fffaeb;
-  --cp-warning-border: #fedf89;
-  --cp-danger: #ae3b35;
-  --cp-danger-soft: #fff2f0;
-  --cp-danger-border: #efc7c3;
-  --cp-color-card: var(--cp-surface);
-  --cp-color-foreground: var(--cp-ink);
-  --cp-color-border: var(--cp-border);
-  --cp-color-primary: var(--cp-primary);
-  --cp-color-primary-foreground: var(--cp-text-inverse);
-  --cp-color-success: var(--cp-success);
-  --cp-color-success-soft: var(--cp-success-soft);
-  --cp-color-warning-soft: var(--cp-warning-soft);
-  --cp-color-accent: var(--cp-danger-soft);
-  --cp-color-danger: var(--cp-danger);
-  --cp-primary-deep: var(--cp-primary);
-  --cp-surface-lifted: var(--cp-surface);
-  --cp-radius-control: 0.5rem;
-  --cp-radius-input: 0.5rem;
-  --cp-radius-lg: 0.5rem;
-  --cp-radius-xl: 0.75rem;
-  --cp-duration-fast: 120ms;
-  --cp-ease-out: ease-out;
-
   width: 100%;
   max-width: 74rem;
   margin: 0 auto;
-  color: var(--cp-ink);
+  color: var(--text-primary);
 }
 
 .review-page-meta {
@@ -1148,7 +1121,7 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .review-page-meta strong {
-  color: var(--cp-ink);
+  color: var(--text-primary);
   font-weight: 650;
 }
 
@@ -1174,11 +1147,11 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .announcement-banner {
-  border: 1px solid var(--cp-warning-border);
-  border-radius: 0.5rem;
-  background: var(--cp-warning-soft);
+  border: 1px solid var(--color-warning-100);
+  border-radius: var(--radius-lg);
+  background: var(--color-warning-50);
   padding: 0.75rem 1rem;
-  color: var(--cp-warning);
+  color: var(--color-warning-700);
   font-size: 0.875rem;
 }
 
@@ -1190,15 +1163,15 @@ const isPrimaryDisabled = computed(() => {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  border: 1px solid var(--cp-border);
-  border-radius: 0.5rem;
-  background: var(--cp-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-primary);
   padding: 0.625rem 0.75rem;
-  box-shadow: 0 4px 12px rgb(16 24 40 / 0.06);
+  box-shadow: var(--shadow-sm);
 }
 
 .accept-all-status {
-  color: var(--cp-text-muted);
+  color: var(--text-secondary);
   font-size: 0.8125rem;
   font-weight: 640;
   font-variant-numeric: tabular-nums;
@@ -1210,11 +1183,11 @@ const isPrimaryDisabled = computed(() => {
   justify-content: center;
   flex: 0 0 auto;
   min-height: 2.25rem;
-  border: 1px solid var(--cp-primary-border);
-  border-radius: 0.375rem;
+  border: 1px solid var(--color-primary-200);
+  border-radius: var(--radius-md);
   padding: 0.375rem 0.75rem;
-  background: var(--cp-primary-soft);
-  color: var(--cp-primary);
+  background: var(--color-primary-50);
+  color: var(--color-primary-700);
   font-size: 0.8125rem;
   font-weight: 650;
   cursor: pointer;
@@ -1223,21 +1196,21 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .accept-all-btn:hover:not(:disabled) {
-  background: var(--cp-primary-border);
+  background: var(--color-primary-100);
 }
 
 .accept-all-btn-armed {
-  border-color: var(--cp-danger-border);
-  background: var(--cp-danger-soft);
-  color: var(--cp-danger);
+  border-color: var(--color-error-200);
+  background: var(--color-error-50);
+  color: var(--color-error-700);
 }
 
 .accept-all-btn-armed:hover:not(:disabled) {
-  background: var(--cp-danger-border);
+  background: var(--color-error-100);
 }
 
 .accept-all-btn:focus-visible {
-  outline: 2px solid var(--cp-primary);
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 2px;
 }
 
@@ -1252,7 +1225,7 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .step-heading {
-  color: var(--cp-ink);
+  color: var(--text-primary);
   font-size: 1.375rem;
   font-weight: 670;
   letter-spacing: -0.025em;
@@ -1261,7 +1234,7 @@ const isPrimaryDisabled = computed(() => {
 
 .step-description {
   margin-top: -0.75rem;
-  color: var(--cp-text-muted);
+  color: var(--text-secondary);
   font-size: 0.875rem;
   line-height: 1.375rem;
 }
@@ -1276,8 +1249,8 @@ const isPrimaryDisabled = computed(() => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  border: 1px solid var(--cp-border);
-  border-radius: 0.5rem;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
   padding: 0.75rem 1rem;
 }
 
@@ -1286,7 +1259,7 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .step-item-label {
-  color: var(--cp-text-faint);
+  color: var(--text-muted);
   font-size: 0.6875rem;
   font-weight: 560;
   line-height: 1rem;
@@ -1296,7 +1269,7 @@ const isPrimaryDisabled = computed(() => {
 
 .step-item-value {
   margin-top: 0.125rem;
-  color: var(--cp-ink);
+  color: var(--text-primary);
   font-size: 0.875rem;
   line-height: 1.375rem;
   overflow-wrap: anywhere;
@@ -1314,10 +1287,10 @@ const isPrimaryDisabled = computed(() => {
   align-items: center;
   min-height: 2.25rem;
   border: 0;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-md);
   padding: 0.375rem 0.625rem;
   background: transparent;
-  color: var(--cp-text-muted);
+  color: var(--text-secondary);
   font-size: 0.75rem;
   font-weight: 620;
   cursor: pointer;
@@ -1326,30 +1299,30 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .action-btn-sm:hover {
-  background: var(--cp-surface-muted);
-  color: var(--cp-ink);
+  background: var(--surface-secondary);
+  color: var(--text-primary);
 }
 
 .action-btn-sm-active {
-  color: var(--cp-success);
+  color: var(--color-success-700);
 }
 
 .action-btn-sm-active:hover {
-  background: var(--cp-success-soft);
-  color: var(--cp-success);
+  background: var(--color-success-50);
+  color: var(--color-success-700);
 }
 
 .action-btn-sm-remove {
-  color: var(--cp-danger);
+  color: var(--color-error-700);
 }
 
 .action-btn-sm-remove:hover {
-  background: var(--cp-danger-soft);
-  color: var(--cp-danger);
+  background: var(--color-error-50);
+  color: var(--color-error-700);
 }
 
 .action-btn-sm:focus-visible {
-  outline: 2px solid var(--cp-primary);
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 2px;
 }
 
@@ -1360,14 +1333,14 @@ const isPrimaryDisabled = computed(() => {
 .manual-add-form {
   display: grid;
   gap: 0.625rem;
-  border: 1px solid var(--cp-primary-border);
-  border-radius: 0.5rem;
-  background: var(--cp-primary-soft);
+  border: 1px solid var(--color-primary-200);
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-50);
   padding: 1rem;
 }
 
 .manual-add-form label {
-  color: var(--cp-ink);
+  color: var(--text-primary);
   font-size: 0.8125rem;
   font-weight: 650;
 }
@@ -1377,11 +1350,11 @@ const isPrimaryDisabled = computed(() => {
   width: 100%;
   min-height: 2.75rem;
   resize: vertical;
-  border: 1px solid var(--cp-border-strong);
-  border-radius: 0.5rem;
-  background: var(--cp-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-primary);
   padding: 0.625rem 0.75rem;
-  color: var(--cp-ink);
+  color: var(--text-primary);
   font: inherit;
 }
 
@@ -1392,7 +1365,7 @@ const isPrimaryDisabled = computed(() => {
 .manual-add-form input:focus-visible,
 .manual-add-form textarea:focus-visible,
 .add-item-button:focus-visible {
-  outline: 2px solid var(--cp-primary);
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 2px;
 }
 
@@ -1410,18 +1383,18 @@ const isPrimaryDisabled = computed(() => {
 .add-item-button {
   justify-self: start;
   min-height: 2.75rem;
-  border: 1px dashed var(--cp-primary-border);
-  border-radius: 0.5rem;
+  border: 1px dashed var(--color-primary-200);
+  border-radius: var(--radius-md);
   padding: 0.5rem 0.875rem;
-  background: var(--cp-surface);
-  color: var(--cp-primary);
+  background: var(--surface-primary);
+  color: var(--color-primary-700);
   font-size: 0.8125rem;
   font-weight: 650;
   cursor: pointer;
 }
 
 .add-item-button:hover {
-  background: var(--cp-primary-soft);
+  background: var(--color-primary-50);
 }
 
 .final-summary {
@@ -1433,10 +1406,10 @@ const isPrimaryDisabled = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-radius: 0.5rem;
-  background: var(--cp-surface-muted);
+  border-radius: var(--radius-lg);
+  background: var(--surface-secondary);
   padding: 0.75rem 1rem;
-  color: var(--cp-text);
+  color: var(--text-primary);
   font-size: 0.875rem;
 }
 
@@ -1446,18 +1419,18 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .text-success {
-  color: var(--cp-success);
+  color: var(--color-success-700);
 }
 
 .text-warning {
-  color: var(--cp-warning);
+  color: var(--color-warning-700);
 }
 
 .final-warning {
-  border-radius: 0.5rem;
-  background: var(--cp-warning-soft);
+  border-radius: var(--radius-lg);
+  background: var(--color-warning-50);
   padding: 0.75rem 1rem;
-  color: var(--cp-warning);
+  color: var(--color-warning-700);
   font-size: 0.875rem;
   line-height: 1.375rem;
 }
@@ -1468,10 +1441,10 @@ const isPrimaryDisabled = computed(() => {
   justify-content: center;
   min-height: 2.75rem;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   padding: 0.625rem 1.25rem;
-  background: var(--cp-primary);
-  color: var(--cp-text-inverse);
+  background: var(--color-primary-600);
+  color: #ffffff;
   font-size: 0.875rem;
   font-weight: 650;
   cursor: pointer;
@@ -1480,7 +1453,7 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .preview-btn:hover:not(:disabled) {
-  background: var(--cp-primary-hover);
+  background: var(--color-primary-700);
 }
 
 .preview-btn:disabled {
@@ -1489,7 +1462,7 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .preview-btn:focus-visible {
-  outline: 2px solid var(--cp-primary);
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 2px;
 }
 
@@ -1500,44 +1473,44 @@ const isPrimaryDisabled = computed(() => {
 
 .confirmed-banner {
   margin-top: 1.5rem;
-  border: 1px solid var(--cp-success-border);
-  border-radius: 0.75rem;
-  background: var(--cp-success-soft);
+  border: 1px solid var(--color-success-100);
+  border-radius: var(--radius-lg);
+  background: var(--color-success-50);
   padding: 1.5rem;
   text-align: center;
 }
 
 .confirmed-title {
-  color: var(--cp-success);
+  color: var(--color-success-700);
   font-size: 1.125rem;
   font-weight: 650;
 }
 
 .confirmed-summary {
   margin-top: 0.5rem;
-  color: var(--cp-ink);
+  color: var(--text-primary);
 }
 
 .confirmed-requirements {
   margin-top: 0.25rem;
-  color: var(--cp-text-muted);
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
 .review-state {
   margin-top: 1.5rem;
-  border: 1px solid var(--cp-border);
-  border-radius: 0.75rem;
-  background: var(--cp-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-primary);
   padding: 1.5rem;
-  color: var(--cp-text-muted);
+  color: var(--text-secondary);
   text-align: center;
 }
 
 .review-state-error {
-  border-color: var(--cp-danger-border);
-  background: var(--cp-danger-soft);
-  color: var(--cp-danger);
+  border-color: var(--color-error-200);
+  background: var(--color-error-50);
+  color: var(--color-error-700);
 }
 
 .review-state-error .confirmed-btn-secondary {
@@ -1554,10 +1527,10 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .confirmed-btn-primary {
-  border-radius: 0.5rem;
-  background: var(--cp-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-600);
   padding: 0.5rem 1rem;
-  color: var(--cp-text-inverse);
+  color: #ffffff;
   font-size: 0.875rem;
   font-weight: 600;
   border: none;
@@ -1565,18 +1538,18 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .confirmed-btn-secondary {
-  border-radius: 0.5rem;
-  border: 1px solid var(--cp-border);
-  background: var(--cp-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--surface-primary);
   padding: 0.5rem 1rem;
-  color: var(--cp-text);
+  color: var(--text-primary);
   font-size: 0.875rem;
   cursor: pointer;
 }
 
 .confirmed-btn-primary:focus-visible,
 .confirmed-btn-secondary:focus-visible {
-  outline: 2px solid var(--cp-primary);
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 2px;
 }
 

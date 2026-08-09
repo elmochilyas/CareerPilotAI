@@ -38,7 +38,7 @@ const yearsLabel = computed(() => {
 
 <template>
   <div
-    class="group relative rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md"
+    class="group relative rounded-[var(--radius-xl)] bg-[var(--surface-primary)] p-4 shadow-[var(--shadow-neo-raised)] transition-shadow hover:shadow-[var(--shadow-neo-raised-lg)]"
   >
     <div class="flex items-start justify-between">
       <div class="min-w-0 flex-1">
@@ -46,7 +46,7 @@ const yearsLabel = computed(() => {
           <h3 class="truncate text-sm font-semibold text-slate-900">{{ displayName }}</h3>
           <span
             v-if="skill.is_custom"
-            class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500"
+            class="rounded-[var(--radius-sm)] bg-[var(--surface-secondary)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--text-muted)]"
             >custom</span
           >
         </div>
@@ -65,13 +65,16 @@ const yearsLabel = computed(() => {
 
     <div
       v-if="skill.verification_at_risk"
-      class="mt-2 flex items-center gap-1.5 rounded-lg bg-amber-50 px-2.5 py-1.5 text-xs text-amber-700"
+      class="mt-2 flex items-center gap-1.5 rounded-[var(--radius-md)] bg-amber-50 px-2.5 py-1.5 text-xs text-amber-700 shadow-[var(--shadow-neo-raised-sm)]"
     >
       <AlertTriangle class="size-3.5" aria-hidden="true" />
       Verified but no evidence provided
     </div>
 
-    <div v-if="showActions" class="mt-3 flex items-center gap-1.5 border-t border-slate-100 pt-3">
+    <div
+      v-if="showActions"
+      class="mt-3 flex items-center gap-1.5 border-t border-[var(--border-subtle)] pt-3"
+    >
       <Button variant="ghost" size="sm" :disabled="saving" @click="emit('edit', skill)">
         <Pencil class="size-3.5" aria-hidden="true" />
         Manage evidence
@@ -92,7 +95,7 @@ const yearsLabel = computed(() => {
         v-if="canRestore"
         variant="ghost"
         size="sm"
-        class="text-primary-600 hover:bg-primary-50 hover:text-primary-700"
+        class="text-[var(--color-primary-600)] hover:bg-[var(--color-primary-50)] hover:text-[var(--color-primary-700)]"
         :disabled="saving"
         @click="emit('restore', skill)"
       >

@@ -3,20 +3,23 @@
 namespace App\Domain\CvIngestion\Actions;
 
 use App\Domain\CvIngestion\Enums\CvDocumentStatus;
+use App\Domain\CvIngestion\Enums\CvProcessingRunStatus;
 use App\Domain\CvIngestion\Enums\CvSuggestionReviewStatus;
 use App\Domain\CvIngestion\Services\Contracts\CvAnalyzer;
 use App\Domain\CvIngestion\Services\CvAnalysisSchemaValidator;
 use App\Models\CandidateProfile;
-use App\Models\CandidateSkill;
 use App\Models\CvDocument;
 use App\Models\CvProcessingRun;
 use App\Models\CvSuggestion;
-use App\Models\ProfileItem;
-use App\Models\Skill;
 use Illuminate\Support\Facades\Log;
 
 class AnalyzeCvTextAction
 {
+    /**
+     * @var array<string, true> Pre-fetched dedup keys for the current document.
+     */
+    private array $existingDedupKeys = [];
+
     public function __construct(
         private CvAnalyzer $analyzer,
         private CvAnalysisSchemaValidator $schemaValidator,
@@ -70,7 +73,7 @@ class AnalyzeCvTextAction
                 'failure_code' => 'ai_schema_validation_failed',
             ]);
             $run->update([
-                'status' => 'failed',
+                'status' => CvProcessingRunStatus::Failed,
                 'failure_reason' => 'Schema validation failed',
                 'failure_code' => 'ai_schema_validation_failed',
                 'completed_at' => now(),
@@ -82,39 +85,48 @@ class AnalyzeCvTextAction
         $validated = $validation['result'];
         $userId = $document->user_id;
         $schemaVersion = config('cv-ingestion.analysis_schema_version', '1.1.0');
+
+        // Load the profile once and preload relationships needed for entity lookups.
+        $profile = CandidateProfile::where('user_id', $userId)
+            ->with(['items', 'candidateSkills.skill'])
+            ->first();
+
+        // Pre-fetch all existing suggestion dedup keys for this document in one query.
+        $this->existingDedupKeys = $this->loadExistingDedupKeys($document->id);
+
         $created = 0;
 
-        $created += $this->createBasicInformationSuggestions($document, $run, $validated->basicInformation, $userId, $schemaVersion);
-        $created += $this->createFieldSuggestion($document, $run, 'headline', null, 'headline', $validated->headline, $userId, $schemaVersion);
-        $created += $this->createFieldSuggestion($document, $run, 'summary', null, 'professional_summary', $validated->professionalSummary, $userId, $schemaVersion);
+        $created += $this->createBasicInformationSuggestions($document, $run, $validated->basicInformation, $profile, $schemaVersion);
+        $created += $this->createFieldSuggestion($document, $run, 'headline', null, 'headline', $validated->headline, $profile, $schemaVersion);
+        $created += $this->createFieldSuggestion($document, $run, 'summary', null, 'professional_summary', $validated->professionalSummary, $profile, $schemaVersion);
 
         foreach ($validated->professionalLinks as $link) {
             $category = $link['type'] ?? 'other';
-            $created += $this->createEntitySuggestion($document, $run, 'social_link', $category, $link, $userId, $schemaVersion);
+            $created += $this->createEntitySuggestion($document, $run, 'social_link', $category, $link, $profile, $schemaVersion);
         }
 
         foreach ($validated->experiences as $exp) {
-            $created += $this->createEntitySuggestion($document, $run, 'experience', null, $exp, $userId, $schemaVersion);
+            $created += $this->createEntitySuggestion($document, $run, 'experience', null, $exp, $profile, $schemaVersion);
         }
 
         foreach ($validated->projects as $proj) {
-            $created += $this->createEntitySuggestion($document, $run, 'project', null, $proj, $userId, $schemaVersion);
+            $created += $this->createEntitySuggestion($document, $run, 'project', null, $proj, $profile, $schemaVersion);
         }
 
         foreach ($validated->education as $edu) {
-            $created += $this->createEntitySuggestion($document, $run, 'education', null, $edu, $userId, $schemaVersion);
+            $created += $this->createEntitySuggestion($document, $run, 'education', null, $edu, $profile, $schemaVersion);
         }
 
         foreach ($validated->certifications as $cert) {
-            $created += $this->createEntitySuggestion($document, $run, 'certification', null, $cert, $userId, $schemaVersion);
+            $created += $this->createEntitySuggestion($document, $run, 'certification', null, $cert, $profile, $schemaVersion);
         }
 
         foreach ($validated->languages as $lang) {
-            $created += $this->createEntitySuggestion($document, $run, 'language', null, $lang, $userId, $schemaVersion);
+            $created += $this->createEntitySuggestion($document, $run, 'language', null, $lang, $profile, $schemaVersion);
         }
 
         foreach ($validated->skills as $skill) {
-            $created += $this->createEntitySuggestion($document, $run, 'skill', $skill['category'] ?? null, $skill, $userId, $schemaVersion);
+            $created += $this->createEntitySuggestion($document, $run, 'skill', $skill['category'] ?? null, $skill, $profile, $schemaVersion);
         }
 
         if ($created === 0) {
@@ -124,7 +136,7 @@ class AnalyzeCvTextAction
                 'failure_code' => 'ai_no_suggestions',
             ]);
             $run->update([
-                'status' => 'failed',
+                'status' => CvProcessingRunStatus::Failed,
                 'failure_reason' => 'No valid suggestions generated',
                 'failure_code' => 'ai_no_suggestions',
                 'completed_at' => now(),
@@ -135,15 +147,35 @@ class AnalyzeCvTextAction
 
         $document->update(['status' => CvDocumentStatus::ReadyForReview]);
         $run->update([
-            'status' => 'completed',
+            'status' => CvProcessingRunStatus::Completed,
             'completed_at' => now(),
         ]);
     }
 
     /**
+     * Pre-fetch all existing suggestion dedup keys for a document in one query.
+     *
+     * @return array<string, true>
+     */
+    private function loadExistingDedupKeys(int $documentId): array
+    {
+        $existing = CvSuggestion::where('cv_document_id', $documentId)
+            ->select('type', 'field_name')
+            ->get();
+
+        $keys = [];
+        foreach ($existing as $suggestion) {
+            $typeValue = $suggestion->type->value;
+            $keys[$typeValue.'|'.($suggestion->field_name ?? '')] = true;
+        }
+
+        return $keys;
+    }
+
+    /**
      * @param  array<string, mixed>  $basicInfo
      */
-    private function createBasicInformationSuggestions(CvDocument $document, CvProcessingRun $run, array $basicInfo, int $userId, string $schemaVersion): int
+    private function createBasicInformationSuggestions(CvDocument $document, CvProcessingRun $run, array $basicInfo, ?CandidateProfile $profile, string $schemaVersion): int
     {
         $count = 0;
         $fieldMap = [
@@ -160,15 +192,12 @@ class AnalyzeCvTextAction
                 continue;
             }
 
-            $currentValue = $this->getCurrentProfileField($userId, $fieldName);
-            $existing = CvSuggestion::where('cv_document_id', $document->id)
-                ->where('type', 'basic_information')
-                ->where('field_name', $fieldName)
-                ->exists();
-
-            if ($existing) {
+            $dedupKey = 'basic_information|'.$fieldName;
+            if (isset($this->existingDedupKeys[$dedupKey])) {
                 continue;
             }
+
+            $currentValue = $this->getCurrentProfileField($profile, $fieldName);
 
             CvSuggestion::create([
                 'cv_document_id' => $document->id,
@@ -186,27 +215,25 @@ class AnalyzeCvTextAction
                 'review_status' => CvSuggestionReviewStatus::Pending,
             ]);
 
+            $this->existingDedupKeys[$dedupKey] = true;
             $count++;
         }
 
         return $count;
     }
 
-    private function createFieldSuggestion(CvDocument $document, CvProcessingRun $run, string $type, ?string $category, string $fieldName, ?string $value, int $userId, string $schemaVersion): int
+    private function createFieldSuggestion(CvDocument $document, CvProcessingRun $run, string $type, ?string $category, string $fieldName, ?string $value, ?CandidateProfile $profile, string $schemaVersion): int
     {
         if ($value === null) {
             return 0;
         }
 
-        $currentValue = $this->getCurrentProfileField($userId, $fieldName);
-        $existing = CvSuggestion::where('cv_document_id', $document->id)
-            ->where('type', $type)
-            ->where('field_name', $fieldName)
-            ->exists();
-
-        if ($existing) {
+        $dedupKey = $type.'|'.$fieldName;
+        if (isset($this->existingDedupKeys[$dedupKey])) {
             return 0;
         }
+
+        $currentValue = $this->getCurrentProfileField($profile, $fieldName);
 
         CvSuggestion::create([
             'cv_document_id' => $document->id,
@@ -224,13 +251,15 @@ class AnalyzeCvTextAction
             'review_status' => CvSuggestionReviewStatus::Pending,
         ]);
 
+        $this->existingDedupKeys[$dedupKey] = true;
+
         return 1;
     }
 
     /**
      * @param  array<string, mixed>  $entity
      */
-    private function createEntitySuggestion(CvDocument $document, CvProcessingRun $run, string $type, ?string $category, array $entity, int $userId, string $schemaVersion): int
+    private function createEntitySuggestion(CvDocument $document, CvProcessingRun $run, string $type, ?string $category, array $entity, ?CandidateProfile $profile, string $schemaVersion): int
     {
         $entityWithoutSource = $entity;
         unset($entityWithoutSource['source']);
@@ -238,21 +267,14 @@ class AnalyzeCvTextAction
         $sourceText = $entity['source']['text'] ?? null;
         $sourcePage = $entity['source']['page'] ?? null;
 
-        $currentValue = $this->getCurrentEntityValue($userId, $type, $entityWithoutSource);
         $dedupKey = $this->getDedupKey($type, $entityWithoutSource);
+        $dedupIndex = $type.'|'.($dedupKey ?? '');
 
-        $existing = CvSuggestion::where('cv_document_id', $document->id)
-            ->where('type', $type)
-            ->where(function ($q) use ($dedupKey) {
-                if ($dedupKey !== null) {
-                    $q->where('field_name', $dedupKey);
-                }
-            })
-            ->exists();
-
-        if ($existing) {
+        if (isset($this->existingDedupKeys[$dedupIndex])) {
             return 0;
         }
+
+        $currentValue = $this->getCurrentEntityValue($profile, $type, $entityWithoutSource);
 
         CvSuggestion::create([
             'cv_document_id' => $document->id,
@@ -269,6 +291,8 @@ class AnalyzeCvTextAction
             'confidence' => null,
             'review_status' => CvSuggestionReviewStatus::Pending,
         ]);
+
+        $this->existingDedupKeys[$dedupIndex] = true;
 
         return 1;
     }
@@ -294,10 +318,8 @@ class AnalyzeCvTextAction
      * @param  array<string, mixed>  $entity
      * @return array<string, mixed>|null
      */
-    private function getCurrentEntityValue(int $userId, string $type, array $entity): ?array
+    private function getCurrentEntityValue(?CandidateProfile $profile, string $type, array $entity): ?array
     {
-        $profile = CandidateProfile::where('user_id', $userId)->first();
-
         if (! $profile) {
             return null;
         }
@@ -311,10 +333,8 @@ class AnalyzeCvTextAction
         };
     }
 
-    private function getCurrentProfileField(int $userId, string $field): ?array
+    private function getCurrentProfileField(?CandidateProfile $profile, string $field): ?array
     {
-        $profile = CandidateProfile::where('user_id', $userId)->first();
-
         if (! $profile) {
             return null;
         }
@@ -376,11 +396,10 @@ class AnalyzeCvTextAction
         $title = $entity['title'] ?? $entity['name'] ?? $entity['degree'] ?? '';
         $organization = $entity['organization'] ?? $entity['institution'] ?? '';
 
-        $existing = ProfileItem::where('candidate_profile_id', $profile->id)
-            ->where('type', $type)
-            ->where('title', $title)
-            ->where('organization', $organization)
-            ->first();
+        $existing = $profile->items->first(fn ($item) => $item->type->value === $type
+            && $item->title === $title
+            && $item->organization === $organization
+        );
 
         if (! $existing) {
             return null;
@@ -409,17 +428,18 @@ class AnalyzeCvTextAction
         }
 
         $normalizedName = mb_strtolower(trim($skillName));
-        $skill = Skill::where('normalized_name', $normalizedName)->first();
 
-        $existing = CandidateSkill::where('candidate_profile_id', $profile->id)
-            ->where(function ($q) use ($skill, $skillName) {
-                if ($skill) {
-                    $q->where('skill_id', $skill->id);
-                } else {
-                    $q->where('custom_skill_name', $skillName);
-                }
-            })
-            ->first();
+        $existing = $profile->candidateSkills->first(function ($candidateSkill) use ($normalizedName, $skillName) {
+            if ($candidateSkill->skill && $candidateSkill->skill->normalized_name === $normalizedName) {
+                return true;
+            }
+
+            if ($candidateSkill->custom_skill_name === $skillName) {
+                return true;
+            }
+
+            return false;
+        });
 
         if (! $existing) {
             return null;

@@ -37,7 +37,7 @@ defineProps<{
 
 <style scoped>
 .opportunity-header {
-  border-bottom: 1px solid var(--cp-border);
+  border-bottom: 1px solid var(--border-subtle);
   padding: 0.5rem 0 1.75rem;
 }
 
@@ -53,7 +53,7 @@ defineProps<{
 }
 
 .header-eyebrow {
-  color: var(--cp-primary);
+  color: var(--color-primary-500);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.07em;
@@ -64,7 +64,7 @@ defineProps<{
 .header-copy h1 {
   scroll-margin-top: 5rem;
   margin-top: 0.375rem;
-  color: var(--cp-ink);
+  color: var(--text-primary);
   font-size: clamp(2rem, 4vw, 2.75rem);
   font-weight: 720;
   letter-spacing: -0.045em;
@@ -74,7 +74,7 @@ defineProps<{
 
 .header-copy > p:last-child {
   margin-top: 0.625rem;
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
   font-size: 0.9375rem;
   line-height: 1.5rem;
 }
@@ -86,29 +86,26 @@ defineProps<{
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border: 1px solid var(--cp-primary);
-  border-radius: 0.625rem;
+  border-radius: var(--radius-md);
   padding: 0.625rem 0.875rem;
-  background: var(--cp-primary);
-  box-shadow: 0 0.375rem 0.875rem rgb(79 70 229 / 0.18);
+  background: var(--color-primary-500);
+  box-shadow: var(--shadow-neo-button);
   color: white;
   font-size: 0.8125rem;
   font-weight: 680;
   text-decoration: none;
   transition:
     background-color 150ms ease,
-    border-color 150ms ease,
     box-shadow 150ms ease;
 }
 
 .header-action:hover {
-  border-color: var(--cp-primary-hover);
-  background: var(--cp-primary-hover);
-  box-shadow: 0 0.5rem 1rem rgb(79 70 229 / 0.22);
+  background: var(--color-primary-600);
+  box-shadow: var(--shadow-neo-button-pressed);
 }
 
 .header-action:focus-visible {
-  outline: 2px solid var(--cp-primary);
+  outline: 2px solid var(--color-primary-500);
   outline-offset: 3px;
 }
 

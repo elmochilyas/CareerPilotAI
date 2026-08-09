@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { resetPassword, fetchCsrfCookie } from '@/features/auth/api'
 import Button from '@/components/ui/Button.vue'
+import FormField from '@/components/ui/FormField.vue'
 import Input from '@/components/ui/Input.vue'
 
 const route = useRoute()
@@ -38,38 +39,48 @@ async function handleSubmit(): Promise<void> {
 </script>
 
 <template>
-  <form @submit.prevent="handleSubmit" class="space-y-4">
-    <h1 class="text-center text-lg font-semibold text-slate-900">Set new password</h1>
+  <form @submit.prevent="handleSubmit" class="space-y-5">
+    <div class="text-center">
+      <h1 class="text-[var(--text-xl)] font-semibold tracking-tight text-[var(--text-primary)]">
+        Set new password
+      </h1>
+      <p class="mt-1 text-[var(--text-base)] text-[var(--text-secondary)]">
+        Enter your new password below.
+      </p>
+    </div>
 
     <input type="hidden" name="email" :value="form.email" />
     <input type="hidden" name="token" :value="form.token" />
 
-    <Input
-      v-model="form.password"
-      name="password"
-      label="New password"
-      type="password"
-      autocomplete="new-password"
-      required
-      :error="errors.password?.[0]"
-    />
+    <FormField label="New password" :error="errors.password?.[0]" required>
+      <Input
+        v-model="form.password"
+        name="password"
+        type="password"
+        autocomplete="new-password"
+        required
+      />
+    </FormField>
 
-    <Input
-      v-model="form.password_confirmation"
-      name="password_confirmation"
-      label="Confirm new password"
-      type="password"
-      autocomplete="new-password"
-      required
-      :error="errors.password?.[0]"
-    />
+    <FormField label="Confirm new password" :error="errors.password_confirmation?.[0]" required>
+      <Input
+        v-model="form.password_confirmation"
+        name="password_confirmation"
+        type="password"
+        autocomplete="new-password"
+        required
+      />
+    </FormField>
 
-    <Button type="submit" :disabled="submitting" class="w-full">
-      {{ submitting ? 'Resetting...' : 'Reset password' }}
+    <Button type="submit" :loading="submitting" :disabled="submitting" class="w-full">
+      Reset password
     </Button>
 
-    <p class="text-center text-sm text-slate-600">
-      <RouterLink :to="{ name: 'login' }" class="text-primary-600 hover:text-primary-500">
+    <p class="text-center text-[var(--text-base)] text-[var(--text-secondary)]">
+      <RouterLink
+        :to="{ name: 'login' }"
+        class="font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-700)]"
+      >
         Back to sign in
       </RouterLink>
     </p>

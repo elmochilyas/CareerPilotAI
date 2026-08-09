@@ -4,25 +4,47 @@ import type { FunctionalComponent, SVGAttributes } from 'vue'
 withDefaults(
   defineProps<{
     variant?: 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info'
+    size?: 'sm' | 'md'
+    dot?: boolean
     icon?: FunctionalComponent<SVGAttributes>
   }>(),
-  { variant: 'default' },
+  { variant: 'default', size: 'md' },
 )
 </script>
 
 <template>
   <span
-    class="inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium"
+    class="inline-flex items-center gap-1 rounded-full font-medium shadow-[var(--shadow-neo-raised-sm)] text-[0.6875rem] uppercase tracking-[var(--tracking-wide)]"
     :class="[
-      variant === 'default' ? 'border-slate-300 bg-slate-50 text-slate-700' : '',
-      variant === 'primary' ? 'border-primary-200 bg-primary-50 text-primary-700' : '',
-      variant === 'success' ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : '',
-      variant === 'warning' ? 'border-amber-300 bg-amber-50 text-amber-700' : '',
-      variant === 'error' ? 'border-red-300 bg-red-50 text-red-700' : '',
-      variant === 'info' ? 'border-blue-300 bg-blue-50 text-blue-700' : '',
+      size === 'sm' ? 'px-2 py-px text-[9px]' : 'px-2.5 py-0.5',
+      variant === 'default' ? 'bg-[var(--color-neutral-100)] text-[var(--text-secondary)]' : '',
+      variant === 'primary' ? 'bg-[var(--color-primary-50)] text-[var(--color-primary-700)]' : '',
+      variant === 'success' ? 'bg-[var(--color-success-50)] text-[var(--color-success-700)]' : '',
+      variant === 'warning' ? 'bg-[var(--color-warning-50)] text-[var(--color-warning-700)]' : '',
+      variant === 'error' ? 'bg-[var(--color-error-50)] text-[var(--color-error-700)]' : '',
+      variant === 'info' ? 'bg-[var(--color-info-50)] text-[var(--color-info-700)]' : '',
     ]"
   >
-    <component :is="icon" v-if="icon" class="size-3.5" aria-hidden="true" />
+    <span
+      v-if="dot"
+      class="shrink-0 rounded-full"
+      :class="[
+        size === 'sm' ? 'size-1.5' : 'size-2',
+        variant === 'default' ? 'bg-[var(--color-neutral-500)]' : '',
+        variant === 'primary' ? 'bg-[var(--color-primary-500)]' : '',
+        variant === 'success' ? 'bg-[var(--color-success-500)]' : '',
+        variant === 'warning' ? 'bg-[var(--color-warning-500)]' : '',
+        variant === 'error' ? 'bg-[var(--color-error-500)]' : '',
+        variant === 'info' ? 'bg-[var(--color-info-500)]' : '',
+      ]"
+      aria-hidden="true"
+    />
+    <component
+      :is="icon"
+      v-if="icon"
+      :class="size === 'sm' ? 'size-3' : 'size-3.5'"
+      aria-hidden="true"
+    />
     <slot />
   </span>
 </template>

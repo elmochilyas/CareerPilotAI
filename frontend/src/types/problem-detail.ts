@@ -7,10 +7,4 @@ export interface ProblemDetail {
   code: string
   errors: Record<string, unknown>
   request_id: string
-  debug?: {
-    exception: string
-    message: string
-    file: string
-    line: number
-  }
 }

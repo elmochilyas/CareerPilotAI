@@ -110,7 +110,7 @@ describe('ProcessingPage with Vue Query', () => {
     const page = await mountPage()
 
     expect(mocks.fetchIngestion).toHaveBeenCalledOnce()
-    expect(page.text()).toContain('We couldn’t complete the analysis')
+    expect(page.text()).toContain("We couldn't complete the analysis")
   })
 
   it('does not query an invalid ingestion route id', async () => {
@@ -230,7 +230,7 @@ describe('ProcessingPage with Vue Query', () => {
     await confirmButton!.trigger('click')
     await flushPromises()
 
-    const busyButton = dialog.findAll('button').find((button) => button.text() === 'Cancelling…')
+    const busyButton = dialog.findAll('button').find((button) => button.text() === 'Cancelling...')
     expect(busyButton?.attributes('disabled')).toBeDefined()
     expect(mocks.deleteIngestion).toHaveBeenCalledOnce()
 
@@ -306,7 +306,7 @@ describe('ProcessingPage with Vue Query', () => {
     await confirmButton!.trigger('click')
     await flushPromises()
 
-    expect(page.text()).toContain('We couldn’t restart the analysis')
+    expect(page.text()).toContain("We couldn't restart the analysis")
     expect(page.text()).not.toContain('SQLSTATE')
     expect(page.find('[role="alert"]').exists()).toBe(true)
   })

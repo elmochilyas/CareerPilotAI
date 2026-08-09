@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Trash2 } from '@lucide/vue'
+import { Trash2, AlertTriangle, Info } from '@lucide/vue'
 import Modal from './Modal.vue'
 import Button from './Button.vue'
 
@@ -12,6 +12,7 @@ const props = withDefaults(
     confirmLabel?: string
     busyLabel?: string
     cancelLabel?: string
+    variant?: 'danger' | 'warning' | 'info'
   }>(),
   {
     title: 'Delete this item?',
@@ -20,6 +21,7 @@ const props = withDefaults(
     confirmLabel: 'Delete',
     busyLabel: 'Deleting…',
     cancelLabel: 'Cancel',
+    variant: 'danger',
   },
 )
 
@@ -27,27 +29,61 @@ const emit = defineEmits<{
   confirm: []
   cancel: []
 }>()
+
+const variantConfig = {
+  danger: {
+    icon: Trash2,
+    bg: 'bg-[var(--color-error-50)]',
+    color: 'text-[var(--color-error-600)]',
+    buttonVariant: 'danger' as const,
+  },
+  warning: {
+    icon: AlertTriangle,
+    bg: 'bg-[var(--color-warning-50)]',
+    color: 'text-[var(--color-warning-600)]',
+    buttonVariant: 'primary' as const,
+  },
+  info: {
+    icon: Info,
+    bg: 'bg-[var(--color-info-50)]',
+    color: 'text-[var(--color-info-600)]',
+    buttonVariant: 'primary' as const,
+  },
+}
 </script>
 
 <template>
   <Modal :open="open" :title="props.title" size="sm" @close="emit('cancel')">
     <div class="p-6">
       <div class="flex items-start gap-4">
-        <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100">
-          <Trash2 :size="18" class="text-red-600" stroke-width="1.5" aria-hidden="true" />
+        <div
+          class="flex size-10 shrink-0 items-center justify-center rounded-full shadow-[var(--shadow-neo-raised-sm)]"
+          :class="[variantConfig[variant].bg]"
+        >
+          <component
+            :is="variantConfig[variant].icon"
+            :size="18"
+            :class="variantConfig[variant].color"
+            stroke-width="1.5"
+            aria-hidden="true"
+          />
         </div>
         <div>
-          <p class="text-sm text-slate-600">
+          <p class="text-sm text-[var(--text-secondary)]">
             {{ props.description }}
           </p>
         </div>
       </div>
     </div>
-    <div class="flex justify-end gap-2 border-t border-slate-100 bg-slate-50/50 px-6 py-4">
+    <div class="flex justify-end gap-2 bg-[var(--surface-secondary)] px-6 py-4">
       <Button variant="outline" :disabled="props.busy" @click="emit('cancel')">
         {{ props.cancelLabel }}
       </Button>
-      <Button variant="danger" :disabled="props.busy" @click="emit('confirm')">
+      <Button
+        :variant="variantConfig[variant].buttonVariant"
+        :disabled="props.busy"
+        @click="emit('confirm')"
+      >
         {{ props.busy ? props.busyLabel : props.confirmLabel }}
       </Button>
     </div>

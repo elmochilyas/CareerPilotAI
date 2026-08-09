@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Button from '@/components/ui/Button.vue'
+
 withDefaults(
   defineProps<{
     busy?: boolean
@@ -14,7 +16,7 @@ const emit = defineEmits<{
 <template>
   <div
     role="status"
-    class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3"
+    class="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-xl)] bg-[var(--color-warning-50)] px-4 py-3 shadow-[var(--shadow-neo-raised)]"
   >
     <div class="min-w-0 text-sm text-amber-800">
       <p class="font-semibold">Profile or opportunity changed since this analysis</p>
@@ -22,13 +24,8 @@ const emit = defineEmits<{
         Recalculate to see an up-to-date match. The previous result stays visible below.
       </p>
     </div>
-    <button
-      type="button"
-      :disabled="busy"
-      class="inline-flex min-h-9 items-center justify-center rounded-lg bg-amber-700 px-3.5 text-sm font-medium text-white hover:bg-amber-800 focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-      @click="emit('recalculate')"
-    >
+    <Button variant="warning" size="sm" :disabled="busy" @click="emit('recalculate')">
       {{ busy ? 'Recalculating…' : 'Recalculate' }}
-    </button>
+    </Button>
   </div>
 </template>

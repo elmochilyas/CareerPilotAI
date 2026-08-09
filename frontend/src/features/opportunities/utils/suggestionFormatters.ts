@@ -97,6 +97,43 @@ export function getSuggestionField(suggestion: {
   return String(formatter(suggestion.extracted_value))
 }
 
+const SUGGESTION_LABELS: Record<string, string> = {
+  job_title: 'Job Title',
+  company: 'Company',
+  department: 'Department',
+  external_reference: 'Reference',
+  summary: 'Summary',
+  application_url: 'Application URL',
+  city: 'City',
+  region: 'Region',
+  country: 'Country',
+  work_mode: 'Work Mode',
+  contract_type: 'Contract Type',
+  seniority_level: 'Seniority Level',
+  working_hours: 'Working Hours',
+  travel_required: 'Travel Required',
+  relocation_required: 'Relocation Required',
+  responsibility: 'Responsibility',
+  required_experience: 'Required Experience',
+  preferred_experience: 'Preferred Experience',
+  education: 'Education',
+  required_skill: 'Required Skill',
+  preferred_skill: 'Preferred Skill',
+  language: 'Language',
+  certification: 'Certification',
+  compensation: 'Compensation',
+  benefit: 'Benefit',
+  publication_date: 'Publication Date',
+  application_deadline: 'Application Deadline',
+  expected_start_date: 'Expected Start Date',
+  employment_duration: 'Employment Duration',
+  additional_requirement: 'Additional Requirement',
+}
+
+export function suggestionLabel(type: string): string {
+  return SUGGESTION_LABELS[type] ?? type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
 export function isSuggestionDisplayable(suggestion: {
   type: string
   extracted_value: Record<string, unknown>

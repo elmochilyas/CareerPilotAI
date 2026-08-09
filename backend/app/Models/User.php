@@ -62,7 +62,7 @@ use Laravel\Sanctum\PersonalAccessToken;
  *
  * @mixin \Eloquent
  */
-#[Fillable(['full_name', 'email', 'password', 'role', 'account_status', 'timezone'])]
+#[Fillable(['full_name', 'email', 'password', 'timezone'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {

@@ -27,7 +27,7 @@ const contextParts = computed(() =>
     <RouterLink
       v-if="opportunity"
       :to="{ name: 'opportunities-detail', params: { id: opportunity.id } }"
-      class="inline-flex items-center gap-1 text-sm text-primary-700 hover:text-primary-800 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none"
+      class="inline-flex items-center gap-1 rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium text-[var(--color-primary-700)] shadow-[var(--shadow-neo-raised-sm)] transition-all hover:text-[var(--color-primary-800)] hover:shadow-[var(--shadow-neo-button)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] focus-visible:outline-none"
     >
       &larr; Back to opportunity
     </RouterLink>
@@ -45,7 +45,7 @@ const contextParts = computed(() =>
       v-if="classifierUnavailable"
       role="status"
       aria-live="polite"
-      class="group max-w-2xl rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
+      class="group max-w-2xl rounded-[var(--radius-xl)] bg-[var(--color-warning-50)] px-4 py-3 text-sm text-amber-900 shadow-[var(--shadow-neo-raised-sm)]"
     >
       <p class="flex items-center gap-2">
         <span class="font-medium">

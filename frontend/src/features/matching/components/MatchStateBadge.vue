@@ -18,23 +18,24 @@ const config = computed<{
   const map: Record<MatchState, { icon: LucideIcon; classes: string; iconClasses: string }> = {
     matched: {
       icon: CheckCircle2,
-      classes: 'border-emerald-300 bg-emerald-50 text-emerald-700',
+      classes: 'bg-emerald-50 text-emerald-700 shadow-[var(--shadow-neo-raised-sm)]',
       iconClasses: 'text-emerald-600',
     },
     partial: {
       icon: MinusCircle,
-      classes: 'border-amber-300 bg-amber-50 text-amber-700',
+      classes: 'bg-amber-50 text-amber-700 shadow-[var(--shadow-neo-raised-sm)]',
       iconClasses: 'text-amber-600',
     },
     gap: {
       icon: XCircle,
-      classes: 'border-red-300 bg-red-50 text-red-700',
+      classes: 'bg-red-50 text-red-700 shadow-[var(--shadow-neo-raised-sm)]',
       iconClasses: 'text-red-600',
     },
     unknown: {
       icon: HelpCircle,
-      classes: 'border-slate-300 bg-slate-100 text-slate-600',
-      iconClasses: 'text-slate-500',
+      classes:
+        'bg-[var(--surface-secondary)] text-[var(--text-secondary)] shadow-[var(--shadow-neo-raised-sm)]',
+      iconClasses: 'text-[var(--text-muted)]',
     },
   }
 
@@ -44,7 +45,7 @@ const config = computed<{
 
 <template>
   <span
-    class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium"
+    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
     :class="config.classes"
   >
     <component :is="config.icon" class="size-3.5" :class="config.iconClasses" aria-hidden="true" />

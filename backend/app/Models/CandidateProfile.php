@@ -73,7 +73,7 @@ use Illuminate\Support\Carbon;
  * @mixin \Eloquent
  */
 #[Fillable([
-    'user_id', 'headline', 'professional_summary', 'phone', 'city', 'country',
+    'headline', 'professional_summary', 'phone', 'city', 'country',
     'linkedin_url', 'github_url', 'portfolio_url', 'availability_status',
     'availability_date', 'target_roles', 'preferred_locations',
     'work_modes', 'contract_types', 'salary_min', 'salary_max', 'languages',

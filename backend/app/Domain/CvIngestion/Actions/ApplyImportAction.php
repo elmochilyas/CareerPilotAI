@@ -16,6 +16,7 @@ use App\Models\CvSuggestion;
 use App\Models\ProfileItem;
 use App\Models\Skill;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class ApplyImportAction
@@ -111,7 +112,9 @@ class ApplyImportAction
                         );
                     }
 
-                    $profile = CandidateProfile::create(['user_id' => $document->user_id]);
+                    $profile = new CandidateProfile;
+                    $profile->user_id = $document->user_id;
+                    $profile->save();
                 }
 
                 if ($profileUpdatedAt !== null) {
@@ -127,6 +130,11 @@ class ApplyImportAction
                 $accepted = $suggestions->reject(
                     fn (CvSuggestion $s) => $s->review_status->value === CvSuggestionReviewStatus::Rejected->value
                 );
+
+                $profileItems = ProfileItem::where('candidate_profile_id', $profile->id)->get();
+                $allSkills = Skill::all()->keyBy(fn (Skill $s) => $s->normalized_name);
+                $candidateSkills = CandidateSkill::where('candidate_profile_id', $profile->id)->get();
+                $maxDisplayOrder = $profileItems->max('display_order') ?? 0;
 
                 $fieldsUpdated = 0;
                 $itemsCreated = 0;
@@ -156,8 +164,8 @@ class ApplyImportAction
                             CvSuggestionType::Education->value,
                             CvSuggestionType::Project->value,
                             CvSuggestionType::Certification->value,
-                        ], true) => $this->applyProfileItem($profile, $value, $suggestion, $type),
-                        default => $this->applySkill($profile, $value, $suggestion),
+                        ], true) => $this->applyProfileItem($profile, $value, $suggestion, $type, $profileItems, $maxDisplayOrder),
+                        default => $this->applySkill($profile, $value, $suggestion, $allSkills, $candidateSkills),
                     };
 
                     if ($result !== null) {
@@ -294,7 +302,8 @@ class ApplyImportAction
         };
 
         if ($field) {
-            $profile->update([$field => mb_substr((string) $url, 0, 500)]);
+            $normalized = str_starts_with($url, 'http') ? $url : "https://{$url}";
+            $profile->update([$field => mb_substr($normalized, 0, 500)]);
             $suggestion->update(['import_status' => 'included', 'applied_profile_id' => $profile->id]);
 
             return ['type' => 'field', 'id' => $profile->id];
@@ -338,18 +347,20 @@ class ApplyImportAction
      * @param  array<string, mixed>  $value
      * @return array{type: string, id: mixed}|null
      */
-    private function applyProfileItem(CandidateProfile $profile, array $value, CvSuggestion $suggestion, string $type): ?array
-    {
-        $maxOrder = ProfileItem::where('candidate_profile_id', $profile->id)->max('display_order') ?? 0;
-
+    private function applyProfileItem(
+        CandidateProfile $profile,
+        array $value,
+        CvSuggestion $suggestion,
+        string $type,
+        Collection $profileItems,
+        int &$maxDisplayOrder,
+    ): ?array {
         $title = (string) ($value['title'] ?? $value['name'] ?? $value['degree'] ?? 'Untitled');
         $organization = (string) ($value['organization'] ?? $value['institution'] ?? '');
 
-        $existing = ProfileItem::where('candidate_profile_id', $profile->id)
-            ->where('type', $type)
-            ->where('title', $title)
-            ->where('organization', $organization)
-            ->first();
+        $existing = $profileItems->first(
+            fn (ProfileItem $p) => $p->type->value === $type && $p->title === $title && $p->organization === $organization
+        );
 
         if ($existing && $suggestion->review_status->value === CvSuggestionReviewStatus::UpdateExisting->value) {
             $existing->update([
@@ -366,6 +377,7 @@ class ApplyImportAction
         }
 
         if (! $existing) {
+            $maxDisplayOrder++;
             $item = ProfileItem::create([
                 'candidate_profile_id' => $profile->id,
                 'type' => $type,
@@ -375,8 +387,9 @@ class ApplyImportAction
                 'start_date' => $this->normalizeDate($value['start_date'] ?? null),
                 'end_date' => ! empty($value['is_current']) ? null : $this->normalizeDate($value['end_date'] ?? null),
                 'description' => isset($value['description']) ? mb_substr((string) $value['description'], 0, 5000) : null,
-                'display_order' => $maxOrder + 1,
+                'display_order' => $maxDisplayOrder,
             ]);
+            $profileItems->push($item);
 
             $suggestion->update(['import_status' => 'included', 'applied_profile_id' => $item->id]);
 
@@ -392,22 +405,21 @@ class ApplyImportAction
      * @param  array<string, mixed>  $value
      * @return array{type: string, id: mixed}|null
      */
-    private function applySkill(CandidateProfile $profile, array $value, CvSuggestion $suggestion): ?array
-    {
+    private function applySkill(
+        CandidateProfile $profile,
+        array $value,
+        CvSuggestion $suggestion,
+        Collection $allSkills,
+        Collection $candidateSkills,
+    ): ?array {
         $skillName = (string) ($value['name'] ?? $value['value'] ?? 'Unknown Skill');
         $normalizedName = mb_strtolower(trim($skillName));
 
-        $skill = Skill::where('normalized_name', $normalizedName)->first();
+        $skill = $allSkills->get($normalizedName);
 
-        $existingSkill = CandidateSkill::where('candidate_profile_id', $profile->id)
-            ->where(function ($q) use ($skill, $skillName) {
-                if ($skill) {
-                    $q->where('skill_id', $skill->id);
-                } else {
-                    $q->where('custom_skill_name', $skillName);
-                }
-            })
-            ->first();
+        $existingSkill = $candidateSkills->first(
+            fn (CandidateSkill $cs) => $skill ? $cs->skill_id === $skill->id : $cs->custom_skill_name === $skillName
+        );
 
         if ($existingSkill) {
             $suggestion->update(['import_status' => 'skipped']);

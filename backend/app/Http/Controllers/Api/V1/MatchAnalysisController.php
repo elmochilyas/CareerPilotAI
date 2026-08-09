@@ -70,6 +70,8 @@ class MatchAnalysisController extends Controller
     ): JsonResponse {
         Gate::authorize('view', $matchAnalysis);
 
+        $matchAnalysis->load(['candidateProfile', 'jobOpportunity']);
+
         $data = $action->execute(
             $matchAnalysis,
             $matchAnalysis->candidateProfile,

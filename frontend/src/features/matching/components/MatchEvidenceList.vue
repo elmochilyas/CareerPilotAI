@@ -22,24 +22,20 @@ interface EvidenceTypeMeta {
   label: string
 }
 
-const typeMeta = (type: string | null | undefined): EvidenceTypeMeta => {
-  switch (type) {
-    case 'candidate_skill':
-    case 'skill':
-      return { icon: Code2, label: 'Skill' }
-    case 'experience':
-      return { icon: Briefcase, label: 'Experience' }
-    case 'project':
-      return { icon: FolderKanban, label: 'Project' }
-    case 'education':
-      return { icon: GraduationCap, label: 'Education' }
-    case 'certification':
-      return { icon: Award, label: 'Certification' }
-    case 'language':
-      return { icon: Languages, label: 'Language' }
-    default:
-      return { icon: FileText, label: 'Evidence' }
-  }
+const TYPE_META_MAP: Record<string, EvidenceTypeMeta> = {
+  candidate_skill: { icon: Code2, label: 'Skill' },
+  skill: { icon: Code2, label: 'Skill' },
+  experience: { icon: Briefcase, label: 'Experience' },
+  project: { icon: FolderKanban, label: 'Project' },
+  education: { icon: GraduationCap, label: 'Education' },
+  certification: { icon: Award, label: 'Certification' },
+  language: { icon: Languages, label: 'Language' },
+}
+
+const defaultMeta: EvidenceTypeMeta = { icon: FileText, label: 'Evidence' }
+
+function typeMeta(type: string | null | undefined): EvidenceTypeMeta {
+  return (type ? TYPE_META_MAP[type] : null) ?? defaultMeta
 }
 
 const refs = computed<MatchEvidenceRef[]>(() => props.finding.evidence_refs ?? [])
@@ -51,17 +47,17 @@ const refs = computed<MatchEvidenceRef[]>(() => props.finding.evidence_refs ?? [
       <li
         v-for="(ref, index) in refs"
         :key="`${ref.type}:${ref.id ?? 'x'}:${index}`"
-        class="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 py-1 pr-2.5 pl-2 text-xs text-slate-700"
+        class="inline-flex max-w-full items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--surface-secondary)] py-1 pr-2.5 pl-2 text-xs text-[var(--text-secondary)] shadow-[var(--shadow-neo-raised-sm)]"
       >
         <component
           :is="typeMeta(ref.type).icon"
-          class="size-3.5 shrink-0 text-slate-400"
+          class="size-3.5 shrink-0 text-[var(--text-muted)]"
           aria-hidden="true"
         />
         <span class="sr-only">{{ typeMeta(ref.type).label }}: </span>
         <span class="truncate">{{ ref.label }}</span>
       </li>
     </ul>
-    <p v-else class="text-sm text-slate-500">{{ evidenceEmptyMessage(finding) }}</p>
+    <p v-else class="text-sm text-[var(--text-muted)]">{{ evidenceEmptyMessage(finding) }}</p>
   </div>
 </template>
