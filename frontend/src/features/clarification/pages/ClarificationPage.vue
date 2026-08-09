@@ -72,10 +72,10 @@ function retryLoad(): void {
   }
 }
 
-function goBackToBrief(): void {
+function goBackToOpportunity(): void {
   const id = opportunityId.value
   if (id === null) return
-  void router.push({ name: 'opportunities-match', params: { id } })
+  void router.push({ name: 'opportunities-detail', params: { id } })
 }
 </script>
 
@@ -94,9 +94,13 @@ function goBackToBrief(): void {
 
     <div v-else-if="loading" class="mt-10" role="status">
       <div class="mx-auto max-w-md space-y-4">
-        <div class="h-6 w-40 animate-pulse rounded-lg bg-slate-100" />
-        <div class="h-28 animate-pulse rounded-xl border border-slate-200 bg-white shadow-sm" />
-        <div class="h-40 animate-pulse rounded-xl border border-slate-200 bg-white shadow-sm" />
+        <div class="h-6 w-40 animate-pulse rounded-lg bg-[var(--color-neutral-100)]" />
+        <div
+          class="h-28 animate-pulse rounded-[var(--radius-xl)] bg-[var(--surface-primary)] shadow-[var(--shadow-neo-raised)]"
+        />
+        <div
+          class="h-40 animate-pulse rounded-[var(--radius-xl)] bg-[var(--surface-primary)] shadow-[var(--shadow-neo-raised)]"
+        />
       </div>
       <span class="sr-only">Loading the clarification questions…</span>
     </div>
@@ -129,14 +133,18 @@ function goBackToBrief(): void {
     <template v-else-if="completedAnalysis">
       <button
         type="button"
-        class="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-primary-700 hover:text-primary-800 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none"
-        @click="goBackToBrief"
+        class="mb-4 inline-flex items-center gap-1.5 rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium text-[var(--color-primary-700)] shadow-[var(--shadow-neo-raised-sm)] hover:text-[var(--color-primary-800)] hover:shadow-[var(--shadow-neo-button)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] focus-visible:outline-none"
+        @click="goBackToOpportunity"
       >
         <ArrowLeft class="size-4" aria-hidden="true" />
-        Back to match brief
+        Back to opportunity
       </button>
 
-      <ClarificationFlow class="mt-2" :analysis-id="completedAnalysis.id" @close="goBackToBrief" />
+      <ClarificationFlow
+        class="mt-2"
+        :analysis-id="completedAnalysis.id"
+        @close="goBackToOpportunity"
+      />
     </template>
   </div>
 </template>

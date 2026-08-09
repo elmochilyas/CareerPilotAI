@@ -92,7 +92,7 @@ onUnmounted(() => {
   <div class="relative">
     <div class="relative">
       <Search
-        class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"
+        class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--text-muted)]"
         aria-hidden="true"
       />
       <input
@@ -106,7 +106,7 @@ onUnmounted(() => {
         aria-haspopup="listbox"
         aria-autocomplete="list"
         :aria-activedescendant="activeIndex >= 0 ? `skill-option-${activeIndex}` : undefined"
-        class="w-full rounded-lg border border-slate-300 bg-white py-2.5 pl-10 pr-4 text-sm shadow-sm transition-[border-color,box-shadow] focus-visible:border-primary-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/30"
+        class="w-full rounded-[var(--radius-lg)] bg-[var(--surface-secondary)] py-2.5 pl-10 pr-4 text-sm shadow-[var(--shadow-neo-inset)] transition-[box-shadow] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)]/30"
         name="skill_catalog_search"
         autocomplete="off"
         placeholder="Search for a skill…"
@@ -116,7 +116,7 @@ onUnmounted(() => {
       />
       <LoaderCircle
         v-if="searchQuery.isPending.value && query.length >= 2"
-        class="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-slate-400"
+        class="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-[var(--text-muted)]"
         aria-hidden="true"
       />
     </div>
@@ -125,7 +125,7 @@ onUnmounted(() => {
       v-if="isOpen && results.length > 0"
       ref="listRef"
       role="listbox"
-      class="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg"
+      class="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-[var(--radius-lg)] bg-[var(--surface-primary)] shadow-[var(--shadow-neo-raised-lg)]"
     >
       <li
         v-for="(skill, i) in results"
@@ -134,8 +134,8 @@ onUnmounted(() => {
         role="option"
         :aria-selected="i === activeIndex"
         :class="[
-          'cursor-pointer px-4 py-2.5 text-sm hover:bg-primary-50',
-          i === activeIndex ? 'bg-primary-50' : '',
+          'cursor-pointer px-4 py-2.5 text-sm hover:bg-[var(--color-primary-50)]',
+          i === activeIndex ? 'bg-[var(--color-primary-50)]' : '',
         ]"
         @mousedown.prevent="select(skill)"
       >

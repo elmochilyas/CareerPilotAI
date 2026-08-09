@@ -35,45 +35,45 @@ function navigateToReview(id: number) {
 </script>
 
 <template>
-  <div class="space-y-2">
+  <div class="space-y-3">
     <div
       v-for="item in items"
       :key="item.id"
-      class="flex items-center justify-between gap-4 rounded-lg border border-slate-100 bg-slate-50/50 px-4 py-3 transition-colors hover:bg-slate-50"
+      class="flex items-center justify-between gap-4 rounded-[var(--radius-xl)] bg-[var(--surface-primary)] px-4 py-3 shadow-[var(--shadow-neo-raised-sm)] transition-shadow hover:shadow-[var(--shadow-neo-raised)]"
     >
       <div class="flex items-center gap-3 min-w-0">
         <div
-          class="flex size-8 shrink-0 items-center justify-center rounded-full"
+          class="flex size-8 shrink-0 items-center justify-center rounded-full shadow-[var(--shadow-neo-inset)]"
           :class="[
             item.status === 'failed'
-              ? 'bg-red-100'
+              ? 'bg-[var(--color-error-100)]'
               : item.status === 'review_ready'
-                ? 'bg-amber-100'
-                : 'bg-blue-100',
+                ? 'bg-[var(--color-warning-100)]'
+                : 'bg-[var(--color-primary-100)]',
           ]"
         >
           <AlertCircle
             v-if="item.status === 'failed'"
-            class="size-4 text-red-600"
+            class="size-4 text-[var(--color-error-600)]"
             aria-hidden="true"
           />
-          <Clock v-else class="size-4 text-amber-600" aria-hidden="true" />
+          <Clock v-else class="size-4 text-[var(--color-warning-600)]" aria-hidden="true" />
         </div>
         <div class="min-w-0">
-          <p class="truncate text-sm font-medium text-slate-900">
+          <p class="truncate text-sm font-medium text-[var(--text-primary)]">
             {{ item.personal_label || `Ingestion #${item.id}` }}
           </p>
-          <p class="text-xs text-slate-500">
+          <p class="text-[var(--text-xs)] text-[var(--text-secondary)]">
             <span
               class="inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-medium"
               :class="[
                 statusVariant(item.status) === 'warning'
-                  ? 'bg-amber-100 text-amber-700'
+                  ? 'bg-[var(--color-warning-100)] text-[var(--color-warning-700)]'
                   : statusVariant(item.status) === 'error'
-                    ? 'bg-red-100 text-red-700'
+                    ? 'bg-[var(--color-error-100)] text-[var(--color-error-700)]'
                     : statusVariant(item.status) === 'info'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-slate-100 text-slate-600',
+                      ? 'bg-[var(--color-primary-100)] text-[var(--color-primary-700)]'
+                      : 'bg-[var(--color-neutral-100)] text-[var(--color-neutral-600)]',
               ]"
             >
               {{ statusLabel(item.status) }}
@@ -84,7 +84,7 @@ function navigateToReview(id: number) {
       </div>
       <button
         v-if="item.status === 'review_ready' || item.status === 'failed'"
-        class="shrink-0 rounded-md bg-white border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500/40"
+        class="shrink-0 rounded-[var(--radius-md)] bg-[var(--surface-primary)] px-3 py-1.5 text-[var(--text-xs)] font-medium text-[var(--text-secondary)] shadow-[var(--shadow-neo-raised-sm)] transition-colors hover:bg-[var(--surface-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/40"
         @click="navigateToReview(item.id)"
       >
         Review

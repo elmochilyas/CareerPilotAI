@@ -17,7 +17,7 @@ const levels: { value: ProficiencyLevel; label: string }[] = [
   <select
     :value="modelValue"
     :disabled="disabled"
-    class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30 disabled:cursor-not-allowed disabled:bg-slate-100"
+    class="block w-full rounded-[var(--radius-lg)] bg-[var(--surface-secondary)] px-3 py-2 text-sm shadow-[var(--shadow-neo-inset)] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/30 disabled:cursor-not-allowed disabled:bg-[var(--surface-sunken)]"
     @change="
       emit('update:modelValue', ($event.target as HTMLSelectElement).value as ProficiencyLevel)
     "

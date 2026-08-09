@@ -57,7 +57,7 @@ function onInput() {
       <input
         v-model="localValue"
         type="url"
-        class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+        class="mt-1 block w-full rounded-[var(--radius-lg)] bg-[var(--surface-secondary)] px-3 py-2 text-sm shadow-[var(--shadow-neo-inset)] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/30"
         placeholder="https://example.com/certificate"
         :aria-describedby="error ? 'url-error' : undefined"
         :aria-invalid="!!error"
@@ -70,7 +70,7 @@ function onInput() {
       <input
         v-model="localLabel"
         type="text"
-        class="mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm transition-all focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+        class="mt-1 block w-full rounded-[var(--radius-lg)] bg-[var(--surface-secondary)] px-3 py-2 text-sm shadow-[var(--shadow-neo-inset)] transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/30"
         placeholder="e.g. Professional Certificate"
         @input="onInput"
       />

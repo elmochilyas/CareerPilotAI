@@ -14,9 +14,13 @@ import ProjectsSection from '../components/ProjectsSection.vue'
 import CertificationsSection from '../components/CertificationsSection.vue'
 import SkillsSection from '@/features/skills/components/SkillsSection.vue'
 import Tabs from '@/components/ui/Tabs.vue'
+import Button from '@/components/ui/Button.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
+import Toast from '@/components/ui/Toast.vue'
+import { useToast } from '@/composables/useToast'
 
 const state = useProfile()
+const { toast } = useToast()
 
 const busy = computed(
   () =>
@@ -40,22 +44,11 @@ const remove = (item: ProfileItem) => state.deleteItemMutation.mutate(item)
 const reorder = (type: ProfileItemType, ids: number[]) =>
   state.reorderMutation.mutate({ type, ids })
 
-const toastMessage = ref('')
-let successTimer: ReturnType<typeof setTimeout> | null = null
-const toastVisible = ref(false)
 watch(
   () => state.announcement.value,
   (msg) => {
     if (!msg) return
-    toastMessage.value = msg
-    toastVisible.value = true
-    if (successTimer) clearTimeout(successTimer)
-    successTimer = setTimeout(() => {
-      toastVisible.value = false
-      setTimeout(() => {
-        toastMessage.value = ''
-      }, 250)
-    }, 3500)
+    toast.success(msg)
   },
 )
 
@@ -97,85 +90,65 @@ const completedAreas = computed(() => {
   <div class="mx-auto w-full max-w-[1320px] overflow-x-hidden pb-16">
     <p class="sr-only" aria-live="polite">{{ state.announcement.value }}</p>
 
-    <Teleport to="body">
-      <Transition name="toast">
-        <div
-          v-if="toastMessage"
-          class="fixed right-4 top-16 z-50 max-w-sm rounded-lg border border-emerald-200 bg-white px-4 py-3 shadow-lg ring-1 ring-slate-900/5"
-          role="status"
-        >
-          <div class="flex items-center gap-3">
-            <div
-              class="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-100"
-            >
-              <svg
-                viewBox="0 0 16 16"
-                fill="none"
-                class="size-3.5 text-emerald-600"
-                stroke="currentColor"
-                stroke-width="3"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <polyline points="3 8 6 11 13 4" />
-              </svg>
-            </div>
-            <span class="text-sm font-medium text-slate-800">{{ toastMessage }}</span>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <Toast />
 
     <!-- Loading state -->
     <div v-if="state.isPending.value" aria-label="Loading profile" class="grid gap-6">
-      <div class="rounded-lg border border-slate-200 bg-white p-6">
-        <div class="flex items-center gap-4">
-          <Skeleton classes="size-14 rounded-full" />
-          <div class="flex-1 space-y-2">
-            <Skeleton classes="h-5 w-56" />
-            <Skeleton classes="h-4 w-40" />
-            <Skeleton classes="h-3 w-64" />
+      <div
+        class="rounded-[var(--radius-2xl)] bg-[var(--surface-primary)] shadow-[var(--shadow-neo-raised-lg)]"
+      >
+        <div
+          class="h-1.5 w-full animate-pulse rounded-t-[var(--radius-2xl)] bg-[var(--color-neutral-200)]"
+        />
+        <div class="p-8">
+          <div class="flex items-start gap-5">
+            <Skeleton classes="size-20 shrink-0 rounded-2xl sm:size-24" />
+            <div class="flex-1 space-y-3 pt-1">
+              <Skeleton classes="h-7 w-64" />
+              <Skeleton classes="h-5 w-48" />
+            </div>
           </div>
         </div>
       </div>
       <div class="flex gap-2">
-        <Skeleton v-for="n in 5" :key="n" classes="h-9 w-24" />
+        <Skeleton v-for="n in 5" :key="n" classes="h-9 w-24 rounded-xl" />
       </div>
-      <Skeleton classes="h-96 rounded-lg border border-slate-200" />
+      <Skeleton classes="h-96 rounded-[var(--radius-xl)] shadow-[var(--shadow-neo-raised)]" />
     </div>
 
     <!-- Error state -->
     <section
       v-else-if="state.isError.value"
-      class="rounded-lg border border-red-200 bg-red-50 p-6"
+      class="rounded-[var(--radius-xl)] bg-[var(--color-error-50)] p-6 shadow-[var(--shadow-neo-raised)]"
       aria-labelledby="profile-error"
     >
       <div class="flex items-start gap-4">
-        <div class="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-100">
-          <AlertCircle :size="20" class="text-red-600" />
+        <div
+          class="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-error-100)]"
+        >
+          <AlertCircle :size="20" class="text-[var(--color-error-600)]" />
         </div>
         <div>
-          <h1 id="profile-error" class="text-base font-semibold text-red-900">
+          <h1
+            id="profile-error"
+            class="text-[var(--text-base)] font-semibold text-[var(--text-primary)]"
+          >
             We couldn't load your profile
           </h1>
-          <p class="mt-1 text-sm text-red-700">
+          <p class="mt-1 text-[var(--text-sm)] text-[var(--color-error-600)]">
             Check your connection and try again. Your entered data has not been cleared.
           </p>
           <div class="mt-3">
-            <button
-              type="button"
-              class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
-              @click="state.refetch()"
-            >
+            <Button variant="secondary" @click="state.refetch()">
               Retry
-            </button>
+            </Button>
           </div>
         </div>
       </div>
     </section>
 
     <!-- Profile content -->
-    <div v-else-if="state.profile.value" class="grid gap-6">
+    <div v-else-if="state.profile.value" class="ds-animate-fade-in grid gap-6">
       <ProfileHeader
         :profile="state.profile.value"
         :saving="busy"
@@ -262,12 +235,3 @@ const completedAreas = computed(() => {
     </div>
   </div>
 </template>
-
-<style scoped>
-.toast-enter-active {
-  animation: toast-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-.toast-leave-active {
-  animation: toast-out 0.25s cubic-bezier(0.55, 0, 1, 0.45) both;
-}
-</style>

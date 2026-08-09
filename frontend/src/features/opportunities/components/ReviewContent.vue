@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { JobSuggestion, PreviewData, ReviewDecisionValue, SuggestionType } from '../types'
+import type { JobSuggestion, PreviewData, SuggestionType } from '../types'
 import { getSuggestionField, suggestionLabel } from '../utils/suggestionFormatters'
 import ReviewSection from './ReviewSection.vue'
-import SuggestionRow from './SuggestionRow.vue'
 import SkillChipEditor from './SkillChipEditor.vue'
 import ResponsibilityReviewItem from './ResponsibilityReviewItem.vue'
 import ScalarReviewItem from './ScalarReviewItem.vue'

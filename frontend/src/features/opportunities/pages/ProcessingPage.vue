@@ -229,15 +229,19 @@ async function viewConfirmedOpportunity(): Promise<void> {
   <div class="mx-auto max-w-xl space-y-6">
     <div class="flex items-start justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-slate-900">Processing job description</h1>
-        <p class="mt-1 text-sm text-slate-500">AI is analyzing your job description.</p>
+        <h1 class="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+          Processing job description
+        </h1>
+        <p class="mt-1 text-sm text-[var(--text-secondary)]">
+          AI is analyzing your job description.
+        </p>
       </div>
     </div>
 
     <!-- Invalid ID -->
     <div
       v-if="ingestionId === null"
-      class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+      class="rounded-[var(--radius-lg)] border border-[var(--color-error-100)] bg-[var(--color-error-50)] p-4 text-sm text-[var(--color-error-700)]"
       role="alert"
     >
       <p>Invalid ingestion identifier.</p>
@@ -266,7 +270,7 @@ async function viewConfirmedOpportunity(): Promise<void> {
     <!-- Error -->
     <div
       v-else-if="isError || !ingestion"
-      class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+      class="rounded-[var(--radius-lg)] border border-[var(--color-error-100)] bg-[var(--color-error-50)] p-4 text-sm text-[var(--color-error-700)]"
     >
       Failed to load ingestion.
     </div>
@@ -275,36 +279,39 @@ async function viewConfirmedOpportunity(): Promise<void> {
       <!-- Confirmed banner -->
       <div
         v-if="isConfirmed"
-        class="rounded-xl border border-emerald-200 bg-emerald-50 p-5 text-sm"
+        class="rounded-[var(--radius-lg)] border border-[var(--color-success-100)] bg-[var(--color-success-50)] p-5 text-sm"
       >
-        <div class="flex items-center gap-2 text-emerald-700">
+        <div class="flex items-center gap-2 text-[var(--color-success-700)]">
           <CheckCircle2 class="size-5" aria-hidden="true" />
           <p class="font-semibold">Job opportunity confirmed!</p>
         </div>
         <button
           v-if="confirmedOpportunityId !== null"
-          class="mt-3 inline-flex items-center gap-1.5 font-medium text-primary-600 hover:text-primary-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+          class="mt-3 inline-flex items-center gap-1.5 font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-700)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary-600)]"
           @click="viewConfirmedOpportunity"
         >
           View opportunity
         </button>
-        <div v-else class="mt-2 text-emerald-600">
+        <div v-else class="mt-2 text-[var(--color-success-600)]">
           <p>The confirmed opportunity link is temporarily unavailable.</p>
         </div>
       </div>
 
       <!-- Stage progress -->
-      <div class="rounded-xl border border-slate-200 bg-white p-5">
-        <h2 class="mb-4 text-sm font-semibold text-slate-900">Progress</h2>
+      <div
+        class="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-primary)] p-5"
+      >
+        <h2 class="mb-4 text-sm font-semibold text-[var(--text-primary)]">Progress</h2>
         <div class="space-y-3">
           <div v-for="(stage, i) in stageItems" :key="stage.key" class="flex items-center gap-3">
             <div
               class="flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold transition-colors"
               :class="{
-                'bg-emerald-500 text-white': stage.status === 'complete',
-                'bg-primary-500 text-white': stage.status === 'active',
-                'bg-red-500 text-white': stage.status === 'failed',
-                'border-2 border-slate-200 bg-white text-slate-400': stage.status === 'pending',
+                'bg-[var(--color-success-500)] text-white': stage.status === 'complete',
+                'bg-[var(--color-primary-600)] text-white': stage.status === 'active',
+                'bg-[var(--color-error-500)] text-white': stage.status === 'failed',
+                'border-2 border-[var(--color-neutral-200)] bg-white text-[var(--text-muted)]':
+                  stage.status === 'pending',
               }"
               :aria-label="`Stage ${i + 1}: ${stage.label} - ${stage.status}`"
             >
@@ -321,21 +328,24 @@ async function viewConfirmedOpportunity(): Promise<void> {
               <p
                 class="text-sm font-medium"
                 :class="{
-                  'text-emerald-700': stage.status === 'complete',
-                  'text-primary-700': stage.status === 'active',
-                  'text-red-700': stage.status === 'failed',
-                  'text-slate-400': stage.status === 'pending',
+                  'text-[var(--color-success-700)]': stage.status === 'complete',
+                  'text-[var(--text-primary)]': stage.status === 'active',
+                  'text-[var(--color-error-700)]': stage.status === 'failed',
+                  'text-[var(--text-muted)]': stage.status === 'pending',
                 }"
               >
                 {{ stage.label }}
               </p>
             </div>
-            <span v-if="stage.status === 'active'" class="text-xs font-medium text-primary-600">
+            <span
+              v-if="stage.status === 'active'"
+              class="text-xs font-medium text-[var(--color-primary-600)]"
+            >
               In progress
             </span>
             <span
               v-else-if="stage.status === 'complete'"
-              class="text-xs font-medium text-emerald-600"
+              class="text-xs font-medium text-[var(--color-success-600)]"
             >
               Done
             </span>
@@ -346,15 +356,15 @@ async function viewConfirmedOpportunity(): Promise<void> {
       <!-- Failed state -->
       <div
         v-if="isFailed"
-        class="rounded-xl border border-red-200 bg-red-50 p-5 text-sm"
+        class="rounded-[var(--radius-lg)] border border-[var(--color-error-100)] bg-[var(--color-error-50)] p-5 text-sm"
         role="alert"
         aria-live="assertive"
       >
-        <div class="flex items-center gap-2 text-red-700">
+        <div class="flex items-center gap-2 text-[var(--color-error-700)]">
           <AlertCircle class="size-5" aria-hidden="true" />
           <p class="font-semibold">We couldn't complete the analysis</p>
         </div>
-        <p class="mt-2 break-words text-red-600">{{ failureMessage }}</p>
+        <p class="mt-2 break-words text-[var(--color-error-600)]">{{ failureMessage }}</p>
 
         <div class="mt-4 flex flex-wrap gap-2">
           <Button v-if="isRetryable" size="sm" :disabled="isPending" @click="handleRetry">
@@ -393,12 +403,17 @@ async function viewConfirmedOpportunity(): Promise<void> {
       </div>
 
       <!-- Cancelled state -->
-      <div v-if="isCancelled" class="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm">
-        <div class="flex items-center gap-2 text-amber-700">
+      <div
+        v-if="isCancelled"
+        class="rounded-[var(--radius-lg)] border border-[var(--color-warning-100)] bg-[var(--color-warning-50)] p-5 text-sm"
+      >
+        <div class="flex items-center gap-2 text-[var(--color-warning-700)]">
           <XCircle class="size-5" aria-hidden="true" />
           <p class="font-semibold">Processing cancelled</p>
         </div>
-        <p class="mt-1 text-amber-600">This job description ingestion was cancelled.</p>
+        <p class="mt-1 text-[var(--color-warning-600)]">
+          This job description ingestion was cancelled.
+        </p>
         <div class="mt-4 flex flex-wrap gap-2">
           <Button
             size="sm"

@@ -52,7 +52,10 @@ const actionLabel = computed(() => {
 </script>
 
 <template>
-  <div v-if="isSessionLoading" class="rounded-2xl border border-slate-200 bg-white p-5">
+  <div
+    v-if="isSessionLoading"
+    class="rounded-[var(--radius-2xl)] bg-[var(--surface-primary)] p-5 shadow-[var(--shadow-neo-raised)]"
+  >
     <div class="flex items-center gap-3">
       <Skeleton classes="size-10 rounded-full" />
       <div class="grid flex-1 gap-2">
@@ -64,11 +67,11 @@ const actionLabel = computed(() => {
 
   <div
     v-else-if="isSessionError"
-    class="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between"
+    class="flex flex-col gap-3 rounded-[var(--radius-2xl)] bg-[var(--surface-primary)] p-5 shadow-[var(--shadow-neo-raised)] sm:flex-row sm:items-center sm:justify-between"
   >
     <div class="flex items-start gap-3">
       <span
-        class="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600"
+        class="flex size-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600 shadow-[var(--shadow-neo-inset)]"
       >
         <HelpCircle class="size-5" aria-hidden="true" />
       </span>
@@ -84,11 +87,11 @@ const actionLabel = computed(() => {
 
   <div
     v-else-if="state !== null"
-    class="flex flex-col gap-4 rounded-2xl border border-primary-100 bg-primary-50/60 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"
+    class="flex flex-col gap-4 rounded-[var(--radius-2xl)] bg-[var(--color-primary-50)] p-5 shadow-[var(--shadow-neo-raised)] sm:flex-row sm:items-center sm:justify-between sm:p-6"
   >
     <div class="flex items-start gap-3">
       <span
-        class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700"
+        class="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-primary-100)] text-[var(--color-primary-700)] shadow-[var(--shadow-neo-inset)]"
       >
         <HelpCircle class="size-5" aria-hidden="true" />
       </span>

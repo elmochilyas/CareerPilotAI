@@ -286,8 +286,7 @@ function languageProficiencyLabel(p: string | null): string {
               </Button>
               <Button
                 size="sm"
-                variant="ghost"
-                class="text-red-600 hover:text-red-700"
+                variant="destructive-ghost"
                 @click="emit('decision', s.id, { decision: 'rejected' })"
               >
                 <X class="mr-0.5 h-3.5 w-3.5" aria-hidden="true" /> Remove

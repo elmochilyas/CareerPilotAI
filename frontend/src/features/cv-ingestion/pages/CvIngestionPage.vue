@@ -272,10 +272,10 @@ onBeforeRouteLeave(() => {
               :class="[
                 'relative z-10 flex size-9 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-300',
                 i < currentStepIndex
-                  ? 'border-primary-600 bg-primary-600 text-white shadow-sm'
+                  ? 'border-[var(--color-primary-600)] bg-[var(--color-primary-600)] text-white shadow-sm'
                   : i === currentStepIndex
-                    ? 'border-primary-600 bg-white text-primary-600 shadow-sm ring-4 ring-primary-50'
-                    : 'border-slate-200 bg-white text-slate-400',
+                    ? 'border-[var(--color-primary-600)] bg-white text-[var(--color-primary-600)] shadow-sm ring-4 ring-[var(--color-primary-50)]'
+                    : 'border-[var(--color-neutral-200)] bg-white text-[var(--text-muted)]',
               ]"
             >
               <Check
@@ -298,7 +298,9 @@ onBeforeRouteLeave(() => {
               v-if="i < visibleSteps.length - 1"
               :class="[
                 'mx-2 h-0.5 flex-1 rounded-full transition-colors duration-300',
-                i < currentStepIndex ? 'bg-primary-600' : 'bg-slate-200',
+                i < currentStepIndex
+                  ? 'bg-[var(--color-primary-600)]'
+                  : 'bg-[var(--color-neutral-200)]',
               ]"
               aria-hidden="true"
             />
@@ -306,7 +308,9 @@ onBeforeRouteLeave(() => {
           <span
             :class="[
               'absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap text-[11px] font-medium',
-              i === currentStepIndex ? 'text-primary-700' : 'text-slate-400',
+              i === currentStepIndex
+                ? 'text-[var(--color-primary-700)]'
+                : 'text-[var(--text-muted)]',
             ]"
           >
             {{ step.label }}
@@ -318,10 +322,10 @@ onBeforeRouteLeave(() => {
     <!-- Header -->
     <div class="flex items-start justify-between pt-4">
       <div>
-        <h1 class="text-xl font-bold tracking-tight text-slate-900">
+        <h1 class="text-[var(--text-2xl)] font-semibold tracking-tight text-[var(--text-primary)]">
           {{ stageHeading.title }}
         </h1>
-        <p class="mt-1 text-sm text-slate-500">
+        <p class="mt-1 text-sm text-[var(--text-secondary)]">
           {{ stageHeading.subtitle }}
         </p>
       </div>
@@ -351,33 +355,35 @@ onBeforeRouteLeave(() => {
             </div>
             <div class="mt-6 grid gap-3 sm:grid-cols-2">
               <button
-                class="group flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left transition-all duration-200 hover:border-primary-300 hover:bg-primary-50/30 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40"
+                class="group flex items-start gap-3 rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 text-left transition-all duration-200 hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)]/30 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/40"
                 @click="chooseMode('create_new')"
               >
                 <div
-                  class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600 transition-colors duration-200 group-hover:bg-primary-100"
+                  class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-600)] transition-colors duration-200 group-hover:bg-[var(--color-primary-100)]"
                 >
                   <Sparkles class="size-4.5" aria-hidden="true" />
                 </div>
                 <div>
-                  <p class="text-sm font-semibold text-slate-900">Create new profile</p>
-                  <p class="mt-0.5 text-xs leading-relaxed text-slate-500">
+                  <p class="text-sm font-semibold text-[var(--text-primary)]">Create new profile</p>
+                  <p class="mt-0.5 text-xs leading-relaxed text-[var(--text-secondary)]">
                     Start fresh with a new profile built from your CV.
                   </p>
                 </div>
               </button>
               <button
-                class="group flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left transition-all duration-200 hover:border-primary-300 hover:bg-primary-50/30 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500/40"
+                class="group flex items-start gap-3 rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] p-4 text-left transition-all duration-200 hover:border-[var(--color-primary-300)] hover:bg-[var(--color-primary-50)]/30 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/40"
                 @click="chooseMode('update_existing')"
               >
                 <div
-                  class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600 transition-colors duration-200 group-hover:bg-primary-100"
+                  class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-primary-50)] text-[var(--color-primary-600)] transition-colors duration-200 group-hover:bg-[var(--color-primary-100)]"
                 >
                   <Upload class="size-4.5" aria-hidden="true" />
                 </div>
                 <div>
-                  <p class="text-sm font-semibold text-slate-900">Update existing profile</p>
-                  <p class="mt-0.5 text-xs leading-relaxed text-slate-500">
+                  <p class="text-sm font-semibold text-[var(--text-primary)]">
+                    Update existing profile
+                  </p>
+                  <p class="mt-0.5 text-xs leading-relaxed text-[var(--text-secondary)]">
                     Merge CV data into your current profile.
                   </p>
                 </div>
@@ -398,12 +404,15 @@ onBeforeRouteLeave(() => {
         <div v-if="stage === 'idle' || stage === 'upload'" class="space-y-4">
           <div
             v-if="uploadError"
-            class="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm"
+            class="flex items-start gap-3 rounded-[var(--radius-xl)] border border-[var(--color-warning-100)] bg-[var(--color-warning-50)] p-4 text-sm"
             role="alert"
           >
             <div class="flex-1">
-              <p class="font-medium text-amber-800">{{ uploadError.detail }}</p>
-              <p v-if="uploadError.code === 'file_duplicate'" class="mt-1.5 text-amber-700">
+              <p class="font-medium text-[var(--color-warning-800)]">{{ uploadError.detail }}</p>
+              <p
+                v-if="uploadError.code === 'file_duplicate'"
+                class="mt-1.5 text-[var(--color-warning-700)]"
+              >
                 <button
                   class="font-medium underline hover:text-amber-900"
                   @click="handleViewExisting"
@@ -420,7 +429,7 @@ onBeforeRouteLeave(() => {
               </p>
             </div>
             <button
-              class="shrink-0 text-amber-500 hover:text-amber-700"
+              class="shrink-0 text-[var(--color-warning-500)] hover:text-[var(--color-warning-700)]"
               aria-label="Dismiss error"
               @click="handleDismissError"
             >
@@ -428,12 +437,16 @@ onBeforeRouteLeave(() => {
             </button>
           </div>
           <Card padding="lg">
-            <div class="mb-4 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
-              <span class="text-xs font-medium uppercase tracking-wider text-slate-500">
+            <div
+              class="mb-4 flex items-center gap-2 rounded-lg bg-[var(--surface-secondary)] px-3 py-2"
+            >
+              <span
+                class="text-xs font-medium uppercase tracking-wider text-[var(--text-secondary)]"
+              >
                 {{ uploadMode === 'create_new' ? 'Create new profile' : 'Update existing profile' }}
               </span>
               <button
-                class="text-xs font-medium text-primary-600 hover:text-primary-800"
+                class="text-xs font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)]"
                 @click="reset()"
               >
                 Change
@@ -443,14 +456,14 @@ onBeforeRouteLeave(() => {
           </Card>
           <div
             v-if="isUploading"
-            class="overflow-hidden rounded-full bg-slate-100"
+            class="overflow-hidden rounded-full bg-[var(--color-neutral-100)]"
             role="progressbar"
             :aria-valuenow="uploadProgress"
             aria-valuemin="0"
             aria-valuemax="100"
           >
             <div
-              class="h-1.5 rounded-full bg-primary-600 transition-all duration-500 ease-out"
+              class="h-1.5 rounded-full bg-[var(--color-primary-600)] transition-all duration-500 ease-out"
               :style="{ width: uploadProgress + '%' }"
             />
           </div>

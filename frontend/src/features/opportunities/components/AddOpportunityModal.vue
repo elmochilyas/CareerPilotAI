@@ -150,47 +150,42 @@ async function startDifferentImport(): Promise<void> {
 
 <template>
   <Modal :open="open" title="Add opportunity" size="lg" @close="emit('close')">
-    <div class="px-6 py-5">
-      <div class="rounded-lg border border-blue-100 bg-blue-50 p-3.5 text-sm text-blue-700">
+    <div class="modal-body">
+      <div class="modal-info">
         Paste the full job description below. The system will extract the key information which you
         can review and edit before saving.
       </div>
 
-      <form id="add-opportunity-form" class="mt-5 space-y-4" @submit.prevent="submit">
-        <div>
-          <label for="add-opp-description" class="block text-sm font-medium text-slate-700">
-            Job description
-          </label>
+      <form id="add-opportunity-form" class="modal-form" @submit.prevent="submit">
+        <div class="form-group">
+          <label for="add-opp-description" class="form-label"> Job description </label>
           <textarea
             id="add-opp-description"
             ref="descriptionInput"
             v-model="description"
             name="source_description"
             autocomplete="off"
-            class="mt-1.5 block w-full rounded-lg border border-slate-300 p-3 text-sm transition-colors placeholder:text-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+            class="form-textarea"
             rows="12"
             :maxlength="maxLength"
             placeholder="Paste the full job description here..."
           />
-          <div class="mt-1.5 flex justify-between text-xs text-slate-400">
-            <span v-if="charCount < minLength && charCount > 0" class="text-amber-500">
+          <div class="form-hint">
+            <span v-if="charCount < minLength && charCount > 0" class="hint-warning">
               Minimum {{ minLength }} characters
             </span>
-            <span v-else-if="charCount > maxLength * 0.9" class="text-amber-500">
+            <span v-else-if="charCount > maxLength * 0.9" class="hint-warning">
               {{ charCount }} / {{ maxLength }}
             </span>
             <span v-else>{{ charCount }} / {{ maxLength }}</span>
           </div>
         </div>
 
-        <div>
-          <label
-            for="add-opp-source-url"
-            class="flex items-center gap-1.5 text-sm font-medium text-slate-700"
-          >
-            <ExternalLink class="size-3.5 text-slate-400" aria-hidden="true" />
+        <div class="form-group">
+          <label for="add-opp-source-url" class="form-label form-label-inline">
+            <ExternalLink class="label-icon" aria-hidden="true" />
             Source URL
-            <span class="text-xs font-normal text-slate-400">(optional)</span>
+            <span class="label-optional">(optional)</span>
           </label>
           <input
             id="add-opp-source-url"
@@ -198,19 +193,16 @@ async function startDifferentImport(): Promise<void> {
             name="source_url"
             type="url"
             autocomplete="off"
-            class="mt-1.5 block w-full rounded-lg border border-slate-300 p-2.5 text-sm transition-colors placeholder:text-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+            class="form-input"
             placeholder="https://example.com/job-posting"
           />
         </div>
 
-        <div>
-          <label
-            for="add-opp-label"
-            class="flex items-center gap-1.5 text-sm font-medium text-slate-700"
-          >
-            <Tag class="size-3.5 text-slate-400" aria-hidden="true" />
+        <div class="form-group">
+          <label for="add-opp-label" class="form-label form-label-inline">
+            <Tag class="label-icon" aria-hidden="true" />
             Personal label
-            <span class="text-xs font-normal text-slate-400">(optional)</span>
+            <span class="label-optional">(optional)</span>
           </label>
           <input
             id="add-opp-label"
@@ -218,47 +210,35 @@ async function startDifferentImport(): Promise<void> {
             name="personal_label"
             type="text"
             autocomplete="off"
-            class="mt-1.5 block w-full rounded-lg border border-slate-300 p-2.5 text-sm transition-colors placeholder:text-slate-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+            class="form-input"
             placeholder="e.g., Frontend role at ACME"
             maxlength="255"
           />
         </div>
 
-        <div
-          v-if="validationError && description.trim().length > 0"
-          class="flex items-start gap-2 text-sm text-red-600"
-        >
-          <AlertTriangle class="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+        <div v-if="validationError && description.trim().length > 0" class="validation-error">
+          <AlertTriangle class="error-icon" aria-hidden="true" />
           {{ validationError }}
         </div>
 
-        <div
-          v-if="errorMessage && !duplicateInfo"
-          role="alert"
-          class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
-        >
+        <div v-if="errorMessage && !duplicateInfo" role="alert" class="error-alert">
           {{ errorMessage }}
         </div>
 
-        <div
-          v-if="duplicateInfo"
-          role="alert"
-          aria-live="polite"
-          class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
-        >
-          <p class="font-medium">This job was already imported</p>
-          <p class="mt-1 text-amber-800">{{ duplicateMessage }}</p>
-          <div class="mt-3 flex flex-wrap gap-3">
+        <div v-if="duplicateInfo" role="alert" aria-live="polite" class="duplicate-alert">
+          <p class="duplicate-title">This job was already imported</p>
+          <p class="duplicate-message">{{ duplicateMessage }}</p>
+          <div class="duplicate-actions">
             <button
               type="button"
-              class="font-medium text-primary-700 hover:text-primary-800 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600"
+              class="action-link action-link-primary"
               @click="navigateToExisting"
             >
               View existing {{ duplicateInfo.opportunityId ? 'opportunity' : 'analysis' }}
             </button>
             <button
               type="button"
-              class="font-medium text-slate-600 hover:text-slate-900 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-600"
+              class="action-link action-link-secondary"
               @click="startDifferentImport"
             >
               Import a different job
@@ -269,7 +249,7 @@ async function startDifferentImport(): Promise<void> {
     </div>
 
     <template #footer>
-      <div class="flex justify-end gap-3">
+      <div class="modal-footer">
         <Button variant="outline" @click="emit('close')">Cancel</Button>
         <Button
           type="submit"
@@ -283,3 +263,167 @@ async function startDifferentImport(): Promise<void> {
     </template>
   </Modal>
 </template>
+
+<style scoped>
+.modal-body {
+  padding: 1.25rem 1.5rem;
+}
+
+.modal-info {
+  border-radius: var(--radius-md);
+  padding: 0.875rem;
+  background: var(--color-info-50);
+  color: var(--color-info-700);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.modal-form {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.form-label-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.label-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  color: var(--text-muted);
+}
+
+.label-optional {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.form-textarea,
+.form-input {
+  margin-top: 0.375rem;
+  width: 100%;
+  border-radius: var(--radius-lg);
+  padding: 0.875rem;
+  font-size: 0.875rem;
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-neo-inset);
+  transition: all 200ms ease;
+}
+
+.form-textarea:focus,
+.form-input:focus {
+  outline: none;
+  ring: 2px;
+  ring-color: var(--color-primary-500);
+}
+
+.form-textarea::placeholder,
+.form-input::placeholder {
+  color: var(--text-muted);
+}
+
+.form-hint {
+  margin-top: 0.375rem;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.hint-warning {
+  color: var(--color-warning-600);
+}
+
+.validation-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-error-600);
+}
+
+.error-icon {
+  margin-top: 0.125rem;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+.error-alert {
+  border-radius: var(--radius-lg);
+  padding: 0.75rem;
+  background: var(--color-error-50);
+  color: var(--color-error-700);
+  font-size: 0.875rem;
+}
+
+.duplicate-alert {
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+  background: var(--color-warning-50);
+  color: var(--color-warning-900);
+  font-size: 0.875rem;
+}
+
+.duplicate-title {
+  font-weight: 500;
+}
+
+.duplicate-message {
+  margin-top: 0.25rem;
+  color: var(--color-warning-800);
+}
+
+.duplicate-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.action-link {
+  font-weight: 500;
+  border-radius: var(--radius-md);
+  padding: 0.25rem 0.5rem;
+  transition: color 150ms ease;
+}
+
+.action-link-primary {
+  color: var(--color-primary-700);
+}
+
+.action-link-primary:hover {
+  color: var(--color-primary-800);
+}
+
+.action-link-secondary {
+  color: var(--text-secondary);
+}
+
+.action-link-secondary:hover {
+  color: var(--text-primary);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+</style>

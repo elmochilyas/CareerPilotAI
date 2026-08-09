@@ -46,10 +46,10 @@ const totalCount = computed(() => props.details.areas.length)
 
 <template>
   <section
-    class="sticky top-24 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"
+    class="sticky top-24 overflow-hidden rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-sm)]"
     aria-labelledby="completion-heading"
   >
-    <div class="border-b border-slate-100 px-5 py-5 sm:px-6">
+    <div class="border-b border-[var(--border-subtle)] px-5 py-5 sm:px-6">
       <div class="flex items-center gap-4">
         <div class="relative flex shrink-0 items-center justify-center">
           <svg width="64" height="64" viewBox="0 0 64 64" class="-rotate-90">
@@ -60,7 +60,7 @@ const totalCount = computed(() => props.details.areas.length)
               fill="none"
               stroke="currentColor"
               stroke-width="5"
-              class="text-slate-100"
+              class="text-[var(--color-neutral-100)]"
             />
             <circle
               cx="32"
@@ -72,39 +72,49 @@ const totalCount = computed(() => props.details.areas.length)
               stroke-linecap="round"
               :stroke-dasharray="2 * Math.PI * 26"
               :stroke-dashoffset="2 * Math.PI * 26 * (1 - score / 100)"
-              class="text-primary-500 transition-[stroke-dashoffset] duration-700 motion-reduce:transition-none"
+              class="text-[var(--color-primary-500)] transition-[stroke-dashoffset] duration-700 motion-reduce:transition-none"
             />
           </svg>
-          <span class="absolute text-base font-bold text-slate-900">
-            {{ score }}<span class="text-xs font-normal text-slate-400">%</span>
+          <span class="absolute text-[var(--text-base)] font-bold text-[var(--text-primary)]">
+            {{ score
+            }}<span class="text-[var(--text-xs)] font-normal text-[var(--text-muted)]">%</span>
           </span>
         </div>
         <div>
-          <h2 id="completion-heading" class="text-sm font-semibold text-slate-900">
+          <h2
+            id="completion-heading"
+            class="text-[var(--text-sm)] font-semibold text-[var(--text-primary)]"
+          >
             Profile strength
           </h2>
-          <p class="text-xs text-slate-500">
+          <p class="text-[var(--text-xs)] text-[var(--text-secondary)]">
             {{ completedCount }} of {{ totalCount }} areas complete
           </p>
         </div>
       </div>
-      <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+      <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-neutral-100)]">
         <div
-          class="h-full rounded-full bg-primary-500 transition-all duration-500 motion-reduce:transition-none"
+          class="h-full rounded-full bg-[var(--color-primary-500)] transition-all duration-500 motion-reduce:transition-none"
           :style="{ width: score + '%' }"
         />
       </div>
     </div>
 
     <div v-if="recommendation" class="px-5 pt-4 sm:px-6">
-      <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">
+      <p
+        class="text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-muted)]"
+      >
         Recommended next step
       </p>
-      <div class="mt-2 overflow-hidden rounded-lg border border-primary-100 bg-primary-50 p-3">
-        <p class="text-sm font-semibold text-slate-900">{{ recommendation.title }}</p>
+      <div
+        class="mt-2 overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-primary-100)] bg-[var(--color-primary-50)] p-3"
+      >
+        <p class="text-[var(--text-sm)] font-semibold text-[var(--text-primary)]">
+          {{ recommendation.title }}
+        </p>
         <p
           v-if="recommendation.gain"
-          class="mt-1 inline-flex items-center gap-1 rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700"
+          class="mt-1 inline-flex items-center gap-1 rounded bg-[var(--color-success-100)] px-2 py-0.5 text-[var(--text-xs)] font-medium text-[var(--color-success-700)]"
         >
           {{ recommendation.gain }} profile completion
         </p>
@@ -112,25 +122,38 @@ const totalCount = computed(() => props.details.areas.length)
     </div>
 
     <div class="px-5 pb-5 pt-4 sm:px-6 sm:pb-6">
-      <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Checklist</p>
+      <p
+        class="mb-3 text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-muted)]"
+      >
+        Checklist
+      </p>
       <ul class="space-y-2">
         <li
           v-for="(area, i) in details.areas"
           :key="area.key"
-          class="flex items-start gap-2 text-sm transition-all"
+          class="flex items-start gap-2 text-[var(--text-sm)] transition-all"
           :class="`animate-fade-in-up stagger-${Math.min(i + 1, 8)}`"
         >
           <div class="relative mt-0.5 shrink-0">
             <CheckCircle
               v-if="area.complete"
               :size="16"
-              class="text-emerald-500"
+              class="text-[var(--color-success-500)]"
               aria-label="Complete"
             />
-            <Circle v-else :size="16" class="text-slate-300" aria-label="Incomplete" />
+            <Circle
+              v-else
+              :size="16"
+              class="text-[var(--color-neutral-300)]"
+              aria-label="Incomplete"
+            />
           </div>
           <span
-            :class="area.complete ? 'text-slate-400 line-through' : 'font-medium text-slate-800'"
+            :class="
+              area.complete
+                ? 'text-[var(--text-muted)] line-through'
+                : 'font-medium text-[var(--text-primary)]'
+            "
           >
             {{ areaLabels[area.key] ?? area.key }}
           </span>

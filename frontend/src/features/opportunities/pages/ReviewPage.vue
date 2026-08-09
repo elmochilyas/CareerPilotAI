@@ -1092,7 +1092,7 @@ const isPrimaryDisabled = computed(() => {
   width: 100%;
   max-width: 74rem;
   margin: 0 auto;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .review-page-meta {
@@ -1104,7 +1104,7 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .review-page-meta strong {
-  color: #111827;
+  color: var(--text-primary);
   font-weight: 650;
 }
 
@@ -1130,11 +1130,11 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .announcement-banner {
-  border: 1px solid #fedf89;
-  border-radius: 0.75rem;
-  background: #fffaeb;
+  border: 1px solid var(--color-warning-100);
+  border-radius: var(--radius-lg);
+  background: var(--color-warning-50);
   padding: 0.75rem 1rem;
-  color: #b54708;
+  color: var(--color-warning-700);
   font-size: 0.875rem;
 }
 
@@ -1146,15 +1146,15 @@ const isPrimaryDisabled = computed(() => {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  border: 1px solid #e4e7ec;
-  border-radius: 0.75rem;
-  background: #ffffff;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-primary);
   padding: 0.625rem 0.75rem;
-  box-shadow: 0 4px 12px rgb(16 24 40 / 0.06);
+  box-shadow: var(--shadow-sm);
 }
 
 .accept-all-status {
-  color: #667085;
+  color: var(--text-secondary);
   font-size: 0.8125rem;
   font-weight: 640;
   font-variant-numeric: tabular-nums;
@@ -1166,11 +1166,11 @@ const isPrimaryDisabled = computed(() => {
   justify-content: center;
   flex: 0 0 auto;
   min-height: 2.25rem;
-  border: 1px solid #c7d2fe;
-  border-radius: 0.5rem;
+  border: 1px solid var(--color-primary-200);
+  border-radius: var(--radius-md);
   padding: 0.375rem 0.75rem;
-  background: #eef2ff;
-  color: #315ee7;
+  background: var(--color-primary-50);
+  color: var(--color-primary-700);
   font-size: 0.8125rem;
   font-weight: 650;
   cursor: pointer;
@@ -1179,21 +1179,21 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .accept-all-btn:hover:not(:disabled) {
-  background: #c7d2fe;
+  background: var(--color-primary-100);
 }
 
 .accept-all-btn-armed {
-  border-color: #efc7c3;
-  background: #fff2f0;
-  color: #ae3b35;
+  border-color: var(--color-error-200);
+  background: var(--color-error-50);
+  color: var(--color-error-700);
 }
 
 .accept-all-btn-armed:hover:not(:disabled) {
-  background: #efc7c3;
+  background: var(--color-error-100);
 }
 
 .accept-all-btn:focus-visible {
-  outline: 2px solid #315ee7;
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 2px;
 }
 
@@ -1208,7 +1208,7 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .step-heading {
-  color: #111827;
+  color: var(--text-primary);
   font-size: 1.375rem;
   font-weight: 670;
   letter-spacing: -0.025em;
@@ -1217,7 +1217,7 @@ const isPrimaryDisabled = computed(() => {
 
 .step-description {
   margin-top: -0.75rem;
-  color: #667085;
+  color: var(--text-secondary);
   font-size: 0.875rem;
   line-height: 1.375rem;
 }
@@ -1232,8 +1232,8 @@ const isPrimaryDisabled = computed(() => {
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
-  border: 1px solid #e4e7ec;
-  border-radius: 0.75rem;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
   padding: 0.75rem 1rem;
 }
 
@@ -1242,7 +1242,7 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .step-item-label {
-  color: #98a2b3;
+  color: var(--text-muted);
   font-size: 0.6875rem;
   font-weight: 560;
   line-height: 1rem;
@@ -1252,7 +1252,7 @@ const isPrimaryDisabled = computed(() => {
 
 .step-item-value {
   margin-top: 0.125rem;
-  color: #111827;
+  color: var(--text-primary);
   font-size: 0.875rem;
   line-height: 1.375rem;
   overflow-wrap: anywhere;
@@ -1270,10 +1270,10 @@ const isPrimaryDisabled = computed(() => {
   align-items: center;
   min-height: 2.25rem;
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   padding: 0.375rem 0.625rem;
   background: transparent;
-  color: #667085;
+  color: var(--text-secondary);
   font-size: 0.75rem;
   font-weight: 620;
   cursor: pointer;
@@ -1282,30 +1282,30 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .action-btn-sm:hover {
-  background: #f2f4f7;
-  color: #111827;
+  background: var(--surface-secondary);
+  color: var(--text-primary);
 }
 
 .action-btn-sm-active {
-  color: #18705a;
+  color: var(--color-success-700);
 }
 
 .action-btn-sm-active:hover {
-  background: #edf8f4;
-  color: #18705a;
+  background: var(--color-success-50);
+  color: var(--color-success-700);
 }
 
 .action-btn-sm-remove {
-  color: #ae3b35;
+  color: var(--color-error-700);
 }
 
 .action-btn-sm-remove:hover {
-  background: #fff2f0;
-  color: #ae3b35;
+  background: var(--color-error-50);
+  color: var(--color-error-700);
 }
 
 .action-btn-sm:focus-visible {
-  outline: 2px solid #315ee7;
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 2px;
 }
 
@@ -1316,14 +1316,14 @@ const isPrimaryDisabled = computed(() => {
 .manual-add-form {
   display: grid;
   gap: 0.625rem;
-  border: 1px solid #c7d2fe;
-  border-radius: 0.75rem;
-  background: #eef2ff;
+  border: 1px solid var(--color-primary-200);
+  border-radius: var(--radius-lg);
+  background: var(--color-primary-50);
   padding: 1rem;
 }
 
 .manual-add-form label {
-  color: #111827;
+  color: var(--text-primary);
   font-size: 0.8125rem;
   font-weight: 650;
 }
@@ -1333,11 +1333,11 @@ const isPrimaryDisabled = computed(() => {
   width: 100%;
   min-height: 2.75rem;
   resize: vertical;
-  border: 1px solid #d0d5dd;
-  border-radius: 0.5rem;
-  background: #ffffff;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-primary);
   padding: 0.625rem 0.75rem;
-  color: #111827;
+  color: var(--text-primary);
   font: inherit;
 }
 
@@ -1348,7 +1348,7 @@ const isPrimaryDisabled = computed(() => {
 .manual-add-form input:focus-visible,
 .manual-add-form textarea:focus-visible,
 .add-item-button:focus-visible {
-  outline: 2px solid #315ee7;
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 2px;
 }
 
@@ -1366,18 +1366,18 @@ const isPrimaryDisabled = computed(() => {
 .add-item-button {
   justify-self: start;
   min-height: 2.75rem;
-  border: 1px dashed #c7d2fe;
-  border-radius: 0.5rem;
+  border: 1px dashed var(--color-primary-200);
+  border-radius: var(--radius-md);
   padding: 0.5rem 0.875rem;
-  background: #ffffff;
-  color: #315ee7;
+  background: var(--surface-primary);
+  color: var(--color-primary-700);
   font-size: 0.8125rem;
   font-weight: 650;
   cursor: pointer;
 }
 
 .add-item-button:hover {
-  background: #eef2ff;
+  background: var(--color-primary-50);
 }
 
 .final-summary {
@@ -1389,10 +1389,10 @@ const isPrimaryDisabled = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-radius: 0.75rem;
-  background: #f2f4f7;
+  border-radius: var(--radius-lg);
+  background: var(--surface-secondary);
   padding: 0.75rem 1rem;
-  color: #263244;
+  color: var(--text-primary);
   font-size: 0.875rem;
 }
 
@@ -1402,18 +1402,18 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .text-success {
-  color: #18705a;
+  color: var(--color-success-700);
 }
 
 .text-warning {
-  color: #b54708;
+  color: var(--color-warning-700);
 }
 
 .final-warning {
-  border-radius: 0.75rem;
-  background: #fffaeb;
+  border-radius: var(--radius-lg);
+  background: var(--color-warning-50);
   padding: 0.75rem 1rem;
-  color: #b54708;
+  color: var(--color-warning-700);
   font-size: 0.875rem;
   line-height: 1.375rem;
 }
@@ -1424,9 +1424,9 @@ const isPrimaryDisabled = computed(() => {
   justify-content: center;
   min-height: 2.75rem;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   padding: 0.625rem 1.25rem;
-  background: #315ee7;
+  background: var(--color-primary-600);
   color: #ffffff;
   font-size: 0.875rem;
   font-weight: 650;
@@ -1436,7 +1436,7 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .preview-btn:hover:not(:disabled) {
-  background: #2449bc;
+  background: var(--color-primary-700);
 }
 
 .preview-btn:disabled {
@@ -1445,7 +1445,7 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .preview-btn:focus-visible {
-  outline: 2px solid #315ee7;
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 2px;
 }
 
@@ -1456,44 +1456,44 @@ const isPrimaryDisabled = computed(() => {
 
 .confirmed-banner {
   margin-top: 1.5rem;
-  border: 1px solid #acd6c8;
-  border-radius: 0.75rem;
-  background: #edf8f4;
+  border: 1px solid var(--color-success-100);
+  border-radius: var(--radius-lg);
+  background: var(--color-success-50);
   padding: 1.5rem;
   text-align: center;
 }
 
 .confirmed-title {
-  color: #18705a;
+  color: var(--color-success-700);
   font-size: 1.125rem;
   font-weight: 650;
 }
 
 .confirmed-summary {
   margin-top: 0.5rem;
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .confirmed-requirements {
   margin-top: 0.25rem;
-  color: #667085;
+  color: var(--text-secondary);
   font-size: 0.875rem;
 }
 
 .review-state {
   margin-top: 1.5rem;
-  border: 1px solid #e4e7ec;
-  border-radius: 0.75rem;
-  background: #ffffff;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-primary);
   padding: 1.5rem;
-  color: #667085;
+  color: var(--text-secondary);
   text-align: center;
 }
 
 .review-state-error {
-  border-color: #efc7c3;
-  background: #fff2f0;
-  color: #ae3b35;
+  border-color: var(--color-error-200);
+  background: var(--color-error-50);
+  color: var(--color-error-700);
 }
 
 .review-state-error .confirmed-btn-secondary {
@@ -1510,8 +1510,8 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .confirmed-btn-primary {
-  border-radius: 0.5rem;
-  background: #315ee7;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-600);
   padding: 0.5rem 1rem;
   color: #ffffff;
   font-size: 0.875rem;
@@ -1521,18 +1521,18 @@ const isPrimaryDisabled = computed(() => {
 }
 
 .confirmed-btn-secondary {
-  border-radius: 0.5rem;
-  border: 1px solid #e4e7ec;
-  background: #ffffff;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--surface-primary);
   padding: 0.5rem 1rem;
-  color: #263244;
+  color: var(--text-primary);
   font-size: 0.875rem;
   cursor: pointer;
 }
 
 .confirmed-btn-primary:focus-visible,
 .confirmed-btn-secondary:focus-visible {
-  outline: 2px solid #315ee7;
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 2px;
 }
 

@@ -134,7 +134,9 @@ function back(): void {
       <p class="mt-1 text-sm text-slate-600">{{ question.prompt }}</p>
     </div>
 
-    <dl class="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm">
+    <dl
+      class="grid gap-3 rounded-[var(--radius-xl)] bg-[var(--surface-primary)] p-4 text-sm shadow-[var(--shadow-neo-raised)]"
+    >
       <div class="flex items-start justify-between gap-4">
         <dt class="text-slate-500">Item</dt>
         <dd class="text-right font-medium text-slate-900">{{ targetLabel }}</dd>
@@ -149,11 +151,15 @@ function back(): void {
       </div>
       <div class="flex items-start justify-between gap-4">
         <dt class="text-slate-500">Proposed value</dt>
-        <dd class="max-w-[60%] text-right font-medium text-primary-700">{{ afterLabel }}</dd>
+        <dd class="max-w-[60%] text-right font-medium text-[var(--color-primary-700)]">
+          {{ afterLabel }}
+        </dd>
       </div>
     </dl>
 
-    <div class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+    <div
+      class="rounded-[var(--radius-xl)] bg-[var(--surface-secondary)] px-4 py-3 text-sm text-slate-600 shadow-[var(--shadow-neo-inset)]"
+    >
       <span class="font-medium text-slate-700">Evidence basis: </span>{{ evidenceLabel }}
     </div>
 
@@ -165,11 +171,18 @@ function back(): void {
       </div>
     </div>
 
-    <p v-if="error" role="alert" class="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+    <p
+      v-if="error"
+      role="alert"
+      class="rounded-[var(--radius-xl)] bg-red-50 px-3 py-2 text-sm text-red-700 shadow-[var(--shadow-neo-raised-sm)]"
+    >
       {{ error }}
     </p>
 
-    <div v-if="!editing" class="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+    <div
+      v-if="!editing"
+      class="flex flex-wrap items-center gap-2 border-t border-[var(--border-subtle)] pt-4"
+    >
       <Button v-if="canGoBack" variant="outline" :disabled="busy" @click="back">Back</Button>
       <Button v-if="editable" variant="outline" :disabled="busy" @click="startEdit">
         Edit value

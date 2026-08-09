@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { JobSuggestion, ReviewDecisionValue } from '../types'
+import type { JobSuggestion } from '../types'
 import { getSuggestionField, suggestionLabel } from '../utils/suggestionFormatters'
 
 const props = defineProps<{

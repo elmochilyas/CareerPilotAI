@@ -73,26 +73,24 @@ const remainingSkillCount = computed(() =>
   grid-template-columns: 2.5rem minmax(0, 1fr) auto 1.25rem;
   align-items: center;
   gap: 1rem;
-  border: 1px solid var(--cp-border);
-  border-radius: var(--cp-radius-surface);
+  border-radius: var(--radius-xl);
   padding: 1rem 1.125rem;
-  background: var(--cp-surface);
+  background: var(--surface-primary);
   color: inherit;
   text-decoration: none;
+  box-shadow: var(--shadow-neo-raised);
   transition:
-    border-color 150ms ease,
     box-shadow 150ms ease,
     background-color 150ms ease;
 }
 
 .opportunity-row:hover {
-  border-color: var(--cp-border-strong);
-  background: var(--cp-surface-subtle);
-  box-shadow: var(--cp-shadow-soft);
+  background: var(--surface-secondary);
+  box-shadow: var(--shadow-neo-raised-lg);
 }
 
 .opportunity-row:focus-visible {
-  outline: 2px solid var(--cp-primary);
+  outline: 2px solid var(--color-primary-500);
   outline-offset: 3px;
 }
 
@@ -102,8 +100,9 @@ const remainingSkillCount = computed(() =>
   height: 2.5rem;
   place-items: center;
   border-radius: 0.625rem;
-  background: var(--cp-success-soft);
-  color: var(--cp-success);
+  background: var(--color-success-50);
+  color: var(--color-success-600);
+  box-shadow: var(--shadow-neo-raised-sm);
 }
 
 .row-content {
@@ -121,7 +120,7 @@ const remainingSkillCount = computed(() =>
 
 .row-title {
   overflow: hidden;
-  color: var(--cp-ink);
+  color: var(--text-primary);
   font-size: 0.9375rem;
   font-weight: 680;
   letter-spacing: -0.012em;
@@ -132,7 +131,7 @@ const remainingSkillCount = computed(() =>
 
 .row-company {
   overflow-wrap: anywhere;
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
   font-size: 0.8125rem;
   line-height: 1.125rem;
 }
@@ -143,7 +142,7 @@ const remainingSkillCount = computed(() =>
   align-items: center;
   gap: 0.375rem 0.875rem;
   margin-top: 0.375rem;
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
   font-size: 0.75rem;
   line-height: 1rem;
   text-transform: capitalize;
@@ -165,24 +164,25 @@ const remainingSkillCount = computed(() =>
 .row-skills > span {
   border-radius: 0.375rem;
   padding: 0.1875rem 0.4375rem;
-  background: var(--cp-surface-muted);
-  color: var(--cp-text-muted);
+  background: var(--surface-secondary);
+  color: var(--text-muted);
   font-size: 0.6875rem;
   font-weight: 600;
   line-height: 0.875rem;
+  box-shadow: var(--shadow-neo-raised-sm);
 }
 
 .row-chevron {
   width: 1rem;
   height: 1rem;
-  color: var(--cp-text-faint);
+  color: var(--text-faint);
   transition:
     color 150ms ease,
     transform 150ms ease;
 }
 
 .opportunity-row:hover .row-chevron {
-  color: var(--cp-primary);
+  color: var(--color-primary-500);
   transform: translateX(0.125rem);
 }
 

@@ -80,25 +80,32 @@ const attentionItems = computed(() => {
   <div class="mx-auto max-w-5xl space-y-8 px-4 py-8 sm:px-6 lg:px-8">
     <!-- Header -->
     <header>
-      <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+      <h1
+        class="text-[var(--text-2xl)] font-bold tracking-tight text-[var(--text-primary)] sm:text-[var(--text-3xl)]"
+      >
         {{ greeting }}, {{ firstName }}
       </h1>
-      <p class="mt-1 text-sm text-slate-500">{{ today }}</p>
+      <p class="mt-1 text-[var(--text-sm)] text-[var(--text-tertiary)]">{{ today }}</p>
     </header>
 
     <!-- Loading state -->
     <template v-if="isLoading">
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div v-for="i in 4" :key="i" class="rounded-xl border border-slate-200 bg-white p-5">
-          <Skeleton classes="size-10 rounded-lg" />
+        <div
+          v-for="i in 4"
+          :key="i"
+          class="rounded-[var(--radius-xl)] bg-[var(--surface-primary)] p-5"
+          style="box-shadow: var(--shadow-neo-raised)"
+        >
+          <Skeleton classes="size-10 rounded-[var(--radius-lg)]" />
           <div class="mt-4 space-y-2">
             <Skeleton classes="h-7 w-16" />
             <Skeleton classes="h-4 w-24" />
           </div>
         </div>
       </div>
-      <Skeleton classes="h-48 w-full rounded-xl" />
-      <Skeleton classes="h-32 w-full rounded-xl" />
+      <Skeleton classes="h-48 w-full rounded-[var(--radius-xl)]" />
+      <Skeleton classes="h-32 w-full rounded-[var(--radius-xl)]" />
     </template>
 
     <template v-else>
@@ -110,7 +117,7 @@ const attentionItems = computed(() => {
           :icon="User"
           href="/profile"
         />
-        <StatCard :value="cvCount" label="CV documents" :icon="FileText" href="/profile/cv" />
+        <StatCard :value="cvCount" label="CV documents" :icon="FileText" href="/cv" />
         <StatCard
           :value="savedJobsCount"
           label="Saved opportunities"
@@ -124,8 +131,10 @@ const attentionItems = computed(() => {
       <Card v-if="attentionItems.length > 0" title="Needs Attention">
         <template #header>
           <div class="flex items-center gap-2">
-            <AlertTriangle class="size-4 text-amber-500" aria-hidden="true" />
-            <h2 class="text-base font-semibold text-slate-900">Needs Attention</h2>
+            <AlertTriangle class="size-4 text-[var(--color-warning-500)]" aria-hidden="true" />
+            <h2 class="text-[var(--text-lg)] font-semibold text-[var(--text-primary)]">
+              Needs Attention
+            </h2>
           </div>
         </template>
         <AttentionList :items="attentionItems" />
@@ -142,7 +151,9 @@ const attentionItems = computed(() => {
 
       <!-- Quick Actions -->
       <div>
-        <h2 class="mb-4 text-base font-semibold text-slate-900">Quick Actions</h2>
+        <h2 class="mb-4 text-[var(--text-lg)] font-semibold text-[var(--text-primary)]">
+          Quick Actions
+        </h2>
         <QuickActions />
       </div>
     </template>

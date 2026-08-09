@@ -270,17 +270,17 @@ function retryQueries(): void {
     <div
       v-if="hasError"
       role="alert"
-      class="flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+      class="flex items-center justify-between gap-3 rounded-[var(--radius-lg)] border border-[var(--color-error-100)] bg-[var(--color-error-50)] p-4 text-sm text-[var(--color-error-700)]"
     >
       <div>
         <strong>We couldn't refresh your opportunities.</strong>
-        <p class="mt-0.5 text-xs text-red-600">
+        <p class="mt-0.5 text-xs text-[var(--color-error-600)]">
           Your existing items are still shown when available.
         </p>
       </div>
       <button
         type="button"
-        class="inline-flex items-center gap-1.5 rounded-md bg-white px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
+        class="inline-flex items-center gap-1.5 rounded-[var(--radius-md)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-error-700)] transition-colors hover:bg-[var(--color-error-50)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-error-600)]"
         @click="retryQueries"
       >
         <RefreshCw class="size-3.5" aria-hidden="true" />
@@ -302,13 +302,15 @@ function retryQueries(): void {
     <!-- Empty state -->
     <div
       v-else-if="workspaceItems.length === 0"
-      class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-12 text-center"
+      class="rounded-[var(--radius-xl)] border border-dashed border-[var(--border-default)] bg-[var(--surface-secondary)] px-6 py-12 text-center"
     >
-      <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-primary-50">
-        <SearchX class="size-5 text-primary-600" aria-hidden="true" />
+      <div
+        class="mx-auto flex size-12 items-center justify-center rounded-full bg-[var(--color-primary-50)]"
+      >
+        <SearchX class="size-5 text-[var(--color-primary-600)]" aria-hidden="true" />
       </div>
-      <h3 class="mt-4 text-base font-semibold text-slate-900">Build your shortlist</h3>
-      <p class="mt-1 text-sm text-slate-500">
+      <h3 class="mt-4 text-base font-semibold text-[var(--text-primary)]">Build your shortlist</h3>
+      <p class="mt-1 text-sm text-[var(--text-secondary)]">
         Add a job description to review its details before saving it.
       </p>
       <Button class="mt-4" @click="showAddModal = true">
@@ -320,12 +322,12 @@ function retryQueries(): void {
     <!-- Filtered empty -->
     <div
       v-else-if="filteredItems.length === 0"
-      class="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-6 py-8 text-center text-sm text-slate-500"
+      class="rounded-[var(--radius-xl)] border border-dashed border-[var(--border-default)] bg-[var(--surface-secondary)] px-6 py-8 text-center text-sm text-[var(--text-secondary)]"
     >
       <p>No opportunities match this filter.</p>
       <button
         type="button"
-        class="mt-2 font-medium text-primary-600 hover:text-primary-700"
+        class="mt-2 font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-700)]"
         @click="selectFilter('all')"
       >
         Show all
@@ -341,13 +343,15 @@ function retryQueries(): void {
       >
         <h2
           :id="`group-${group.label}`"
-          class="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-400"
+          class="mb-3 flex items-center gap-2 text-[var(--text-xs)] font-semibold uppercase tracking-wider text-[var(--text-muted)]"
         >
           {{ group.label }}
           <Badge size="sm" variant="default">{{ group.items.length }}</Badge>
         </h2>
 
-        <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div
+          class="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] shadow-[var(--shadow-xs)]"
+        >
           <div class="divide-y divide-slate-100">
             <template v-for="item in group.items" :key="item.key">
               <IngestionRow

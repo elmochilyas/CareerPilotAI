@@ -27,8 +27,7 @@ const emit = defineEmits<{
         <div class="mt-3">
           <Button
             size="sm"
-            variant="outline"
-            class="text-amber-700 border-amber-300 hover:bg-amber-100"
+            variant="soft-warning"
             @click="emit('decision', suggestion.id, { decision: 'rejected' })"
           >
             Ignore this item

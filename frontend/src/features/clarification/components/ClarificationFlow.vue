@@ -277,11 +277,18 @@ watch(
 </script>
 
 <template>
-  <section class="rounded-2xl border border-slate-200 bg-white" aria-label="Clarify your profile">
-    <div class="flex items-center justify-between gap-3 border-b border-slate-100 p-5 sm:p-6">
+  <section
+    class="rounded-[var(--radius-xl)] bg-[var(--surface-primary)] shadow-[var(--shadow-neo-raised)]"
+    aria-label="Clarify your profile"
+  >
+    <div
+      class="flex items-center justify-between gap-3 border-b border-[var(--border-subtle)] p-5 sm:p-6"
+    >
       <div>
-        <h2 class="text-base font-semibold text-slate-900">Clarify your profile</h2>
-        <p v-if="progressText" class="mt-0.5 text-sm text-slate-500">{{ progressText }}</p>
+        <h2 class="text-base font-semibold text-[var(--text-primary)]">Clarify your profile</h2>
+        <p v-if="progressText" class="mt-0.5 text-sm text-[var(--text-secondary)]">
+          {{ progressText }}
+        </p>
       </div>
       <Button
         variant="ghost"

@@ -133,8 +133,8 @@ const actionHint = computed(() => {
 
 <style scoped>
 .opportunity-row {
-  --row-tone-soft: var(--cp-surface-muted);
-  --row-tone-ink: var(--cp-text-muted);
+  --row-tone-soft: var(--surface-secondary);
+  --row-tone-ink: var(--text-muted);
 
   display: grid;
   position: relative;
@@ -144,71 +144,57 @@ const actionHint = computed(() => {
   align-items: center;
   gap: 1rem;
   overflow: hidden;
-  border: 1px solid var(--cp-border);
-  border-radius: var(--cp-radius-surface);
+  border-radius: var(--radius-xl);
   padding: 1rem 1.125rem;
-  background: var(--cp-surface);
-  box-shadow:
-    0 1px 2px rgb(16 24 40 / 0.05),
-    0 5px 12px rgb(16 24 40 / 0.05),
-    0 16px 34px rgb(16 24 40 / 0.07);
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-neo-raised);
   color: inherit;
   text-decoration: none;
-  transition: transform 180ms ease;
+  transition: box-shadow 180ms ease;
 }
 
 .opportunity-row::after {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9);
-  content: '';
   pointer-events: none;
+  content: '';
 }
 
 .opportunity-row:hover {
-  transform: translateY(-0.125rem);
-  border-color: rgb(79 70 229 / 0.22);
-  background: var(--cp-surface-subtle);
-  box-shadow:
-    0 2px 4px rgb(16 24 40 / 0.06),
-    0 10px 22px rgb(16 24 40 / 0.08),
-    0 24px 48px rgb(16 24 40 / 0.12);
+  background: var(--surface-secondary);
+  box-shadow: var(--shadow-neo-raised-lg);
 }
 
 .opportunity-row:active {
-  transform: translateY(0);
-  background: var(--cp-surface-muted);
-  box-shadow:
-    0 1px 2px rgb(16 24 40 / 0.06),
-    0 3px 8px rgb(16 24 40 / 0.07),
-    inset 0 1px 0 rgb(255 255 255 / 0.75);
+  background: var(--surface-secondary);
+  box-shadow: var(--shadow-neo-inset);
 }
 
 .opportunity-row:focus-visible {
-  outline: 2px solid var(--cp-primary);
+  outline: 2px solid var(--color-primary-500);
   outline-offset: 3px;
 }
 
 .opportunity-row-processing,
 .opportunity-row-queued {
-  --row-tone-soft: var(--cp-info-soft);
-  --row-tone-ink: var(--cp-info);
+  --row-tone-soft: var(--color-info-50);
+  --row-tone-ink: var(--color-info-600);
 }
 
 .opportunity-row-review_ready {
-  --row-tone-soft: var(--cp-warning-soft);
-  --row-tone-ink: var(--cp-warning);
+  --row-tone-soft: var(--color-warning-50);
+  --row-tone-ink: var(--color-warning-600);
 }
 
 .opportunity-row-failed {
-  --row-tone-soft: var(--cp-danger-soft);
-  --row-tone-ink: var(--cp-danger);
+  --row-tone-soft: var(--color-error-50);
+  --row-tone-ink: var(--color-error-600);
 }
 
 .opportunity-row-confirmed {
-  --row-tone-soft: var(--cp-success-soft);
-  --row-tone-ink: var(--cp-success);
+  --row-tone-soft: var(--color-success-50);
+  --row-tone-ink: var(--color-success-600);
 }
 
 .row-icon {
@@ -218,10 +204,7 @@ const actionHint = computed(() => {
   place-items: center;
   border-radius: 0.625rem;
   background: var(--row-tone-soft);
-  box-shadow:
-    0 1px 2px rgb(16 24 40 / 0.06),
-    0 5px 12px rgb(16 24 40 / 0.08),
-    inset 0 1px 0 rgb(255 255 255 / 0.8);
+  box-shadow: var(--shadow-neo-raised-sm);
   color: var(--row-tone-ink);
 }
 
@@ -253,7 +236,7 @@ const actionHint = computed(() => {
 .row-title {
   min-width: 0;
   overflow: hidden;
-  color: var(--cp-ink);
+  color: var(--text-primary);
   font-size: 0.9375rem;
   font-weight: 680;
   letter-spacing: -0.012em;
@@ -268,7 +251,7 @@ const actionHint = computed(() => {
   align-items: center;
   gap: 0.375rem 0.875rem;
   margin-top: 0.4375rem;
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
   font-size: 0.75rem;
   line-height: 1rem;
 }
@@ -285,12 +268,12 @@ const actionHint = computed(() => {
   width: 0.8125rem;
   height: 0.8125rem;
   flex: 0 0 auto;
-  color: var(--cp-text-faint);
+  color: var(--text-faint);
 }
 
 .row-context {
   margin-top: 0.4375rem;
-  color: var(--cp-text);
+  color: var(--text-primary);
   font-size: 0.75rem;
   line-height: 1.125rem;
 }
@@ -302,15 +285,11 @@ const actionHint = computed(() => {
   align-items: center;
   justify-content: center;
   gap: 0.4375rem;
-  border: 1px solid rgb(79 70 229 / 0.12);
-  border-radius: var(--cp-radius-control);
+  border-radius: var(--radius-md);
   padding: 0.5rem 0.75rem;
-  background: var(--cp-primary-soft);
-  box-shadow:
-    0 1px 2px rgb(67 56 202 / 0.08),
-    0 5px 14px rgb(67 56 202 / 0.13),
-    inset 0 1px 0 rgb(255 255 255 / 0.82);
-  color: var(--cp-primary-deep);
+  background: var(--color-primary-50);
+  box-shadow: var(--shadow-neo-raised-sm);
+  color: var(--color-primary-600);
   font-size: 0.75rem;
   font-weight: 680;
   line-height: 1rem;
@@ -326,13 +305,9 @@ const actionHint = computed(() => {
 }
 
 .opportunity-row:hover .row-action {
-  border-color: var(--cp-primary);
-  background: var(--cp-primary);
-  box-shadow:
-    0 2px 4px rgb(67 56 202 / 0.12),
-    0 8px 18px rgb(67 56 202 / 0.24),
-    inset 0 1px 0 rgb(255 255 255 / 0.18);
+  background: var(--color-primary-500);
   color: white;
+  box-shadow: var(--shadow-neo-button);
 }
 
 .opportunity-row:hover .row-chevron,

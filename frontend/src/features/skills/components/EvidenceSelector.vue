@@ -69,22 +69,22 @@ function addUrlEvidence() {
       <div
         v-for="entry in evidence"
         :key="entry.key"
-        class="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2"
+        class="flex items-center justify-between rounded-[var(--radius-md)] bg-[var(--surface-secondary)] px-3 py-2 shadow-[var(--shadow-neo-inset)]"
       >
         <div class="flex items-center gap-2 text-sm">
           <ExternalLink
             v-if="entry.type === 'url'"
-            class="size-4 text-slate-400"
+            class="size-4 text-[var(--text-muted)]"
             aria-hidden="true"
           />
-          <span v-else class="size-4 text-slate-400">{{
+          <span v-else class="size-4 text-[var(--text-muted)]">{{
             entry.type === 'profile_item' ? 'PI' : 'TX'
           }}</span>
           <span class="text-slate-900">{{ entry.label || entry.value }}</span>
         </div>
         <button
           type="button"
-          class="text-slate-400 hover:text-red-600"
+          class="text-[var(--text-muted)] hover:text-red-600"
           :disabled="saving"
           :aria-label="'Remove ' + (entry.label || 'evidence')"
           @click="emit('remove', entry.key)"
@@ -96,13 +96,13 @@ function addUrlEvidence() {
 
     <Modal :open="isOpen" title="Add Evidence" size="md" @close="isOpen = false">
       <div class="p-6">
-        <div class="flex gap-2 border-b border-slate-200">
+        <div class="flex gap-2 border-b border-[var(--border-subtle)]">
           <button
             type="button"
             :class="[
               'px-4 py-2 text-sm font-medium transition-all',
               activeTab === 'profile'
-                ? 'border-b-2 border-primary-500 text-primary-700'
+                ? 'border-b-2 border-[var(--color-primary-500)] text-[var(--color-primary-700)]'
                 : 'text-slate-500 hover:text-slate-700',
             ]"
             @click="activeTab = 'profile'"
@@ -114,7 +114,7 @@ function addUrlEvidence() {
             :class="[
               'px-4 py-2 text-sm font-medium transition-all',
               activeTab === 'url'
-                ? 'border-b-2 border-primary-500 text-primary-700'
+                ? 'border-b-2 border-[var(--color-primary-500)] text-[var(--color-primary-700)]'
                 : 'text-slate-500 hover:text-slate-700',
             ]"
             @click="activeTab = 'url'"
@@ -130,7 +130,7 @@ function addUrlEvidence() {
               v-for="item in items"
               :key="item.id"
               type="button"
-              class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left hover:bg-primary-50"
+              class="flex w-full items-center justify-between rounded-[var(--radius-md)] px-3 py-2 text-left shadow-[var(--shadow-neo-raised-sm)] transition-shadow hover:shadow-[var(--shadow-neo-raised)]"
               @click="addProfileItem(item)"
             >
               <div>
@@ -139,7 +139,7 @@ function addUrlEvidence() {
                   {{ item.organization }}
                 </div>
               </div>
-              <Plus class="size-4 text-primary-500" aria-hidden="true" />
+              <Plus class="size-4 text-[var(--color-primary-500)]" aria-hidden="true" />
             </button>
           </div>
           <div v-if="profileItemsLoading" class="py-4 text-center text-sm text-slate-400">
@@ -147,7 +147,7 @@ function addUrlEvidence() {
           </div>
           <div
             v-else-if="profileItemsError"
-            class="rounded-lg bg-red-50 p-3 text-center text-sm text-red-600"
+            class="rounded-[var(--radius-md)] bg-red-50 p-3 text-center text-sm text-red-600 shadow-[var(--shadow-neo-raised-sm)]"
           >
             Failed to load profile items.
           </div>

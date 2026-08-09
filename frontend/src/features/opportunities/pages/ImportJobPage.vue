@@ -2,6 +2,11 @@
 import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { extractProblemDetail } from '@/api/client'
+import Button from '@/components/ui/Button.vue'
+import Input from '@/components/ui/Input.vue'
+import Textarea from '@/components/ui/Textarea.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import Alert from '@/components/ui/Alert.vue'
 import { createIngestion } from '../api'
 import type { IngestionStatus } from '../types'
 
@@ -12,7 +17,7 @@ const sourceUrl = ref('')
 const personalLabel = ref('')
 const isSubmitting = ref(false)
 const errorMessage = ref('')
-const descriptionInput = ref<HTMLTextAreaElement | null>(null)
+const descriptionRef = ref<InstanceType<typeof Textarea> | null>(null)
 const duplicateInfo = ref<{
   ingestionId: number
   opportunityId?: number
@@ -116,130 +121,99 @@ async function startDifferentImport(): Promise<void> {
   errorMessage.value = ''
 
   await nextTick()
-  descriptionInput.value?.focus()
+  descriptionRef.value?.focus()
 }
 </script>
 
 <template>
   <div class="mx-auto max-w-2xl space-y-6">
-    <h1 class="text-2xl font-semibold">Import job description</h1>
+    <PageHeader title="Import job description" />
 
-    <div class="rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-blue-700">
+    <Alert variant="info">
       Paste the full job description below. The system will extract the key information which you
       can review and edit before saving.
-    </div>
+    </Alert>
 
     <form @submit.prevent="submit" class="space-y-4">
-      <div>
-        <label for="description" class="block text-sm font-medium text-gray-700">
-          Job description
-        </label>
-        <textarea
-          id="description"
-          ref="descriptionInput"
-          v-model="description"
-          name="source_description"
-          autocomplete="off"
-          class="mt-1 block w-full rounded-lg border border-gray-300 p-3 text-sm focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500"
-          rows="12"
-          :maxlength="maxLength"
-          placeholder="Paste the full job description here…"
-        />
-        <div class="mt-1 flex justify-between text-xs text-gray-400">
-          <span v-if="charCount < minLength" class="text-amber-500">
-            Minimum {{ minLength }} characters
-          </span>
-          <span v-else-if="charCount > maxLength * 0.9" class="text-amber-500">
-            {{ charCount }} / {{ maxLength }}
-          </span>
-          <span v-else>{{ charCount }} / {{ maxLength }}</span>
-        </div>
+      <Textarea
+        ref="descriptionRef"
+        v-model="description"
+        name="source_description"
+        label="Job description"
+        :rows="12"
+        :maxlength="maxLength"
+        placeholder="Paste the full job description here…"
+        autocomplete="off"
+      />
+      <div class="flex justify-between text-xs text-[var(--text-muted)]">
+        <span v-if="charCount < minLength" class="text-[var(--color-warning-500)]">
+          Minimum {{ minLength }} characters
+        </span>
+        <span v-else-if="charCount > maxLength * 0.9" class="text-[var(--color-warning-500)]">
+          {{ charCount }} / {{ maxLength }}
+        </span>
+        <span v-else>{{ charCount }} / {{ maxLength }}</span>
       </div>
 
-      <div>
-        <label for="source_url" class="block text-sm font-medium text-gray-700">
-          Source URL (optional)
-        </label>
-        <input
-          id="source_url"
-          v-model="sourceUrl"
-          name="source_url"
-          type="url"
-          autocomplete="off"
-          class="mt-1 block w-full rounded-lg border border-gray-300 p-2.5 text-sm focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500"
-          placeholder="https://example.com/job-posting"
-        />
-      </div>
+      <Input
+        v-model="sourceUrl"
+        name="source_url"
+        label="Source URL (optional)"
+        type="url"
+        placeholder="https://example.com/job-posting"
+        autocomplete="off"
+      />
 
-      <div>
-        <label for="personal_label" class="block text-sm font-medium text-gray-700">
-          Personal label (optional)
-        </label>
-        <input
-          id="personal_label"
-          v-model="personalLabel"
-          name="personal_label"
-          type="text"
-          autocomplete="off"
-          class="mt-1 block w-full rounded-lg border border-gray-300 p-2.5 text-sm focus-visible:border-blue-500 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500"
-          placeholder="e.g., Frontend role at ACME"
-          maxlength="255"
-        />
-      </div>
+      <Input
+        v-model="personalLabel"
+        name="personal_label"
+        label="Personal label (optional)"
+        type="text"
+        placeholder="e.g., Frontend role at ACME"
+        :maxlength="255"
+        autocomplete="off"
+      />
 
-      <div v-if="validationError && description.trim().length > 0" class="text-sm text-red-600">
+      <div
+        v-if="validationError && description.trim().length > 0"
+        class="text-sm text-[var(--color-error-600)]"
+      >
         {{ validationError }}
       </div>
 
-      <div
-        v-if="errorMessage && !duplicateInfo"
-        role="alert"
-        class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
-      >
+      <Alert v-if="errorMessage && !duplicateInfo" variant="error">
         {{ errorMessage }}
-      </div>
+      </Alert>
 
-      <div
-        v-if="duplicateInfo"
-        role="alert"
-        aria-live="polite"
-        class="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
-      >
-        <p class="font-medium">This job was already imported</p>
-        <p class="mt-1 text-amber-800">{{ duplicateMessage }}</p>
-        <div class="mt-3 flex flex-wrap gap-3">
-          <button
-            type="button"
-            class="font-medium text-blue-700 hover:text-blue-900 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-            @click="navigateToExisting"
-          >
-            View existing {{ duplicateInfo.opportunityId ? 'opportunity' : 'analysis' }}
-          </button>
-          <button
-            type="button"
-            class="font-medium text-gray-700 hover:text-gray-950 focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-            @click="startDifferentImport"
-          >
-            Import a different job
-          </button>
-        </div>
+      <div v-if="duplicateInfo" role="alert" aria-live="polite">
+        <Alert variant="warning" title="This job was already imported">
+          <p>{{ duplicateMessage }}</p>
+          <div class="mt-3 flex flex-wrap gap-3">
+            <button
+              type="button"
+              class="font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-800)] focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-600)]"
+              @click="navigateToExisting"
+            >
+              View existing {{ duplicateInfo.opportunityId ? 'opportunity' : 'analysis' }}
+            </button>
+            <button
+              type="button"
+              class="font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-600)]"
+              @click="startDifferentImport"
+            >
+              Import a different job
+            </button>
+          </div>
+        </Alert>
       </div>
 
       <div class="flex gap-3">
-        <button
-          type="submit"
-          :disabled="!canSubmit"
-          class="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 hover:enabled:bg-blue-700"
-        >
+        <Button type="submit" :disabled="!canSubmit" :loading="isSubmitting">
           {{ isSubmitting ? 'Submitting…' : 'Start analysis' }}
-        </button>
-        <button
-          type="button"
-          class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:outline-none"
-          @click="router.push({ name: 'opportunities' })"
-        >
+        </Button>
+        <Button variant="outline" @click="router.push({ name: 'opportunities' })">
           Back to opportunities
-        </button>
+        </Button>
       </div>
     </form>
   </div>

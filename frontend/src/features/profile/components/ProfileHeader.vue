@@ -65,85 +65,100 @@ const availabilityLabel: Record<string, string> = {
 </script>
 
 <template>
-  <header class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-    <div class="bg-primary-600 px-6 pb-6 pt-8 sm:px-8 sm:pb-8 sm:pt-10">
-      <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-        <div class="flex items-end gap-4">
+  <header
+    class="overflow-hidden rounded-[var(--radius-2xl)] bg-[var(--surface-primary)] shadow-[var(--shadow-neo-raised-lg)]"
+  >
+    <div
+      class="h-1.5 w-full bg-gradient-to-r from-[var(--color-primary-400)] via-[var(--color-primary-600)] to-[var(--color-primary-500)]"
+    />
+
+    <div class="px-6 py-8 sm:px-8 sm:py-10">
+      <div class="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex items-start gap-5">
           <div
-            class="flex size-16 shrink-0 items-center justify-center rounded-full bg-white text-lg font-bold text-primary-700 shadow-sm ring-4 ring-white/30"
+            class="relative flex size-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--color-primary-500)] to-[var(--color-primary-700)] text-xl font-bold text-white shadow-[var(--shadow-neo-raised-lg)] sm:size-24 sm:text-2xl"
           >
             {{ initials }}
           </div>
-          <div class="min-w-0 pb-0.5">
-            <h1 class="text-xl font-bold text-white sm:text-2xl">
+          <div class="min-w-0 pt-1 sm:pt-2">
+            <h1
+              class="text-2xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-3xl"
+            >
               {{ profile.full_name }}
             </h1>
             <button
               type="button"
-              class="mt-1 flex cursor-pointer items-center gap-1.5 text-left"
+              class="group mt-1.5 flex w-full cursor-pointer items-center gap-2 rounded-xl px-2.5 py-2 text-left transition-all hover:bg-[var(--surface-secondary)]"
               @click="editing = true"
             >
               <span
                 v-if="profile.headline"
-                class="text-sm text-white/80 transition-colors hover:text-white"
+                class="min-w-0 text-sm font-medium text-[var(--text-secondary)] transition-colors group-hover:text-[var(--text-primary)]"
               >
                 {{ profile.headline }}
               </span>
               <span
                 v-else
-                class="rounded border border-dashed border-white/40 px-2 py-0.5 text-xs text-white/60 transition-all hover:border-white/70 hover:text-white/90"
+                class="rounded-lg border border-dashed border-[var(--border-default)] px-3 py-1 text-xs text-[var(--text-muted)] transition-all group-hover:border-[var(--color-primary-300)] group-hover:bg-[var(--color-primary-50)] group-hover:text-[var(--color-primary-600)]"
               >
                 Add a professional headline
               </span>
-              <Pencil :size="12" class="text-white/40" />
+              <Pencil
+                :size="15"
+                class="shrink-0 text-[var(--text-muted)] transition-colors group-hover:text-[var(--color-primary-500)]"
+              />
             </button>
           </div>
         </div>
 
-        <div class="flex items-center gap-4 shrink-0">
-          <div class="flex flex-col items-center gap-1" aria-label="Profile completion">
-            <ProgressRing :percentage="completionScore" :size="72" :stroke-width="6" />
-            <span class="text-xs font-medium text-white/70">Profile strength</span>
+        <div class="flex items-center gap-5 shrink-0">
+          <div class="flex flex-col items-center gap-2" aria-label="Profile completion">
+            <ProgressRing :percentage="completionScore" :size="80" :stroke-width="7" />
+            <span class="text-xs font-semibold tracking-wide text-[var(--text-tertiary)]">
+              Profile strength
+            </span>
           </div>
 
           <div
             v-if="completedAreas.completed === completedAreas.total && completedAreas.total > 0"
-            class="flex items-center gap-1.5 rounded-lg bg-white/20 px-3 py-2 text-sm font-medium text-white"
+            class="flex items-center gap-2 rounded-2xl bg-[var(--color-success-50)] px-4 py-2.5 text-sm font-semibold text-[var(--color-success-700)] shadow-[var(--shadow-neo-raised)]"
           >
-            <CheckCircle :size="16" class="text-emerald-300" />
+            <CheckCircle :size="18" />
             Complete
           </div>
         </div>
       </div>
 
-      <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
+      <div class="mt-6 flex flex-wrap items-center gap-2.5 text-xs">
         <span
-          class="flex items-center gap-1.5 rounded bg-white/15 px-2 py-1"
-          :class="profile.city || profile.country ? 'text-white/80' : 'text-white/60'"
+          class="flex items-center gap-2 rounded-xl bg-[var(--surface-secondary)] px-3 py-2 font-medium shadow-[var(--shadow-neo-raised-sm)]"
+          :class="profile.city || profile.country ? 'text-[var(--text-secondary)]' : 'text-[var(--text-muted)]'"
         >
           <MapPin
-            :size="13"
-            :class="profile.city || profile.country ? 'text-white/60' : 'text-white/40'"
+            :size="14"
+            :class="profile.city || profile.country ? 'text-[var(--color-primary-400)]' : 'text-[var(--text-muted)]'"
           />
           {{ [profile.city, profile.country].filter(Boolean).join(', ') || 'Location not added' }}
         </span>
-        <span class="flex items-center gap-1.5 rounded bg-white/15 px-2 py-1 text-white/80">
+        <span
+          class="flex items-center gap-2 rounded-xl bg-[var(--surface-secondary)] px-3 py-2 font-medium text-[var(--text-secondary)] shadow-[var(--shadow-neo-raised-sm)]"
+        >
           <span
-            class="inline-block size-2 rounded-full"
+            class="inline-block size-2.5 rounded-full"
             :class="availabilityColor[profile.availability_status ?? ''] ?? 'bg-slate-300'"
           />
           {{ availabilityLabel[profile.availability_status ?? ''] ?? 'Availability not set' }}
         </span>
         <span
           v-if="profile.target_roles?.length"
-          class="rounded bg-white/20 px-2 py-1 font-medium text-white"
+          class="rounded-xl bg-[var(--color-primary-50)] px-3 py-2 font-semibold text-[var(--color-primary-700)] shadow-[var(--shadow-neo-raised-sm)]"
         >
           {{ profile.target_roles[0] }}
         </span>
       </div>
     </div>
 
-    <div v-if="editing" class="border-t border-slate-100 px-6 py-4 sm:px-8">
+    <div v-if="editing" class="border-t border-[var(--border-subtle)] px-6 py-5 sm:px-8">
       <form class="flex max-w-xl gap-2" @submit.prevent="save">
         <label class="sr-only" for="profile-headline">Professional headline</label>
         <div class="relative flex-1">
@@ -151,12 +166,12 @@ const availabilityLabel: Record<string, string> = {
             id="profile-headline"
             v-model="headline"
             maxlength="255"
-            class="min-h-10 w-full rounded-lg border border-slate-300 bg-white px-3.5 pr-14 text-sm shadow-sm transition-all focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-500/30"
+            class="min-h-11 w-full rounded-xl border border-[var(--border-default)] bg-[var(--surface-primary)] px-4 pr-14 text-sm shadow-[var(--shadow-neo-inset)] transition-all focus:border-[var(--color-primary-400)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-500)]/30"
             placeholder="Your professional headline"
             @input="emit('dirty', true)"
           />
           <span
-            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400"
+            class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[var(--text-muted)]"
           >
             {{ headline.length }}/255
           </span>

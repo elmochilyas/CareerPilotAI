@@ -33,7 +33,9 @@ const emit = defineEmits<{ retry: []; restart: []; generate: []; close: [] }>()
     class="grid justify-items-center gap-3 py-6 text-center"
     role="alert"
   >
-    <span class="flex size-12 items-center justify-center rounded-full bg-red-50 text-red-600">
+    <span
+      class="flex size-12 items-center justify-center rounded-full bg-red-50 text-red-600 shadow-[var(--shadow-neo-raised)]"
+    >
       <AlertTriangle class="size-6" aria-hidden="true" />
     </span>
     <div>
@@ -46,7 +48,9 @@ const emit = defineEmits<{ retry: []; restart: []; generate: []; close: [] }>()
   </div>
 
   <div v-else-if="kind === 'empty'" class="grid justify-items-center gap-3 py-6 text-center">
-    <span class="flex size-12 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+    <span
+      class="flex size-12 items-center justify-center rounded-full bg-[var(--surface-secondary)] text-[var(--text-muted)] shadow-[var(--shadow-neo-raised)]"
+    >
       <HelpCircle class="size-6" aria-hidden="true" />
     </span>
     <div>
@@ -67,7 +71,9 @@ const emit = defineEmits<{ retry: []; restart: []; generate: []; close: [] }>()
     class="grid justify-items-center gap-3 py-6 text-center"
     role="alert"
   >
-    <span class="flex size-12 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+    <span
+      class="flex size-12 items-center justify-center rounded-full bg-amber-50 text-amber-600 shadow-[var(--shadow-neo-raised)]"
+    >
       <HelpCircle class="size-6" aria-hidden="true" />
     </span>
     <div>
@@ -79,7 +85,7 @@ const emit = defineEmits<{ retry: []; restart: []; generate: []; close: [] }>()
 
   <div v-else class="grid justify-items-center gap-3 py-6 text-center">
     <span
-      class="flex size-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600"
+      class="flex size-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 shadow-[var(--shadow-neo-raised)]"
     >
       <CheckCircle2 class="size-6" aria-hidden="true" />
     </span>

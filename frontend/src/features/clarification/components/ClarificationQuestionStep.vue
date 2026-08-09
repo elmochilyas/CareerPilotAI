@@ -182,11 +182,11 @@ function back(): void {
     <div class="grid gap-1">
       <p
         v-if="question.requirement?.label"
-        class="text-xs font-medium uppercase tracking-wide text-slate-400"
+        class="text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]"
       >
         {{ question.requirement.label }}
       </p>
-      <p v-if="question.requirement" class="text-sm text-slate-600">
+      <p v-if="question.requirement" class="text-sm text-[var(--text-secondary)]">
         {{ question.requirement.text }}
       </p>
     </div>
@@ -195,10 +195,10 @@ function back(): void {
 
     <details
       v-if="question.detail"
-      class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3"
+      class="rounded-[var(--radius-xl)] bg-[var(--surface-secondary)] px-4 py-3 shadow-[var(--shadow-neo-inset)]"
     >
       <summary
-        class="cursor-pointer text-sm font-medium text-slate-700 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none"
+        class="cursor-pointer text-sm font-medium text-slate-700 focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] focus-visible:outline-none"
       >
         Why is this asked?
       </summary>
@@ -216,34 +216,34 @@ function back(): void {
         <label
           :class="
             choice === 'yes'
-              ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500'
-              : 'border-slate-300 bg-white hover:border-slate-400'
+              ? 'bg-[var(--color-primary-50)] shadow-[var(--shadow-neo-inset)]'
+              : 'bg-[var(--surface-primary)] shadow-[var(--shadow-neo-raised-sm)] hover:bg-[var(--surface-secondary)]'
           "
-          class="flex cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-3 transition-colors focus-within:ring-2 focus-within:ring-primary-500/40"
+          class="flex cursor-pointer items-center gap-3 rounded-[var(--radius-xl)] px-3.5 py-3 transition-colors focus-within:ring-2 focus-within:ring-[var(--color-primary-500)]/40"
         >
           <input
             v-model="choice"
             type="radio"
             name="answer-choice"
             value="yes"
-            class="size-4 accent-primary-600"
+            class="size-4 accent-[var(--color-primary-600)]"
           />
           <span class="text-sm text-slate-700">Yes</span>
         </label>
         <label
           :class="
             choice === 'no'
-              ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500'
-              : 'border-slate-300 bg-white hover:border-slate-400'
+              ? 'bg-[var(--color-primary-50)] shadow-[var(--shadow-neo-inset)]'
+              : 'bg-[var(--surface-primary)] shadow-[var(--shadow-neo-raised-sm)] hover:bg-[var(--surface-secondary)]'
           "
-          class="flex cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-3 transition-colors focus-within:ring-2 focus-within:ring-primary-500/40"
+          class="flex cursor-pointer items-center gap-3 rounded-[var(--radius-xl)] px-3.5 py-3 transition-colors focus-within:ring-2 focus-within:ring-[var(--color-primary-500)]/40"
         >
           <input
             v-model="choice"
             type="radio"
             name="answer-choice"
             value="no"
-            class="size-4 accent-primary-600"
+            class="size-4 accent-[var(--color-primary-600)]"
           />
           <span class="text-sm text-slate-700">No</span>
         </label>
@@ -252,7 +252,7 @@ function back(): void {
 
     <div
       v-if="isYesNoWithDetails && choice === 'yes'"
-      class="grid gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4"
+      class="grid gap-4 rounded-[var(--radius-xl)] bg-[var(--surface-secondary)] p-4 shadow-[var(--shadow-neo-inset)]"
     >
       <Input
         ref="urlInput"
@@ -274,7 +274,7 @@ function back(): void {
 
     <p
       v-if="isYesNoWithDetails && choice === 'no'"
-      class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"
+      class="rounded-[var(--radius-xl)] bg-[var(--surface-secondary)] px-4 py-3 text-sm text-slate-600 shadow-[var(--shadow-neo-inset)]"
     >
       You can still move forward — we'll record that this item is missing and let you decide what
       happens next.
@@ -304,17 +304,17 @@ function back(): void {
           :key="option"
           :class="
             selectValue === option
-              ? 'border-primary-500 bg-primary-50 ring-1 ring-primary-500'
-              : 'border-slate-300 bg-white hover:border-slate-400'
+              ? 'bg-[var(--color-primary-50)] shadow-[var(--shadow-neo-inset)]'
+              : 'bg-[var(--surface-primary)] shadow-[var(--shadow-neo-raised-sm)] hover:bg-[var(--surface-secondary)]'
           "
-          class="flex cursor-pointer items-center gap-3 rounded-xl border px-3.5 py-2.5 transition-colors focus-within:ring-2 focus-within:ring-primary-500/40"
+          class="flex cursor-pointer items-center gap-3 rounded-[var(--radius-xl)] px-3.5 py-2.5 transition-colors focus-within:ring-2 focus-within:ring-[var(--color-primary-500)]/40"
         >
           <input
             v-model="selectValue"
             type="radio"
             name="select-option"
             :value="option"
-            class="size-4 accent-primary-600"
+            class="size-4 accent-[var(--color-primary-600)]"
           />
           <span class="text-sm text-slate-700">{{ option }}</span>
         </label>
@@ -336,15 +336,19 @@ function back(): void {
     <p
       v-if="validationError"
       role="alert"
-      class="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700"
+      class="rounded-[var(--radius-xl)] bg-red-50 px-3 py-2 text-sm text-red-700 shadow-[var(--shadow-neo-raised-sm)]"
     >
       {{ validationError }}
     </p>
-    <p v-if="error" role="alert" class="rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700">
+    <p
+      v-if="error"
+      role="alert"
+      class="rounded-[var(--radius-xl)] bg-red-50 px-3 py-2 text-sm text-red-700 shadow-[var(--shadow-neo-raised-sm)]"
+    >
       {{ error }}
     </p>
 
-    <div class="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+    <div class="flex flex-wrap items-center gap-2 border-t border-[var(--border-subtle)] pt-4">
       <Button v-if="canGoBack" variant="outline" :disabled="busy" @click="back">Back</Button>
       <Button variant="ghost" :disabled="busy" @click="skip">Skip question</Button>
       <Button class="ml-auto" :loading="busy" @click="onSubmit">Submit answer</Button>

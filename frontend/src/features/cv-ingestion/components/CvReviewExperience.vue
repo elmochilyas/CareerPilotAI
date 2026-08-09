@@ -183,8 +183,7 @@ const decisionBadgeClasses = (s: CvSuggestion): string => {
           </Button>
           <Button
             size="sm"
-            variant="ghost"
-            class="hover:bg-red-50 hover:text-red-700 text-red-600"
+            variant="destructive-ghost"
             @click="emit('decision', s.id, { decision: 'rejected' })"
           >
             <X class="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Reject

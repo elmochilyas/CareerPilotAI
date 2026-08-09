@@ -86,10 +86,10 @@ const sectionIcon: Record<string, object> = {
 }
 
 const sectionColor: Record<string, string> = {
-  experience: 'bg-primary-100 text-primary-600',
-  education: 'bg-primary-100 text-primary-600',
-  project: 'bg-primary-100 text-primary-600',
-  certification: 'bg-primary-100 text-primary-600',
+  experience: 'bg-[var(--color-primary-100)] text-[var(--color-primary-600)]',
+  education: 'bg-[var(--color-primary-100)] text-[var(--color-primary-600)]',
+  project: 'bg-[var(--color-primary-100)] text-[var(--color-primary-600)]',
+  certification: 'bg-[var(--color-primary-100)] text-[var(--color-primary-600)]',
 }
 
 const emptyStates: Record<string, { title: string; description: string }> = {
@@ -119,15 +119,20 @@ const isAchievement = vnt === 'achievement'
 
 <template>
   <section :aria-labelledby="`${type}-heading`">
-    <header class="flex items-center justify-between gap-3 border-b border-slate-100 py-4">
+    <header class="flex items-center justify-between gap-3 py-4">
       <div class="flex items-center gap-3">
         <div
-          class="flex size-9 items-center justify-center rounded-lg"
-          :class="sectionColor[type] ?? 'bg-slate-100 text-slate-600'"
+          class="flex size-9 items-center justify-center rounded-[var(--radius-lg)]"
+          :class="
+            sectionColor[type] ?? 'bg-[var(--color-neutral-100)] text-[var(--color-neutral-600)]'
+          "
         >
           <component :is="sectionIcon[type]" :size="16" stroke-width="1.5" />
         </div>
-        <h2 :id="`${type}-heading`" class="text-base font-semibold text-slate-900">
+        <h2
+          :id="`${type}-heading`"
+          class="text-[var(--text-base)] font-semibold text-[var(--text-primary)]"
+        >
           {{ title }}
         </h2>
       </div>
@@ -152,7 +157,7 @@ const isAchievement = vnt === 'achievement'
             <Button
               variant="ghost"
               size="sm"
-              class="text-red-600 hover:bg-red-50 hover:text-red-700"
+              class="text-[var(--color-error-600)] hover:bg-[var(--color-error-50)] hover:text-[var(--color-error-700)]"
               @click="deleting = item"
               >Delete</Button
             >
@@ -179,7 +184,7 @@ const isAchievement = vnt === 'achievement'
             <Button
               variant="ghost"
               size="sm"
-              class="text-red-600 hover:bg-red-50 hover:text-red-700"
+              class="text-[var(--color-error-600)] hover:bg-[var(--color-error-50)] hover:text-[var(--color-error-700)]"
               @click="deleting = item"
               >Delete</Button
             >
@@ -189,7 +194,9 @@ const isAchievement = vnt === 'achievement'
 
       <!-- Timeline variant (experience / education) -->
       <div v-else-if="isTimeline && items.length" class="relative pt-4">
-        <div class="absolute left-[21px] top-6 h-[calc(100%-3rem)] w-0.5 bg-slate-200" />
+        <div
+          class="absolute left-[21px] top-6 h-[calc(100%-3rem)] w-0.5 bg-[var(--border-subtle)]"
+        />
         <div class="space-y-6">
           <ProfileItemCard
             v-for="(item, index) in items"
@@ -209,7 +216,7 @@ const isAchievement = vnt === 'achievement'
                 <Button
                   variant="ghost"
                   size="sm"
-                  class="text-red-600 hover:bg-red-50 hover:text-red-700"
+                  class="text-[var(--color-error-600)] hover:bg-[var(--color-error-50)] hover:text-[var(--color-error-700)]"
                   @click="deleting = item"
                   >Delete</Button
                 >
@@ -233,7 +240,7 @@ const isAchievement = vnt === 'achievement'
             <Button
               variant="ghost"
               size="sm"
-              class="text-red-600 hover:bg-red-50 hover:text-red-700"
+              class="text-[var(--color-error-600)] hover:bg-[var(--color-error-50)] hover:text-[var(--color-error-700)]"
               @click="deleting = item"
               >Delete</Button
             >

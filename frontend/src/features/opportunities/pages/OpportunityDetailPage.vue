@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { computed } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
 import {
   ArrowLeft,
@@ -9,7 +9,6 @@ import {
   BriefcaseBusiness,
   CalendarDays,
   CircleAlert,
-  ChevronDown,
   FileCheck2,
   Globe,
   MapPin,
@@ -27,11 +26,11 @@ import MatchAtAGlance from '@/features/matching/components/MatchAtAGlance.vue'
 import MatchStatusPanel from '@/features/matching/components/MatchStatusPanel.vue'
 import MatchErrorState from '@/features/matching/components/MatchErrorState.vue'
 import StaleNotice from '@/features/matching/components/StaleNotice.vue'
-import MatchScoreDetails from '@/features/matching/components/MatchScoreDetails.vue'
-import type { MatchFinding } from '@/features/matching/types'
-import { findingKey } from '@/features/matching/utils/matchPresentation'
+import InsufficientProfileGate from '@/features/matching/components/InsufficientProfileGate.vue'
+import ClarificationEntryCard from '@/features/clarification/components/ClarificationEntryCard.vue'
 
 const route = useRoute()
+const router = useRouter()
 
 const opportunityId = computed(() => {
   const id = Number(route.params.id)
@@ -51,6 +50,7 @@ const {
   announcement: matchAnnouncement,
   completedAnalysis,
   listQuery,
+  createProblemCode,
   isStarting,
   isRecalculating,
   recalculateMutation,
@@ -72,13 +72,25 @@ const failedAnalysis = computed(() => {
 
 const noAnalyses = computed(() => (listQuery.data.value?.data?.length ?? 0) === 0)
 
-const matchFilter = ref<'all' | 'matched' | 'gap'>('all')
+const insufficientProfile = computed(
+  () => noAnalyses.value && createProblemCode.value === 'insufficient_profile',
+)
 
-const filteredFindings = computed(() => {
-  const findings = completedAnalysis.value?.findings ?? []
-  if (matchFilter.value === 'all') return findings
-  return findings.filter((finding: MatchFinding) => finding.match_state === matchFilter.value)
-})
+function viewGaps(): void {
+  const id = opportunityId.value
+  if (id === null) return
+  void router.push({
+    name: 'opportunities-match',
+    params: { id },
+    query: { view: 'analysis', filter: 'gaps' },
+  })
+}
+
+function openClarifications(): void {
+  const id = opportunityId.value
+  if (id === null) return
+  void router.push({ name: 'opportunities-match-clarifications', params: { id } })
+}
 
 function recalculate(): void {
   const target = completedAnalysis.value
@@ -202,10 +214,10 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
 </script>
 
 <template>
-  <div class="mx-auto w-full max-w-5xl">
+  <div class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
     <RouterLink
       :to="{ name: 'opportunities' }"
-      class="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition-colors hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+      class="inline-flex items-center gap-1 rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium text-[var(--color-primary-700)] shadow-[var(--shadow-neo-raised-sm)] transition-all hover:text-[var(--color-primary-800)] hover:shadow-[var(--shadow-neo-button)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] focus-visible:outline-none"
     >
       <ArrowLeft class="size-4" aria-hidden="true" />
       Back to opportunities
@@ -214,11 +226,13 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
     <div
       v-if="opportunityId === null"
       role="alert"
-      class="mx-auto mt-16 max-w-md rounded-xl border border-red-200 bg-red-50 p-6 text-center"
+      class="mx-auto mt-16 max-w-md rounded-[var(--radius-xl)] border border-[var(--color-error-100)] bg-[var(--color-error-50)] p-6 text-center"
     >
-      <CircleAlert class="mx-auto size-8 text-red-500" aria-hidden="true" />
-      <h2 class="mt-3 text-sm font-semibold text-red-700">Invalid opportunity identifier</h2>
-      <p class="mt-1 text-sm text-red-600">This opportunity link isn't valid.</p>
+      <CircleAlert class="mx-auto size-8 text-[var(--color-error-500)]" aria-hidden="true" />
+      <h2 class="mt-3 text-sm font-semibold text-[var(--color-error-700)]">
+        Invalid opportunity identifier
+      </h2>
+      <p class="mt-1 text-sm text-[var(--color-error-600)]">This opportunity link isn't valid.</p>
     </div>
 
     <div
@@ -258,7 +272,9 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
           </div>
         </div>
         <div class="hidden lg:block" aria-hidden="true">
-          <div class="rounded-xl border border-slate-200 bg-white p-5">
+          <div
+            class="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-secondary)] p-5"
+          >
             <Skeleton classes="h-11 w-full rounded-lg" />
             <div class="mt-5 space-y-4">
               <Skeleton classes="h-4 w-3/4" />
@@ -273,14 +289,16 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
     <div
       v-else-if="opportunityQuery.isError.value || !opportunity"
       role="alert"
-      class="mx-auto mt-16 max-w-md rounded-xl border border-red-200 bg-red-50 p-6 text-center"
+      class="mx-auto mt-16 max-w-md rounded-[var(--radius-xl)] border border-[var(--color-error-100)] bg-[var(--color-error-50)] p-6 text-center"
     >
-      <CircleAlert class="mx-auto size-8 text-red-500" aria-hidden="true" />
-      <h2 class="mt-3 text-sm font-semibold text-red-700">We couldn't load this opportunity</h2>
-      <p class="mt-1 text-sm text-red-600">Check your connection and try again.</p>
+      <CircleAlert class="mx-auto size-8 text-[var(--color-error-500)]" aria-hidden="true" />
+      <h2 class="mt-3 text-sm font-semibold text-[var(--color-error-700)]">
+        We couldn't load this opportunity
+      </h2>
+      <p class="mt-1 text-sm text-[var(--color-error-600)]">Check your connection and try again.</p>
       <button
         type="button"
-        class="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-red-300 bg-white px-4 text-sm font-medium text-red-700 transition-colors hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:ring-offset-1"
+        class="mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-error-300)] bg-white px-4 text-sm font-medium text-[var(--color-error-700)] transition-colors hover:bg-[var(--color-error-50)] focus:outline-none focus:ring-2 focus:ring-[var(--color-error-500)]/40 focus:ring-offset-1"
         @click="opportunityQuery.refetch()"
       >
         <RefreshCw class="size-4" aria-hidden="true" />
@@ -336,15 +354,120 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
 
       <div class="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div class="min-w-0 space-y-8">
-          <div class="rounded-xl border border-slate-200 bg-white p-6 sm:p-8">
+          <!-- Match Brief (concise summary — shown first) -->
+          <section aria-labelledby="match-heading">
+            <div
+              class="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8"
+            >
+              <div class="flex items-center justify-between gap-3">
+                <h2
+                  id="match-heading"
+                  class="flex items-center gap-2 text-[var(--text-lg)] font-semibold text-[var(--text-primary)]"
+                >
+                  <Sparkles class="size-5 text-primary-500" aria-hidden="true" />
+                  Match Brief
+                </h2>
+                <RouterLink
+                  v-if="completedAnalysis"
+                  :to="{
+                    name: 'opportunities-match',
+                    params: { id: opportunity.id },
+                    query: { view: 'analysis' },
+                  }"
+                  class="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 transition-colors hover:text-primary-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
+                >
+                  View full analysis
+                  <ArrowRight class="size-3.5" aria-hidden="true" />
+                </RouterLink>
+              </div>
+
+              <div class="sr-only" aria-live="polite">{{ matchAnnouncement }}</div>
+
+              <!-- Loading -->
+              <div v-if="listQuery.isLoading.value" class="mt-6 space-y-4">
+                <div class="h-28 animate-pulse rounded-xl border border-slate-200 bg-slate-50" />
+                <div class="h-20 animate-pulse rounded-xl border border-slate-200 bg-slate-50" />
+              </div>
+
+              <!-- Processing -->
+              <MatchStatusPanel
+                v-else-if="processing && !completedAnalysis"
+                class="mt-6"
+                :status="
+                  listQuery.data.value?.data?.[0]?.status === 'processing' ? 'processing' : 'queued'
+                "
+              />
+
+              <!-- Failed -->
+              <MatchErrorState
+                v-else-if="failedAnalysis && !completedAnalysis"
+                class="mt-6"
+                title="Match analysis failed"
+                :detail="failedAnalysis.failure?.reason"
+                :busy="isStarting"
+                @retry="startAnalysis"
+              />
+
+              <!-- Insufficient profile -->
+              <InsufficientProfileGate v-else-if="insufficientProfile" class="mt-6" />
+
+              <!-- No analyses -->
+              <div v-else-if="noAnalyses" class="mt-6 text-center">
+                <p class="text-sm text-slate-500">
+                  Start a match analysis to see how this opportunity aligns with your profile.
+                </p>
+                <Button class="mt-4" :loading="isStarting" @click="startAnalysis">
+                  {{ isStarting ? 'Starting...' : 'Start analysis' }}
+                </Button>
+              </div>
+
+              <!-- Completed analysis -->
+              <template v-else-if="completedAnalysis">
+                <div
+                  v-if="processing"
+                  role="status"
+                  aria-live="polite"
+                  class="mt-6 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"
+                >
+                  A new analysis is running. The previous result stays visible below.
+                </div>
+
+                <StaleNotice
+                  v-if="completedAnalysis.stale"
+                  class="mt-6"
+                  :busy="isRecalculating"
+                  @recalculate="recalculate"
+                />
+
+                <MatchSummaryHero :analysis="completedAnalysis" class="mt-6" />
+
+                <MatchAtAGlance
+                  :findings="completedAnalysis.findings"
+                  class="mt-4"
+                  @view-gaps="viewGaps"
+                />
+
+                <ClarificationEntryCard
+                  class="mt-4"
+                  :analysis-id="completedAnalysis.id"
+                  @open="openClarifications"
+                />
+              </template>
+            </div>
+          </section>
+
+          <!-- Job details -->
+          <div
+            class="rounded-[var(--radius-xl)] border border-[var(--border-default)] bg-[var(--surface-primary)] p-6 sm:p-8"
+          >
             <section
               v-if="hasOverview"
               aria-labelledby="overview-heading"
-              class="border-t border-slate-100 pt-10 first:border-t-0 first:pt-0"
+              class="border-t border-[var(--border-subtle)] pt-10 first:border-t-0 first:pt-0"
             >
               <h2
                 id="overview-heading"
-                class="text-[1.375rem] font-semibold tracking-tight text-slate-900"
+                class="text-[var(--text-lg)] font-semibold text-[var(--text-primary)]"
               >
                 Overview
               </h2>
@@ -382,11 +505,11 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
             <section
               v-if="responsibilities.length"
               aria-labelledby="responsibilities-heading"
-              class="border-t border-slate-100 pt-10 first:border-t-0 first:pt-0"
+              class="border-t border-[var(--border-subtle)] pt-10 first:border-t-0 first:pt-0"
             >
               <h2
                 id="responsibilities-heading"
-                class="text-[1.375rem] font-semibold tracking-tight text-slate-900"
+                class="text-[var(--text-lg)] font-semibold text-[var(--text-primary)]"
               >
                 Responsibilities
               </h2>
@@ -417,11 +540,11 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
             <section
               v-if="experienceAndEducation.length"
               aria-labelledby="experience-heading"
-              class="border-t border-slate-100 pt-10 first:border-t-0 first:pt-0"
+              class="border-t border-[var(--border-subtle)] pt-10 first:border-t-0 first:pt-0"
             >
               <h2
                 id="experience-heading"
-                class="text-[1.375rem] font-semibold tracking-tight text-slate-900"
+                class="text-[var(--text-lg)] font-semibold text-[var(--text-primary)]"
               >
                 Experience and education
               </h2>
@@ -442,18 +565,18 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
             <section
               v-if="requiredSkills.length"
               aria-labelledby="required-skills-heading"
-              class="border-t border-slate-100 pt-10 first:border-t-0 first:pt-0"
+              class="border-t border-[var(--border-subtle)] pt-10 first:border-t-0 first:pt-0"
             >
               <h2
                 id="required-skills-heading"
-                class="text-[1.375rem] font-semibold tracking-tight text-slate-900"
+                class="text-[var(--text-lg)] font-semibold text-[var(--text-primary)]"
               >
                 Required skills
               </h2>
               <ul class="mt-4 flex flex-wrap gap-2">
                 <li v-for="skill in requiredSkills" :key="skill.id">
                   <span
-                    class="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 py-1 pl-3 pr-1 text-sm font-medium text-primary-800"
+                    class="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-primary-50)] text-[var(--color-primary-700)] px-3 py-1 text-[var(--text-xs)] font-medium"
                   >
                     {{ skill.original_label }}
                     <Badge>{{ skill.skill_id ? 'Catalog matched' : 'Original label' }}</Badge>
@@ -465,11 +588,11 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
             <section
               v-if="preferredSkills.length"
               aria-labelledby="preferred-skills-heading"
-              class="border-t border-slate-100 pt-10 first:border-t-0 first:pt-0"
+              class="border-t border-[var(--border-subtle)] pt-10 first:border-t-0 first:pt-0"
             >
               <h2
                 id="preferred-skills-heading"
-                class="text-[1.375rem] font-semibold tracking-tight text-slate-900"
+                class="text-[var(--text-lg)] font-semibold text-[var(--text-primary)]"
               >
                 Preferred skills
               </h2>
@@ -488,11 +611,11 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
             <section
               v-if="languagesAndCertifications.length"
               aria-labelledby="languages-heading"
-              class="border-t border-slate-100 pt-10 first:border-t-0 first:pt-0"
+              class="border-t border-[var(--border-subtle)] pt-10 first:border-t-0 first:pt-0"
             >
               <h2
                 id="languages-heading"
-                class="text-[1.375rem] font-semibold tracking-tight text-slate-900"
+                class="text-[var(--text-lg)] font-semibold text-[var(--text-primary)]"
               >
                 Languages and certifications
               </h2>
@@ -516,11 +639,11 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
             <section
               v-if="opportunity.additional_requirements?.length"
               aria-labelledby="additional-heading"
-              class="border-t border-slate-100 pt-10 first:border-t-0 first:pt-0"
+              class="border-t border-[var(--border-subtle)] pt-10 first:border-t-0 first:pt-0"
             >
               <h2
                 id="additional-heading"
-                class="text-[1.375rem] font-semibold tracking-tight text-slate-900"
+                class="text-[var(--text-lg)] font-semibold text-[var(--text-primary)]"
               >
                 Additional requirements
               </h2>
@@ -531,174 +654,17 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
               </ul>
             </section>
           </div>
-
-          <!-- Inline Match Brief Section -->
-          <section aria-labelledby="match-heading">
-            <div class="rounded-xl border border-slate-200 bg-white p-6 sm:p-8">
-              <div class="flex items-center justify-between gap-3">
-                <h2
-                  id="match-heading"
-                  class="flex items-center gap-2 text-[1.375rem] font-semibold tracking-tight text-slate-900"
-                >
-                  <Sparkles class="size-5 text-primary-500" aria-hidden="true" />
-                  Match Brief
-                </h2>
-                <RouterLink
-                  v-if="completedAnalysis"
-                  :to="{ name: 'opportunities-match', params: { id: opportunity.id } }"
-                  class="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 transition-colors hover:text-primary-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-600"
-                >
-                  View full analysis
-                  <ArrowRight class="size-3.5" aria-hidden="true" />
-                </RouterLink>
-              </div>
-
-              <div class="sr-only" aria-live="polite">{{ matchAnnouncement }}</div>
-
-              <!-- Loading -->
-              <div v-if="listQuery.isLoading.value" class="mt-6 space-y-4">
-                <div class="h-28 animate-pulse rounded-xl border border-slate-200 bg-slate-50" />
-                <div class="h-20 animate-pulse rounded-xl border border-slate-200 bg-slate-50" />
-              </div>
-
-              <!-- Processing -->
-              <MatchStatusPanel
-                v-else-if="processing && !completedAnalysis"
-                class="mt-6"
-                :status="
-                  listQuery.data.value?.data?.[0]?.status === 'processing' ? 'processing' : 'queued'
-                "
-              />
-
-              <!-- Failed -->
-              <MatchErrorState
-                v-else-if="failedAnalysis && !completedAnalysis"
-                class="mt-6"
-                title="Match analysis failed"
-                :detail="failedAnalysis.failure?.reason"
-                :busy="isStarting"
-                @retry="startAnalysis"
-              />
-
-              <!-- No analyses -->
-              <div v-else-if="noAnalyses" class="mt-6 text-center">
-                <p class="text-sm text-slate-500">
-                  Start a match analysis to see how this opportunity aligns with your profile.
-                </p>
-                <Button class="mt-4" :loading="isStarting" @click="startAnalysis">
-                  {{ isStarting ? 'Starting...' : 'Start analysis' }}
-                </Button>
-              </div>
-
-              <!-- Completed analysis -->
-              <template v-else-if="completedAnalysis">
-                <div
-                  v-if="processing"
-                  role="status"
-                  aria-live="polite"
-                  class="mt-6 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600"
-                >
-                  A new analysis is running. The previous result stays visible below.
-                </div>
-
-                <StaleNotice
-                  v-if="completedAnalysis.stale"
-                  class="mt-6"
-                  :busy="isRecalculating"
-                  @recalculate="recalculate"
-                />
-
-                <MatchSummaryHero :analysis="completedAnalysis" class="mt-6" />
-
-                <MatchAtAGlance :findings="completedAnalysis.findings" class="mt-4" />
-
-                <details class="group mt-4">
-                  <summary
-                    class="flex cursor-pointer list-none items-center justify-between gap-3 rounded-lg border border-slate-200 p-4 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none"
-                  >
-                    <span class="text-sm font-medium text-slate-700">
-                      Full analysis
-                      <span class="text-slate-400">
-                        ({{ completedAnalysis.findings.length }} requirement{{
-                          completedAnalysis.findings.length === 1 ? '' : 's'
-                        }})
-                      </span>
-                    </span>
-                    <ChevronDown
-                      class="size-4 text-slate-400 transition-transform group-open:rotate-180"
-                      aria-hidden="true"
-                    />
-                  </summary>
-
-                  <div class="mt-3 space-y-3">
-                    <div class="flex gap-2">
-                      <button
-                        v-for="filter in ['all', 'matched', 'gap'] as const"
-                        :key="filter"
-                        type="button"
-                        class="rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
-                        :class="
-                          matchFilter === filter
-                            ? 'bg-primary-100 text-primary-700'
-                            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
-                        "
-                        @click="matchFilter = filter"
-                      >
-                        {{ filter === 'all' ? 'All' : filter === 'matched' ? 'Matched' : 'Gaps' }}
-                      </button>
-                    </div>
-
-                    <ul
-                      v-if="filteredFindings.length"
-                      class="space-y-2"
-                      aria-label="Match requirements"
-                    >
-                      <li v-for="finding in filteredFindings" :key="findingKey(finding)">
-                        <div
-                          class="flex items-center justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50 px-4 py-3"
-                        >
-                          <span class="text-sm text-slate-700">{{
-                            finding.requirement_label
-                          }}</span>
-                          <Badge
-                            :variant="
-                              finding.match_state === 'matched'
-                                ? 'success'
-                                : finding.match_state === 'gap'
-                                  ? 'error'
-                                  : 'default'
-                            "
-                            size="sm"
-                          >
-                            {{ finding.match_state }}
-                          </Badge>
-                        </div>
-                      </li>
-                    </ul>
-                    <p v-else class="py-4 text-center text-sm text-slate-500">
-                      No requirements match these filters.
-                    </p>
-                  </div>
-                </details>
-
-                <MatchScoreDetails :analysis="completedAnalysis" class="mt-4" />
-              </template>
-            </div>
-          </section>
         </div>
 
         <aside class="min-w-0" aria-label="Quick facts">
-          <div class="rounded-xl border border-slate-200 bg-white p-5 lg:sticky lg:top-6">
-            <p class="text-xs font-semibold uppercase tracking-[0.07em] text-slate-400">
+          <div
+            class="rounded-[var(--radius-lg)] border border-[var(--border-default)] bg-[var(--surface-secondary)] p-5 lg:sticky lg:top-6"
+          >
+            <p
+              class="text-[var(--text-xs)] font-medium uppercase tracking-wider text-[var(--text-muted)]"
+            >
               Quick facts
             </p>
-            <RouterLink
-              :to="{ name: 'opportunities-match', params: { id: opportunity.id } }"
-              class="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary-600 px-4 text-sm font-medium text-white shadow-[0_0.375rem_0.875rem_rgb(79_70_229_/_0.18)] transition-colors hover:bg-primary-700 hover:shadow-[0_0.5rem_1rem_rgb(79_70_229_/_0.22)] active:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500/40 focus:ring-offset-1"
-            >
-              View match brief
-              <ArrowRight class="size-4" aria-hidden="true" />
-            </RouterLink>
 
             <div v-if="hasRailContent" class="mt-5 divide-y divide-slate-100">
               <section
@@ -715,40 +681,58 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
                 </h2>
                 <dl class="mt-3 space-y-3">
                   <div v-if="location">
-                    <dt class="text-xs font-medium text-slate-500">Location</dt>
-                    <dd class="mt-0.5 text-sm text-slate-700">{{ location }}</dd>
+                    <dt class="text-[var(--text-xs)] font-medium text-[var(--text-muted)]">
+                      Location
+                    </dt>
+                    <dd class="mt-0.5 text-[var(--text-sm)] text-[var(--text-primary)]">
+                      {{ location }}
+                    </dd>
                   </div>
                   <div v-if="opportunity.work_mode">
-                    <dt class="text-xs font-medium text-slate-500">Work mode</dt>
-                    <dd class="mt-0.5 text-sm text-slate-700">
+                    <dt class="text-[var(--text-xs)] font-medium text-[var(--text-muted)]">
+                      Work mode
+                    </dt>
+                    <dd class="mt-0.5 text-[var(--text-sm)] text-[var(--text-primary)]">
                       {{ formatLabel(opportunity.work_mode) }}
                     </dd>
                   </div>
                   <div v-if="opportunity.contract_type">
-                    <dt class="text-xs font-medium text-slate-500">Contract type</dt>
-                    <dd class="mt-0.5 text-sm text-slate-700">
+                    <dt class="text-[var(--text-xs)] font-medium text-[var(--text-muted)]">
+                      Contract type
+                    </dt>
+                    <dd class="mt-0.5 text-[var(--text-sm)] text-[var(--text-primary)]">
                       {{ formatLabel(opportunity.contract_type) }}
                     </dd>
                   </div>
                   <div v-if="opportunity.seniority_level">
-                    <dt class="text-xs font-medium text-slate-500">Seniority</dt>
-                    <dd class="mt-0.5 text-sm text-slate-700">
+                    <dt class="text-[var(--text-xs)] font-medium text-[var(--text-muted)]">
+                      Seniority
+                    </dt>
+                    <dd class="mt-0.5 text-[var(--text-sm)] text-[var(--text-primary)]">
                       {{ formatLabel(opportunity.seniority_level) }}
                     </dd>
                   </div>
                   <div v-if="opportunity.working_hours">
-                    <dt class="text-xs font-medium text-slate-500">Working hours</dt>
-                    <dd class="mt-0.5 text-sm text-slate-700">{{ opportunity.working_hours }}</dd>
+                    <dt class="text-[var(--text-xs)] font-medium text-[var(--text-muted)]">
+                      Working hours
+                    </dt>
+                    <dd class="mt-0.5 text-[var(--text-sm)] text-[var(--text-primary)]">
+                      {{ opportunity.working_hours }}
+                    </dd>
                   </div>
                   <div v-if="opportunity.travel_required !== null">
-                    <dt class="text-xs font-medium text-slate-500">Travel required</dt>
-                    <dd class="mt-0.5 text-sm text-slate-700">
+                    <dt class="text-[var(--text-xs)] font-medium text-[var(--text-muted)]">
+                      Travel required
+                    </dt>
+                    <dd class="mt-0.5 text-[var(--text-sm)] text-[var(--text-primary)]">
                       {{ opportunity.travel_required ? 'Yes' : 'No' }}
                     </dd>
                   </div>
                   <div v-if="opportunity.relocation_required !== null">
-                    <dt class="text-xs font-medium text-slate-500">Relocation required</dt>
-                    <dd class="mt-0.5 text-sm text-slate-700">
+                    <dt class="text-[var(--text-xs)] font-medium text-[var(--text-muted)]">
+                      Relocation required
+                    </dt>
+                    <dd class="mt-0.5 text-[var(--text-sm)] text-[var(--text-primary)]">
                       {{ opportunity.relocation_required ? 'Yes' : 'No' }}
                     </dd>
                   </div>
@@ -769,7 +753,9 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
                 </h2>
                 <dl class="mt-3 space-y-3">
                   <div v-if="opportunity.salary_min || opportunity.salary_max">
-                    <dt class="text-xs font-medium text-slate-500">Salary</dt>
+                    <dt class="text-[var(--text-xs)] font-medium text-[var(--text-muted)]">
+                      Salary
+                    </dt>
                     <dd class="mt-0.5 text-lg font-semibold text-slate-900">
                       {{
                         formatSalaryValue(opportunity.salary_min, opportunity.salary_currency)
@@ -784,13 +770,17 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
                     </dd>
                   </div>
                   <div v-if="opportunity.compensation_text">
-                    <dt class="text-xs font-medium text-slate-500">Compensation note</dt>
-                    <dd class="mt-0.5 text-sm text-slate-700">
+                    <dt class="text-[var(--text-xs)] font-medium text-[var(--text-muted)]">
+                      Compensation note
+                    </dt>
+                    <dd class="mt-0.5 text-[var(--text-sm)] text-[var(--text-primary)]">
                       {{ opportunity.compensation_text }}
                     </dd>
                   </div>
                   <div v-if="opportunity.benefits?.length">
-                    <dt class="text-xs font-medium text-slate-500">Benefits</dt>
+                    <dt class="text-[var(--text-xs)] font-medium text-[var(--text-muted)]">
+                      Benefits
+                    </dt>
                     <dd class="mt-1 text-sm text-slate-700">
                       <ul class="space-y-1">
                         <li v-for="benefit in opportunity.benefits" :key="benefit">
@@ -819,25 +809,33 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
                 </h2>
                 <dl class="mt-3 space-y-3">
                   <div v-if="opportunity.publication_date">
-                    <dt class="text-xs font-medium text-slate-500">Published</dt>
+                    <dt class="text-[var(--text-xs)] font-medium text-[var(--text-muted)]">
+                      Published
+                    </dt>
                     <dd class="mt-0.5 text-sm text-slate-700">
                       {{ formatDate(opportunity.publication_date) }}
                     </dd>
                   </div>
                   <div v-if="opportunity.application_deadline">
-                    <dt class="text-xs font-medium text-slate-500">Application deadline</dt>
+                    <dt class="text-[var(--text-xs)] font-medium text-[var(--text-muted)]">
+                      Application deadline
+                    </dt>
                     <dd class="mt-0.5 text-sm text-slate-700">
                       {{ formatDate(opportunity.application_deadline) }}
                     </dd>
                   </div>
                   <div v-if="opportunity.expected_start_date">
-                    <dt class="text-xs font-medium text-slate-500">Expected start</dt>
+                    <dt class="text-[var(--text-xs)] font-medium text-[var(--text-muted)]">
+                      Expected start
+                    </dt>
                     <dd class="mt-0.5 text-sm text-slate-700">
                       {{ formatDate(opportunity.expected_start_date) }}
                     </dd>
                   </div>
                   <div v-if="opportunity.employment_duration">
-                    <dt class="text-xs font-medium text-slate-500">Employment duration</dt>
+                    <dt class="text-[var(--text-xs)] font-medium text-[var(--text-muted)]">
+                      Employment duration
+                    </dt>
                     <dd class="mt-0.5 text-sm text-slate-700">
                       {{ opportunity.employment_duration }}
                     </dd>
@@ -855,13 +853,17 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
                 </h2>
                 <dl class="mt-3 space-y-3">
                   <div v-if="formatDate(opportunity.saved_at)">
-                    <dt class="text-xs font-medium text-slate-500">Saved</dt>
+                    <dt class="text-[var(--text-xs)] font-medium text-[var(--text-muted)]">
+                      Saved
+                    </dt>
                     <dd class="mt-0.5 text-sm text-slate-700">
                       {{ formatDate(opportunity.saved_at) }}
                     </dd>
                   </div>
                   <div v-if="opportunity.source_url">
-                    <dt class="text-xs font-medium text-slate-500">Original posting</dt>
+                    <dt class="text-[var(--text-xs)] font-medium text-[var(--text-muted)]">
+                      Original posting
+                    </dt>
                     <dd class="mt-0.5 text-sm">
                       <a
                         :href="opportunity.source_url"

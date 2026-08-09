@@ -120,40 +120,11 @@ function formatUpdatedAt(value: string): string {
   overflow: hidden;
   max-width: 65rem;
   margin: 1.25rem auto 0;
-  border: 1px solid rgb(255 255 255 / 0.12);
-  border-radius: var(--cp-radius-panel);
-  background: linear-gradient(118deg, var(--cp-context-start), var(--cp-context-end));
+  border-radius: var(--radius-xl);
+  background: var(--surface-primary);
   padding: 1.375rem;
-  box-shadow: var(--cp-shadow-brand);
-  color: var(--cp-text-inverse);
-}
-
-.context-header::before {
-  position: absolute;
-  top: 0;
-  right: 1.5rem;
-  left: 1.5rem;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgb(255 255 255 / 0.48),
-    var(--cp-primary-bright),
-    transparent
-  );
-  content: '';
-}
-
-.context-header::after {
-  position: absolute;
-  top: -7rem;
-  right: -5rem;
-  width: 17rem;
-  height: 17rem;
-  border-radius: 999px;
-  background: radial-gradient(circle, var(--cp-primary-glow), transparent 68%);
-  content: '';
-  pointer-events: none;
+  box-shadow: var(--shadow-neo-raised-lg);
+  color: var(--text-primary);
 }
 
 .context-identity {
@@ -172,17 +143,13 @@ function formatUpdatedAt(value: string): string {
   height: 3.5rem;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid rgb(255 255 255 / 0.24);
-  border-radius: var(--cp-radius-card);
-  background: linear-gradient(145deg, var(--cp-primary-bright), var(--cp-primary-deep));
-  box-shadow:
-    0 0 0 0.25rem rgb(255 255 255 / 0.07),
-    0 0.625rem 1.5rem rgb(5 8 20 / 0.28);
-  color: var(--cp-text-inverse);
+  border-radius: var(--radius-xl);
+  background: var(--color-primary-500);
+  box-shadow: var(--shadow-neo-raised);
+  color: white;
   font-size: 0.9375rem;
   font-weight: 760;
   letter-spacing: 0.04em;
-  text-shadow: 0 1px 1px rgb(5 8 20 / 0.25);
 }
 
 .context-copy {
@@ -200,7 +167,7 @@ function formatUpdatedAt(value: string): string {
 
 .context-title {
   overflow-wrap: anywhere;
-  color: var(--cp-text-inverse);
+  color: var(--text-primary);
   font-size: 1.375rem;
   font-weight: 690;
   letter-spacing: -0.025em;
@@ -209,7 +176,7 @@ function formatUpdatedAt(value: string): string {
 
 .context-company {
   margin-top: 0.25rem;
-  color: rgb(255 255 255 / 0.7);
+  color: var(--text-muted);
   font-size: 0.875rem;
   font-weight: 520;
   line-height: 1.25rem;
@@ -226,7 +193,7 @@ function formatUpdatedAt(value: string): string {
   position: relative;
   z-index: 1;
   margin-top: 1.25rem;
-  border-top: 1px solid rgb(255 255 255 / 0.12);
+  border-top: 1px solid var(--border-subtle);
   padding-top: 1rem;
 }
 
@@ -234,7 +201,7 @@ function formatUpdatedAt(value: string): string {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  color: rgb(255 255 255 / 0.62);
+  color: var(--text-muted);
   font-size: 0.75rem;
   line-height: 1.125rem;
 }
@@ -251,7 +218,7 @@ function formatUpdatedAt(value: string): string {
 }
 
 .progress-heading strong {
-  color: var(--cp-text-inverse);
+  color: var(--text-primary);
   font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
   font-weight: 670;
@@ -273,46 +240,35 @@ function formatUpdatedAt(value: string): string {
   margin-top: 0.625rem;
   overflow: hidden;
   border-radius: 999px;
-  background: rgb(255 255 255 / 0.12);
-  box-shadow: 0 1px 0 rgb(0 0 0 / 0.18) inset;
+  background: var(--surface-secondary);
+  box-shadow: var(--shadow-neo-inset);
 }
 
 .progress-track span {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(
-    90deg,
-    var(--cp-context-progress-start),
-    var(--cp-context-progress-end)
-  );
-  box-shadow: 0 0 0.75rem var(--cp-primary-glow);
+  background: var(--color-primary-500);
+  box-shadow: 0 0 0.75rem var(--color-primary-200);
   transform-origin: left center;
   transition: transform 160ms ease;
 }
 
 .context-header :deep(.metadata-chip) {
-  border-color: rgb(255 255 255 / 0.14);
-  background: rgb(255 255 255 / 0.075);
-  color: rgb(255 255 255 / 0.78);
-  box-shadow: 0 1px 0 rgb(255 255 255 / 0.06) inset;
+  background: var(--surface-secondary);
+  color: var(--text-muted);
+  box-shadow: var(--shadow-neo-raised-sm);
 }
 
 .context-header :deep(.metadata-chip-primary) {
-  border-color: rgb(174 161 255 / 0.34);
-  background: rgb(109 93 251 / 0.18);
-  color: var(--cp-context-accent);
+  background: var(--color-primary-50);
+  color: var(--color-primary-600);
 }
 
 .context-header :deep(.status-badge) {
-  border-color: rgb(255 255 255 / 0.15);
-  background: rgb(255 255 255 / 0.08);
-  color: rgb(255 255 255 / 0.84);
-  box-shadow: 0 1px 0 rgb(255 255 255 / 0.06) inset;
-}
-
-.context-header :deep(.status-dot) {
-  box-shadow: 0 0 0 0.1875rem rgb(255 255 255 / 0.08);
+  background: var(--surface-secondary);
+  color: var(--text-muted);
+  box-shadow: var(--shadow-neo-raised-sm);
 }
 
 @media (min-width: 40rem) {

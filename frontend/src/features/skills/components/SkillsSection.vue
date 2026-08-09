@@ -140,7 +140,7 @@ function isSaving(skill: CandidateSkill): boolean {
     <template #header>
       <div class="flex items-center gap-3">
         <div
-          class="flex size-9 items-center justify-center rounded-lg bg-primary-100 text-primary-600"
+          class="flex size-9 items-center justify-center rounded-[var(--radius-md)] bg-[var(--color-primary-100)] text-[var(--color-primary-600)] shadow-[var(--shadow-neo-inset)]"
         >
           <Wrench :size="16" stroke-width="1.5" />
         </div>
@@ -159,21 +159,25 @@ function isSaving(skill: CandidateSkill): boolean {
 
     <div
       v-if="announcement"
-      class="mb-4 rounded-lg bg-primary-50 px-4 py-3 text-sm text-primary-700"
+      class="mb-4 rounded-[var(--radius-md)] bg-[var(--color-primary-50)] px-4 py-3 text-sm text-[var(--color-primary-700)] shadow-[var(--shadow-neo-raised-sm)]"
       role="status"
     >
       {{ announcement }}
     </div>
 
     <div v-if="isPending" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      <div v-for="i in 3" :key="i" class="rounded-lg border border-slate-200 p-4">
+      <div
+        v-for="i in 3"
+        :key="i"
+        class="rounded-[var(--radius-xl)] bg-[var(--surface-primary)] p-4 shadow-[var(--shadow-neo-raised)]"
+      >
         <Skeleton classes="h-28" />
       </div>
     </div>
 
     <div
       v-else-if="isError"
-      class="flex flex-col items-center rounded-lg border border-red-200 bg-red-50 p-8 text-center"
+      class="flex flex-col items-center rounded-[var(--radius-xl)] bg-red-50 p-8 text-center shadow-[var(--shadow-neo-raised)]"
     >
       <AlertCircle class="size-8 text-red-400" aria-hidden="true" />
       <p class="mt-2 text-sm text-red-700">Could not load your skills.</p>
