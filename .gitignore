@@ -21,3 +21,10 @@ Thumbs.db
 .idea/
 .vscode/
 .playwright-mcp/
+
+# Impeccable ephemeral files
+.impeccable/config.local.json
+.impeccable/hook.cache.json
+.impeccable/hook.pending.json
+.impeccable/*.png
+.impeccable/live/
