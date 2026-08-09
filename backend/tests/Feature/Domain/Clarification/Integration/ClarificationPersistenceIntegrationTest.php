@@ -113,7 +113,7 @@ it('supports rollback and forward-fix for the clarification migrations', functio
         expect(Schema::hasTable($table))->toBeTrue();
     }
 
-    $this->artisan('migrate:rollback', ['--step' => 5])->assertExitCode(0);
+    $this->artisan('migrate:rollback', ['--step' => 6])->assertExitCode(0);
 
     foreach (CLARIFICATION_TABLES as $table) {
         expect(Schema::hasTable($table))->toBeFalse();

@@ -126,7 +126,7 @@ final class QuestionTemplateRegistry
 
         if (in_array($category, [MatchCategory::RequiredSkills->value, MatchCategory::PreferredSkills->value], true)) {
             return match ($state) {
-                MatchState::Gap, MatchState::Unknown => ClarificationFindingType::SkillMissing,
+                MatchState::Gap => ClarificationFindingType::SkillMissing,
                 MatchState::Partial => ClarificationFindingType::SkillClaimedNoEvidence,
                 default => null,
             };
@@ -134,7 +134,7 @@ final class QuestionTemplateRegistry
 
         if ($category === MatchCategory::ExperienceEducation->value) {
             return match ($state) {
-                MatchState::Gap, MatchState::Unknown => ClarificationFindingType::ExperienceMissing,
+                MatchState::Gap => ClarificationFindingType::ExperienceMissing,
                 MatchState::Partial => ClarificationFindingType::ExperienceAmbiguous,
                 default => null,
             };
@@ -142,7 +142,7 @@ final class QuestionTemplateRegistry
 
         if ($category === MatchCategory::LanguageSoft->value) {
             return match ($state) {
-                MatchState::Gap, MatchState::Unknown => ClarificationFindingType::LanguageMissing,
+                MatchState::Gap => ClarificationFindingType::LanguageMissing,
                 MatchState::Partial => ClarificationFindingType::LanguageAmbiguous,
                 default => null,
             };
@@ -150,7 +150,7 @@ final class QuestionTemplateRegistry
 
         if ($category === MatchCategory::Evidence->value) {
             return match ($state) {
-                MatchState::Gap, MatchState::Unknown => ClarificationFindingType::EvidenceMissing,
+                MatchState::Gap => ClarificationFindingType::EvidenceMissing,
                 MatchState::Partial => ClarificationFindingType::EvidenceAmbiguous,
                 default => null,
             };
