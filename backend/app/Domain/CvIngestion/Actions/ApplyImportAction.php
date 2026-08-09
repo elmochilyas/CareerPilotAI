@@ -112,7 +112,9 @@ class ApplyImportAction
                         );
                     }
 
-                    $profile = CandidateProfile::create(['user_id' => $document->user_id]);
+                    $profile = new CandidateProfile;
+                    $profile->user_id = $document->user_id;
+                    $profile->save();
                 }
 
                 if ($profileUpdatedAt !== null) {

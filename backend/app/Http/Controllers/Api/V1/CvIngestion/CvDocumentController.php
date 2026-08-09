@@ -13,6 +13,7 @@ use App\Domain\CvIngestion\Data\BatchDecisionData;
 use App\Domain\CvIngestion\Data\ImportDecisionData;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\CvIngestion\BatchReviewDecisionRequest;
+use App\Http\Requests\Api\V1\CvIngestion\ListSuggestionsRequest;
 use App\Http\Requests\Api\V1\CvIngestion\SaveReviewDecisionRequest;
 use App\Http\Requests\Api\V1\CvIngestion\UploadCvRequest;
 use App\Http\Resources\Api\V1\CvDocumentResource;
@@ -128,14 +129,14 @@ class CvDocumentController extends Controller
         return response()->json(['message' => 'Document deleted']);
     }
 
-    public function suggestions(Request $request, CvDocument $cvDocument): JsonResponse
+    public function suggestions(ListSuggestionsRequest $request, CvDocument $cvDocument): JsonResponse
     {
         Gate::authorize('view', $cvDocument);
 
         $query = $cvDocument->suggestions()->orderBy('created_at');
 
-        if ($request->has('review_status')) {
-            $query->where('review_status', $request->query('review_status'));
+        if ($request->validated('review_status') !== null) {
+            $query->where('review_status', $request->validated('review_status'));
         }
 
         return response()->json(['data' => CvSuggestionResource::collection($query->get())]);

@@ -17,6 +17,7 @@ use App\Domain\Skills\Data\EvidenceData;
 use App\Domain\Skills\Enums\ProficiencyLevel;
 use App\Domain\Skills\Enums\SkillState;
 use App\Http\Requests\Api\V1\ArchiveCandidateSkillRequest;
+use App\Http\Requests\Api\V1\CandidateSkill\ListCandidateSkillsRequest;
 use App\Http\Requests\Api\V1\DeleteCandidateSkillRequest;
 use App\Http\Requests\Api\V1\DeleteEvidenceRequest;
 use App\Http\Requests\Api\V1\RestoreCandidateSkillRequest;
@@ -47,7 +48,7 @@ class CandidateSkillController
         private readonly RemoveEvidenceAction $removeEvidenceAction,
     ) {}
 
-    public function index(Request $request): CandidateSkillCollection
+    public function index(ListCandidateSkillsRequest $request): CandidateSkillCollection
     {
         $profile = $request->user()->candidateProfile()->first();
 
@@ -55,7 +56,7 @@ class CandidateSkillController
             return new CandidateSkillCollection(collect());
         }
 
-        $state = $request->input('state') !== null ? SkillState::tryFrom($request->input('state')) : null;
+        $state = $request->validated('state') !== null ? SkillState::tryFrom($request->validated('state')) : null;
 
         $skills = $this->listAction->execute($profile, $state);
 
@@ -184,9 +185,9 @@ class CandidateSkillController
         $profile = $request->user()->candidateProfile()->first();
 
         if ($profile === null) {
-            $profile = CandidateProfile::create([
-                'user_id' => $request->user()->id,
-            ]);
+            $profile = new CandidateProfile;
+            $profile->user_id = $request->user()->id;
+            $profile->save();
         }
 
         return $profile;

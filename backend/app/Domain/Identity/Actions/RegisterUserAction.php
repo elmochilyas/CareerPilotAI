@@ -14,13 +14,14 @@ class RegisterUserAction
     public function execute(string $fullName, string $email, string $password): User
     {
         return DB::transaction(function () use ($fullName, $email, $password): User {
-            $user = User::create([
+            $user = new User;
+            $user->forceFill([
                 'full_name' => $fullName,
                 'email' => $email,
                 'password' => Hash::make($password),
                 'role' => UserRole::Candidate,
                 'account_status' => UserAccountStatus::Active,
-            ]);
+            ])->save();
 
             event(new Registered($user));
 

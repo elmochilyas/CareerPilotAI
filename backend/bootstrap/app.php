@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AddRequestId;
+use App\Http\Middleware\SecurityHeaders;
 use App\Support\ProblemDetails\ProblemDetailsException;
 use App\Support\ProblemDetails\ProblemDetailsRenderer;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -25,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(AddRequestId::class);
+        $middleware->prepend(SecurityHeaders::class);
         $middleware->statefulApi();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
