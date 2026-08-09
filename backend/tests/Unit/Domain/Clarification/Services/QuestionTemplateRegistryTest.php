@@ -57,15 +57,18 @@ it('derives evidence types from the evidence category', function () {
         ])))->toBe(ClarificationFindingType::EvidenceAmbiguous);
 });
 
-it('returns null for matched or unknown states', function () {
+it('returns null for matched states', function () {
     expect($this->registry->findingTypeFor(clarificationFinding([
         'category' => 'required_skills',
         'match_state' => MatchState::Matched,
-    ])))->toBeNull()
-        ->and($this->registry->findingTypeFor(clarificationFinding([
-            'category' => 'required_skills',
-            'match_state' => MatchState::Unknown,
-        ])))->toBeNull();
+    ])))->toBeNull();
+});
+
+it('returns finding type for unknown states', function () {
+    expect($this->registry->findingTypeFor(clarificationFinding([
+        'category' => 'required_skills',
+        'match_state' => MatchState::Unknown,
+    ])))->toBe(ClarificationFindingType::SkillMissing);
 });
 
 it('returns null for unsupported categories', function () {

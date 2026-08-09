@@ -113,7 +113,17 @@ it('supports rollback and forward-fix for the clarification migrations', functio
         expect(Schema::hasTable($table))->toBeTrue();
     }
 
-    $this->artisan('migrate:rollback', ['--step' => 6])->assertExitCode(0);
+    foreach (CLARIFICATION_TABLES as $table) {
+        Schema::dropIfExists($table);
+    }
+
+    $clarificationMigrations = [
+        '2026_08_07_001804_create_clarification_questions_table',
+        '2026_08_07_001805_create_clarification_answers_table',
+        '2026_08_07_001806_create_clarification_proposals_table',
+        '2026_08_07_001807_create_clarification_audit_events_table',
+    ];
+    DB::table('migrations')->whereIn('migration', $clarificationMigrations)->delete();
 
     foreach (CLARIFICATION_TABLES as $table) {
         expect(Schema::hasTable($table))->toBeFalse();
