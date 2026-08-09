@@ -5,18 +5,18 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import OpportunityDetailPage from '@/features/opportunities/pages/OpportunityDetailPage.vue'
 import type { JobOpportunity } from '@/features/opportunities/types'
 
-const { opportunityData } = vi.hoisted(() => ({
+const { opportunityData, matchData } = vi.hoisted(() => ({
   opportunityData: { value: undefined as JobOpportunity | undefined },
+  matchData: { value: { data: [] as unknown[] } },
 }))
 
 vi.mock('@tanstack/vue-query', () => ({
   useQuery: vi.fn<(...args: unknown[]) => unknown>((...queryArgs: unknown[]) => {
     const options = queryArgs[0] as { queryFn?: () => unknown } | undefined
-    const isMatchQuery =
-      options?.queryFn?.toString().includes('fetchMatchAnalyses') === true
+    const isMatchQuery = options?.queryFn?.toString().includes('fetchMatchAnalyses') === true
     if (isMatchQuery) {
       return {
-        data: ref({ data: [] }),
+        data: ref(matchData.value),
         isPending: ref(false),
         isLoading: ref(false),
         isSuccess: ref(true),
@@ -62,10 +62,15 @@ vi.mock('@/features/matching/api', () => ({
   recalculateMatchAnalysis: vi.fn<() => Promise<unknown>>(() => Promise.resolve({})),
 }))
 
-vi.mock('@/features/matching/utils/matchPresentation', () => ({
-  findingKey: (f: { skill_name?: string; requirement_text?: string; type: string }) =>
-    f.skill_name ?? f.requirement_text ?? f.type,
-}))
+vi.mock('@/features/matching/utils/matchPresentation', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('@/features/matching/utils/matchPresentation')>()
+  return {
+    ...actual,
+    findingKey: (f: { skill_name?: string; requirement_text?: string; type: string }) =>
+      f.skill_name ?? f.requirement_text ?? f.type,
+  }
+})
 
 function createOpportunity(): JobOpportunity {
   return {
@@ -176,6 +181,11 @@ async function mountPage() {
         name: 'opportunities-match',
         component: { template: '<div />' },
       },
+      {
+        path: '/opportunities/:id/match/clarifications',
+        name: 'opportunities-match-clarifications',
+        component: { template: '<div />' },
+      },
     ],
   })
   await router.push('/opportunities/8')
@@ -189,6 +199,7 @@ async function mountPage() {
 describe('OpportunityDetailPage', () => {
   beforeEach(() => {
     opportunityData.value = createOpportunity()
+    matchData.value = { data: [] }
   })
 
   it('renders all persisted opportunity sections in readonly mode', async () => {
@@ -252,11 +263,24 @@ describe('OpportunityDetailPage', () => {
   })
 
   it('links the match-brief CTA to the opportunities-match route', async () => {
+    matchData.value = {
+      data: [
+        {
+          id: 1,
+          status: 'completed',
+          overall_score: 84,
+          stale: false,
+          findings: [],
+          score_components: [],
+          counts: { required: 0, preferred: 0, matched: 0, partial: 0, gap: 0, unknown: 0 },
+        },
+      ],
+    }
     const wrapper = await mountPage()
 
-    const link = wrapper.find('a[href="/opportunities/8/match"]')
+    const link = wrapper.find('a[href="/opportunities/8/match?view=analysis"]')
     expect(link.exists()).toBe(true)
-    expect(link.text()).toContain('View match brief')
+    expect(link.text()).toContain('View full analysis')
   })
 
   it('uses the shared date formatter for dates', async () => {
@@ -280,5 +304,23 @@ describe('OpportunityDetailPage', () => {
     expect(wrapper.find('textarea').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('Edit')
     expect(wrapper.text()).not.toContain('Delete')
+  })
+
+  it('shows the match brief section before job details', async () => {
+    const wrapper = await mountPage()
+
+    const text = wrapper.text()
+    const matchBriefIndex = text.indexOf('Match Brief')
+    const overviewIndex = text.indexOf('Overview')
+    expect(matchBriefIndex).toBeGreaterThanOrEqual(0)
+    expect(overviewIndex).toBeGreaterThanOrEqual(0)
+    expect(matchBriefIndex).toBeLessThan(overviewIndex)
+  })
+
+  it('does not show a "View match brief" CTA in the Quick Facts sidebar', async () => {
+    const wrapper = await mountPage()
+
+    const sidebar = wrapper.find('[aria-label="Quick facts"]')
+    expect(sidebar.text()).not.toContain('View match brief')
   })
 })

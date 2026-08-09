@@ -312,22 +312,22 @@ describe('ClarificationPage with Vue Query', () => {
     const page = await mountPage()
 
     expect(page.text()).toContain('Senior Laravel Developer')
-    expect(page.text()).toContain('Back to match brief')
+    expect(page.text()).toContain('Back to opportunity')
     expect(page.text()).toContain('Clarify your profile')
     expect(page.text()).toContain('Nothing to clarify')
   })
 
-  it('navigates back to the match brief', async () => {
+  it('navigates back to the opportunity detail', async () => {
     const page = await mountPage()
 
     await page
       .findAll('button')
-      .find((button) => button.text().includes('Back to match brief'))!
+      .find((button) => button.text().includes('Back to opportunity'))!
       .trigger('click')
     await flushPromises()
 
     expect(mocks.push).toHaveBeenCalledWith({
-      name: 'opportunities-match',
+      name: 'opportunities-detail',
       params: { id: 5 },
     })
   })

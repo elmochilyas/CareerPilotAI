@@ -122,25 +122,25 @@ describe('RequirementResultRow', () => {
 })
 
 describe('MatchFilterBar', () => {
-  it('offers only the All, Matches, and Needs attention pills', () => {
+  it('offers only the All, Matches, and Gaps pills', () => {
     const wrapper = mount(MatchFilterBar, {
       props: { matchFilter: 'all', importance: [], includeUnknown: false },
     })
     const buttons = wrapper.find('[aria-label="Filter by result"]').findAll('button')
 
-    expect(buttons.map((button) => button.text())).toEqual(['All', 'Matches', 'Needs attention'])
+    expect(buttons.map((button) => button.text())).toEqual(['All', 'Matches', 'Gaps'])
   })
 
   it('emits the match filter when a pill is selected', async () => {
     const wrapper = mount(MatchFilterBar, {
       props: { matchFilter: 'all', importance: [], includeUnknown: false },
     })
-    const needsAttention = wrapper
+    const gapsButton = wrapper
       .find('[aria-label="Filter by result"]')
       .findAll('button')
-      .find((button) => button.text().startsWith('Needs attention'))
+      .find((button) => button.text().startsWith('Gaps'))
 
-    await needsAttention!.trigger('click')
+    await gapsButton!.trigger('click')
 
     expect(wrapper.emitted('update:matchFilter')).toEqual([['gap']])
   })
@@ -157,13 +157,13 @@ describe('MatchFilterBar', () => {
         ],
       },
     })
-    const needsAttention = wrapper
+    const gapsButton = wrapper
       .find('[aria-label="Filter by result"]')
       .findAll('button')
-      .find((button) => button.text().startsWith('Needs attention'))
+      .find((button) => button.text().startsWith('Gaps'))
 
-    expect(needsAttention!.text()).toContain('Needs attention')
-    expect(needsAttention!.text()).toContain('1')
+    expect(gapsButton!.text()).toContain('Gaps')
+    expect(gapsButton!.text()).toContain('1')
   })
 
   it('emits the importance filter from the More filters checkboxes', async () => {
