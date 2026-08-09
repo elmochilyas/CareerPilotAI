@@ -131,8 +131,8 @@ async function handleLogout(): Promise<void> {
 }
 
 .sidebar-logo {
-  height: 2.5rem;
-  width: auto;
+  width: 100%;
+  height: auto;
 }
 
 .sidebar-nav-item {

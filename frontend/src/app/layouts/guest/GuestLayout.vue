@@ -68,7 +68,7 @@ import logo from '@/assets/images/logo.png'
 }
 
 .auth-bg__logo-img {
-  height: 3rem;
+  height: 5rem;
   width: auto;
 }
 
