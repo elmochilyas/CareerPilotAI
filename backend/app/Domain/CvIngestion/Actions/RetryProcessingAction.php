@@ -25,8 +25,7 @@ class RetryProcessingAction
         ]);
 
         ProcessCvDocumentJob::dispatch($document->id)
-            ->onQueue(config('cv-ingestion.queue', 'cv-ingestion'))
-            ->delay(now()->addSeconds(3));
+            ->onQueue(config('cv-ingestion.queue', 'cv-ingestion'));
 
         return $document->fresh();
     }

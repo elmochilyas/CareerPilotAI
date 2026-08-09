@@ -53,6 +53,14 @@ class PreviewImportAction
         $profile = CandidateProfile::where('user_id', $document->user_id)->first();
 
         if ($profile) {
+            $existingProfileItems = ProfileItem::where('candidate_profile_id', $profile->id)
+                ->get()
+                ->keyBy(fn (ProfileItem $item) => $item->type->value.'|'.$item->title.'|'.$item->organization);
+
+            $allSkills = Skill::all()->keyBy(fn (Skill $s) => $s->normalized_name);
+
+            $existingCandidateSkills = CandidateSkill::where('candidate_profile_id', $profile->id)->with('skill')->get();
+
             $acceptedSuggestions = $suggestions->reject(
                 fn ($s) => $s->review_status->value === CvSuggestionReviewStatus::Rejected->value
             );
@@ -70,11 +78,7 @@ class PreviewImportAction
                     $title = (string) ($value['title'] ?? $value['name'] ?? $value['degree'] ?? '');
                     $organization = (string) ($value['organization'] ?? $value['institution'] ?? '');
 
-                    $existing = ProfileItem::where('candidate_profile_id', $profile->id)
-                        ->where('type', $type)
-                        ->where('title', $title)
-                        ->where('organization', $organization)
-                        ->first();
+                    $existing = $existingProfileItems->get($type.'|'.$title.'|'.$organization);
 
                     if ($existing) {
                         $conflicts[] = [
@@ -96,17 +100,11 @@ class PreviewImportAction
                 if ($type === CvSuggestionType::Skill->value) {
                     $skillName = (string) ($value['name'] ?? $value['value'] ?? '');
                     $normalizedName = mb_strtolower(trim($skillName));
-                    $skill = Skill::where('normalized_name', $normalizedName)->first();
+                    $skill = $allSkills->get($normalizedName);
 
-                    $existing = CandidateSkill::where('candidate_profile_id', $profile->id)
-                        ->where(function ($q) use ($skill, $skillName) {
-                            if ($skill) {
-                                $q->where('skill_id', $skill->id);
-                            } else {
-                                $q->where('custom_skill_name', $skillName);
-                            }
-                        })
-                        ->first();
+                    $existing = $existingCandidateSkills->first(function (CandidateSkill $cs) use ($skill, $skillName) {
+                        return $skill ? $cs->skill_id === $skill->id : $cs->custom_skill_name === $skillName;
+                    });
 
                     if ($existing) {
                         $conflicts[] = [

@@ -58,6 +58,8 @@ class CvDocumentController extends Controller
             $request->input('mode', 'create_new'),
         );
 
+        $document->load('latestRun');
+
         return response()->json(
             ['data' => new CvDocumentResource($document)],
             Response::HTTP_CREATED,

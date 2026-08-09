@@ -101,12 +101,13 @@ class ExtractTextJob implements ShouldQueue
                 'text_length' => strlen($result->text),
                 'warnings' => $result->warnings,
             ];
+            $metadata['extracted_text'] = $result->text;
             $document->update([
                 'status' => CvDocumentStatus::Analyzing,
                 'metadata' => $metadata,
             ]);
 
-            AnalyzeCvJob::dispatch($document->id, $this->idempotencyKey, $result->text)
+            AnalyzeCvJob::dispatch($document->id, $this->idempotencyKey)
                 ->onQueue(Config::get('cv-ingestion.queue', 'cv-ingestion'));
         } catch (\Throwable $e) {
             $document->update([
