@@ -1,5 +1,5 @@
 @layer animations {
-  /* ── Shimmer (skeleton loading) ── */
+  /* ── Shimmer (skeleton loading — lavender base) ── */
   @keyframes ds-shimmer {
     0% {
       background-position: -200% 0;
@@ -10,14 +10,9 @@
   }
 
   .ds-animate-shimmer {
-    background: linear-gradient(
-      90deg,
-      var(--color-neutral-100) 25%,
-      var(--color-neutral-200) 50%,
-      var(--color-neutral-100) 75%
-    );
+    background: linear-gradient(90deg, #f0ecf4 25%, #f8f5fc 50%, #f0ecf4 75%);
     background-size: 200% 100%;
-    animation: ds-shimmer 1.5s ease-in-out infinite;
+    animation: ds-shimmer 1.8s ease-in-out infinite;
   }
 
   /* ── Fade in ── */
@@ -31,14 +26,14 @@
   }
 
   .ds-animate-fade-in {
-    animation: ds-fade-in var(--duration-normal) var(--ease-out) both;
+    animation: ds-fade-in var(--duration-normal) var(--ease-out-expo) both;
   }
 
   /* ── Slide up ── */
   @keyframes ds-slide-up {
     from {
       opacity: 0;
-      transform: translateY(8px);
+      transform: translateY(12px);
     }
     to {
       opacity: 1;
@@ -47,14 +42,14 @@
   }
 
   .ds-animate-slide-up {
-    animation: ds-slide-up var(--duration-slow) var(--ease-default) both;
+    animation: ds-slide-up var(--duration-slow) var(--ease-out-expo) both;
   }
 
   /* ── Slide down ── */
   @keyframes ds-slide-down {
     from {
       opacity: 0;
-      transform: translateY(-8px);
+      transform: translateY(-12px);
     }
     to {
       opacity: 1;
@@ -63,14 +58,14 @@
   }
 
   .ds-animate-slide-down {
-    animation: ds-slide-down var(--duration-slow) var(--ease-default) both;
+    animation: ds-slide-down var(--duration-slow) var(--ease-out-expo) both;
   }
 
   /* ── Scale in ── */
   @keyframes ds-scale-in {
     from {
       opacity: 0;
-      transform: scale(0.95);
+      transform: scale(0.96);
     }
     to {
       opacity: 1;
@@ -111,6 +106,21 @@
     animation: ds-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
+  /* ── Neumorphic glow pulse (for active/loading states) ── */
+  @keyframes ds-glow-pulse {
+    0%,
+    100% {
+      box-shadow: var(--shadow-neo-raised);
+    }
+    50% {
+      box-shadow: var(--shadow-neo-raised-lg);
+    }
+  }
+
+  .ds-animate-glow {
+    animation: ds-glow-pulse 2s ease-in-out infinite;
+  }
+
   /* ── Toast enter/exit ── */
   @keyframes ds-toast-in {
     from {
@@ -134,6 +144,29 @@
     }
   }
 
+  /* ── Stagger children ── */
+  .ds-stagger-children > * {
+    animation: ds-slide-up var(--duration-slow) var(--ease-out-expo) both;
+  }
+  .ds-stagger-children > *:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .ds-stagger-children > *:nth-child(2) {
+    animation-delay: 50ms;
+  }
+  .ds-stagger-children > *:nth-child(3) {
+    animation-delay: 100ms;
+  }
+  .ds-stagger-children > *:nth-child(4) {
+    animation-delay: 150ms;
+  }
+  .ds-stagger-children > *:nth-child(5) {
+    animation-delay: 200ms;
+  }
+  .ds-stagger-children > *:nth-child(6) {
+    animation-delay: 250ms;
+  }
+
   /* ── Vue transition classes ── */
   .ds-transition-fade-enter-active,
   .ds-transition-fade-leave-active {
@@ -147,23 +180,38 @@
   .ds-transition-slide-up-enter-active,
   .ds-transition-slide-up-leave-active {
     transition:
-      opacity var(--duration-slow) var(--ease-default),
-      transform var(--duration-slow) var(--ease-default);
+      opacity var(--duration-slow) var(--ease-out-expo),
+      transform var(--duration-slow) var(--ease-out-expo);
   }
   .ds-transition-slide-up-enter-from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(12px);
   }
   .ds-transition-slide-up-leave-to {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(-12px);
+  }
+
+  .ds-transition-slide-right-enter-active,
+  .ds-transition-slide-right-leave-active {
+    transition:
+      opacity var(--duration-normal) var(--ease-out-expo),
+      transform var(--duration-normal) var(--ease-out-expo);
+  }
+  .ds-transition-slide-right-enter-from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  .ds-transition-slide-right-leave-to {
+    opacity: 0;
+    transform: translateX(16px);
   }
 
   .ds-transition-scale-enter-active,
   .ds-transition-scale-leave-active {
     transition:
-      opacity var(--duration-normal) var(--ease-default),
-      transform var(--duration-normal) var(--ease-default);
+      opacity var(--duration-normal) var(--ease-spring),
+      transform var(--duration-normal) var(--ease-spring);
   }
   .ds-transition-scale-enter-from {
     opacity: 0;
@@ -172,5 +220,21 @@
   .ds-transition-scale-leave-to {
     opacity: 0;
     transform: scale(0.96);
+  }
+
+  /* ── Page transition ── */
+  .ds-page-enter-active,
+  .ds-page-leave-active {
+    transition:
+      opacity var(--duration-slow) var(--ease-out-expo),
+      transform var(--duration-slow) var(--ease-out-expo);
+  }
+  .ds-page-enter-from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  .ds-page-leave-to {
+    opacity: 0;
+    transform: translateY(-4px);
   }
 }
