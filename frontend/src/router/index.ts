@@ -1,6 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import DefaultLayout from '@/app/layouts/DefaultLayout.vue'
-import GuestLayout from '@/app/layouts/guest/GuestLayout.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = createRouter({
@@ -8,7 +6,7 @@ const router = createRouter({
   routes: [
     {
       path: '/login',
-      component: GuestLayout,
+      component: () => import('@/app/layouts/guest/GuestLayout.vue'),
       children: [
         {
           path: '',
@@ -19,7 +17,7 @@ const router = createRouter({
     },
     {
       path: '/register',
-      component: GuestLayout,
+      component: () => import('@/app/layouts/guest/GuestLayout.vue'),
       children: [
         {
           path: '',
@@ -30,7 +28,7 @@ const router = createRouter({
     },
     {
       path: '/forgot-password',
-      component: GuestLayout,
+      component: () => import('@/app/layouts/guest/GuestLayout.vue'),
       children: [
         {
           path: '',
@@ -41,7 +39,7 @@ const router = createRouter({
     },
     {
       path: '/reset-password',
-      component: GuestLayout,
+      component: () => import('@/app/layouts/guest/GuestLayout.vue'),
       children: [
         {
           path: '',
@@ -52,7 +50,7 @@ const router = createRouter({
     },
     {
       path: '/email/verify',
-      component: GuestLayout,
+      component: () => import('@/app/layouts/guest/GuestLayout.vue'),
       children: [
         {
           path: '',
@@ -63,7 +61,7 @@ const router = createRouter({
     },
     {
       path: '/',
-      component: DefaultLayout,
+      component: () => import('@/app/layouts/DefaultLayout.vue'),
       children: [
         {
           path: '',
@@ -127,21 +125,34 @@ const router = createRouter({
         },
       ],
     },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('@/app/layouts/guest/GuestLayout.vue'),
+      children: [
+        {
+          path: '',
+          name: '404',
+          component: () => import('@/features/auth/pages/LoginPage.vue'),
+        },
+      ],
+    },
   ],
 })
 
 router.beforeEach(async (to) => {
+  if (to.meta.requiresAuth) {
+    const auth = useAuthStore()
+    if (!auth.initialized) {
+      await auth.initialize()
+    }
+    if (!auth.isAuthenticated) {
+      const redirect = to.fullPath.replace(/^\/{2,}/, '/')
+      return { name: 'login', query: { redirect } }
+    }
+  }
+
   const auth = useAuthStore()
-
-  if (!auth.initialized) {
-    await auth.initialize()
-  }
-
-  if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    const redirect = to.fullPath.replace(/^\/{2,}/, '/')
-    return { name: 'login', query: { redirect } }
-  }
-
   if (auth.isAuthenticated && ['login', 'register'].includes(String(to.name))) {
     return { name: 'home' }
   }

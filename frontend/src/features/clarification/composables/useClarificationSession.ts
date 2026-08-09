@@ -31,7 +31,6 @@ export function useClarificationSession(analysisId: MaybeRefOrGetter<number | nu
     queryKey: computed(() => clarificationKeys.session(analysisIdValue.value ?? 0)),
     queryFn: () => fetchClarificationSession(analysisIdValue.value!),
     enabled: computed(() => analysisIdValue.value !== null),
-    retry: 1,
   })
 
   const session = computed(() => sessionQuery.data.value)

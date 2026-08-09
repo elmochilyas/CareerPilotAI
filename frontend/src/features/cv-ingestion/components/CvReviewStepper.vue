@@ -241,8 +241,8 @@ function labelForStep(index: number): string {
         :aria-label="`Step ${activeIndex + 1} of ${steps.length}`"
       >
         <div
-          class="h-full rounded-full bg-gradient-to-r from-primary-500 to-primary-400 transition-all duration-500 ease-out"
-          :style="{ width: `${((activeIndex + 1) / steps.length) * 100}%` }"
+          class="h-full rounded-full bg-gradient-to-r from-primary-500 to-primary-400 transition-[transform] duration-500 ease-out origin-left"
+          :style="{ transform: `scaleX(${(activeIndex + 1) / steps.length})` }"
         />
       </div>
 
@@ -250,8 +250,8 @@ function labelForStep(index: number): string {
       <div v-if="total && total > 0" class="flex items-center gap-2 text-xs text-slate-500">
         <div class="flex-1 h-1.5 overflow-hidden rounded-full bg-slate-100">
           <div
-            class="h-full rounded-full bg-emerald-400 transition-all duration-500"
-            :style="{ width: `${total ? Math.round(((reviewed ?? 0) / total) * 100) : 0}%` }"
+            class="h-full rounded-full bg-emerald-400 transition-[transform] duration-500 origin-left"
+            :style="{ transform: `scaleX(${total ? (reviewed ?? 0) / total : 0})` }"
           />
         </div>
         <span class="font-medium text-slate-700 shrink-0"> {{ reviewed ?? 0 }}/{{ total }} </span>
@@ -273,10 +273,14 @@ function labelForStep(index: number): string {
   animation: stepper-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
 }
 .dropdown-enter-active {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .dropdown-leave-active {
-  transition: all 0.15s cubic-bezier(0.55, 0, 1, 0.45);
+  transition:
+    opacity 0.15s cubic-bezier(0.55, 0, 1, 0.45),
+    transform 0.15s cubic-bezier(0.55, 0, 1, 0.45);
 }
 .dropdown-enter-from,
 .dropdown-leave-to {

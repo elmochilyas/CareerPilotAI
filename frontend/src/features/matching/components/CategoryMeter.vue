@@ -8,7 +8,6 @@ const props = defineProps<{
 }>()
 
 const notEvaluated = computed(() => props.hasData === false)
-const width = computed(() => `${Math.min(100, Math.max(0, props.score))}%`)
 </script>
 
 <template>
@@ -28,9 +27,9 @@ const width = computed(() => `${Math.min(100, Math.max(0, props.score))}%`)
       class="h-2 w-full overflow-hidden rounded-full bg-[var(--surface-sunken)] shadow-[var(--shadow-neo-inset)]"
     >
       <div
-        class="h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none"
+        class="h-full rounded-full transition-[transform] duration-500 motion-reduce:transition-none origin-left"
         :class="notEvaluated ? 'bg-[var(--color-neutral-200)]' : 'bg-[var(--color-primary-500)]'"
-        :style="{ width }"
+        :style="{ transform: `scaleX(${Math.min(100, Math.max(0, score)) / 100})` }"
       />
     </div>
     <p v-if="notEvaluated" class="text-xs text-[var(--text-muted)]">

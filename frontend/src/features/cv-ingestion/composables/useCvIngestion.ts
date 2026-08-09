@@ -47,21 +47,18 @@ export function useCvIngestion() {
       if (stage.value === 'processing') return 3000
       return false
     }),
-    retry: 1,
   })
 
   const suggestionsQuery = useQuery({
     queryKey: computed(() => cvKeys.suggestions(activeDocumentId.value!)),
     queryFn: () => fetchSuggestions(activeDocumentId.value!),
     enabled: computed(() => stage.value === 'review' && activeDocumentId.value !== null),
-    retry: 1,
   })
 
   const previewQuery = useQuery({
     queryKey: computed(() => cvKeys.importPreview(activeDocumentId.value!)),
     queryFn: () => fetchImportPreview(activeDocumentId.value!),
     enabled: computed(() => stage.value === 'import' && activeDocumentId.value !== null),
-    retry: 1,
   })
 
   const document = computed(() => documentQuery.data.value ?? null)

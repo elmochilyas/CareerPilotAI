@@ -9,11 +9,29 @@ export default defineConfig({
   plugins: [
     tailwindcss(),
     vue(),
-    vueDevTools(),
+    ...(process.env.NODE_ENV !== 'production' ? [vueDevTools()] : []),
   ],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
+  build: {
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/vue') || id.includes('node_modules/pinia') || id.includes('node_modules/vue-router')) {
+            return 'vendor'
+          }
+          if (id.includes('node_modules/@tanstack/vue-query')) {
+            return 'query'
+          }
+          if (id.includes('node_modules/@lucide/vue')) {
+            return 'icons'
+          }
+        },
+      },
     },
   },
   server: {

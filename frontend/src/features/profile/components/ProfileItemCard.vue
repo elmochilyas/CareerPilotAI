@@ -67,6 +67,10 @@ const isCurrent = computed(() => {
   return !props.item.end_date
 })
 
+const issuerEntry = computed(() => metadata.value.find((m) => m.label === 'Issuer'))
+const credentialEntries = computed(() => metadata.value.filter((m) => m.label === 'Credential'))
+const expiresEntries = computed(() => metadata.value.filter((m) => m.label === 'Expires'))
+
 const isTimeline = props.variant === 'timeline' || props.variant === 'academic'
 const isGrid = props.variant === 'grid'
 const isAchievement = props.variant === 'achievement'
@@ -235,16 +239,12 @@ const iconColor: Record<string, string> = {
           </h3>
           <p class="mt-0.5 text-xs text-[var(--text-secondary)]">
             {{ item.organization }}
+            <span v-if="item.organization && issuerEntry" class="mx-1">\u00b7</span>
             <span
-              v-if="item.organization && metadata.find((m) => m.label === 'Issuer')"
-              class="mx-1"
-              >\u00b7</span
-            >
-            <span
-              v-if="metadata.find((m) => m.label === 'Issuer')"
+              v-if="issuerEntry"
               class="rounded-lg bg-[var(--surface-secondary)] px-1.5 py-0.5 font-medium text-[var(--text-secondary)]"
             >
-              {{ metadata.find((m) => m.label === 'Issuer')?.value }}
+              {{ issuerEntry.value }}
             </span>
           </p>
         </div>
@@ -258,9 +258,9 @@ const iconColor: Record<string, string> = {
           Issued {{ dateDisplay(item.start_date, null) }}
         </span>
       </div>
-      <div v-if="metadata.filter((m) => m.label === 'Credential').length" class="mt-2.5">
+      <div v-if="credentialEntries.length" class="mt-2.5">
         <a
-          v-for="(line, i) in metadata.filter((m) => m.label === 'Credential')"
+          v-for="(line, i) in credentialEntries"
           :key="i"
           :href="line.url"
           target="_blank"
@@ -271,9 +271,9 @@ const iconColor: Record<string, string> = {
           View credential
         </a>
       </div>
-      <div v-if="metadata.filter((m) => m.label === 'Expires').length" class="mt-1.5">
+      <div v-if="expiresEntries.length" class="mt-1.5">
         <p
-          v-for="(line, i) in metadata.filter((m) => m.label === 'Expires')"
+          v-for="(line, i) in expiresEntries"
           :key="i"
           class="inline-flex items-center gap-1 text-xs text-[var(--color-primary-600)]"
         >

@@ -95,13 +95,13 @@ const allDone = computed(() => props.total > 0 && props.reviewed === props.total
             class="mt-1.5 h-1.5 w-28 overflow-hidden rounded-full bg-slate-100 shadow-inner"
           >
             <div
-              class="h-full rounded-full transition-all duration-500 ease-out"
+              class="h-full rounded-full transition-[transform] duration-500 ease-out origin-left"
               :class="
                 allDone
                   ? 'bg-gradient-to-r from-emerald-400 to-emerald-500'
                   : 'bg-gradient-to-r from-primary-400 to-primary-500'
               "
-              :style="{ width: reviewedPercent + '%' }"
+              :style="{ transform: `scaleX(${reviewedPercent / 100})` }"
             />
           </div>
         </div>

@@ -52,7 +52,6 @@ export function useMatchAnalysis(opportunityId: MaybeRefOrGetter<number | null>)
       const status = query.state.data?.data?.[0]?.status
       return status === 'queued' || status === 'processing' ? 3000 : false
     },
-    retry: 1,
   })
 
   const analyses = computed(() => listQuery.data.value?.data ?? [])

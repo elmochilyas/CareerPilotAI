@@ -105,11 +105,7 @@ const failureMessage = computed(() => {
     unexpected_processing_failure:
       'We could not complete this analysis safely. No unreviewed information was added.',
   }
-  return (
-    (code && messages[code]) ||
-    ingestion.value?.failure_reason ||
-    'The analysis could not be completed.'
-  )
+  return (code && messages[code]) || 'The analysis could not be completed.'
 })
 
 const isRetryable = computed(() => {
@@ -146,8 +142,8 @@ const cancelMutation = useMutation({
   },
   onError: (error) => {
     const detail = extractProblemDetail(error as never)
-    cancellationError.value =
-      detail?.detail ?? 'Cancellation failed. Please try again or return to opportunities.'
+    const fallback = 'Cancellation failed. Please try again or return to opportunities.'
+    cancellationError.value = detail?.status >= 500 ? fallback : (detail?.detail ?? fallback)
     isCancelDialogOpen.value = false
   },
 })

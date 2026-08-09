@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Search, X } from '@lucide/vue'
-import { ref, watch } from 'vue'
+import { ref, watch, onUnmounted } from 'vue'
 
 const props = withDefaults(
   defineProps<{
@@ -38,6 +38,10 @@ function clear() {
   localValue.value = ''
   emit('update:modelValue', '')
 }
+
+onUnmounted(() => {
+  if (timeout) clearTimeout(timeout)
+})
 </script>
 
 <template>

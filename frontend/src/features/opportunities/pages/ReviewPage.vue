@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, shallowRef } from 'vue'
+import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import OpportunityPageHeader from '../components/OpportunityPageHeader.vue'
@@ -254,7 +254,20 @@ const ambiguousCount = computed(
     ).length,
 )
 
+const suggestionsByStep = computed(() => {
+  const map = new Map<string, typeof visibleSuggestions.value>()
+  for (const step of STEP_DEFINITIONS) {
+    map.set(
+      step.key,
+      visibleSuggestions.value.filter((s) => (step.types as readonly string[]).includes(s.type)),
+    )
+  }
+  return map
+})
+
 function getSuggestionsByGroup(types: readonly string[]) {
+  const key = STEP_DEFINITIONS.find((s) => JSON.stringify(s.types) === JSON.stringify(types))?.key
+  if (key) return suggestionsByStep.value.get(key) ?? []
   return visibleSuggestions.value.filter((s) => types.includes(s.type))
 }
 
@@ -577,6 +590,10 @@ onMounted(() => {
   }
 
   void refetchSuggestions()
+})
+
+onUnmounted(() => {
+  disarmAcceptAll()
 })
 
 const primaryButtonLabel = computed(() => {

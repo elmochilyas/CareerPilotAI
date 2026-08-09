@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/vue-query'
 import { Plus, AlertCircle, RefreshCw, Wrench } from '@lucide/vue'
 import { fetchProfile } from '@/features/profile/api'
 import { useSkills } from '../composables/useSkills'
+import { profileKeys } from '@/features/profile/api'
 import SkillCard from './SkillCard.vue'
 import AddSkillFlow from './AddSkillFlow.vue'
 import EvidenceSelector from './EvidenceSelector.vue'
@@ -30,7 +31,7 @@ const {
 } = useSkills()
 
 const profileQuery = useQuery({
-  queryKey: ['profile', 'detail'],
+  queryKey: profileKeys.detail(),
   queryFn: fetchProfile,
 })
 

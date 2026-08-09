@@ -94,8 +94,8 @@ const totalCount = computed(() => props.details.areas.length)
       </div>
       <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-neutral-100)]">
         <div
-          class="h-full rounded-full bg-[var(--color-primary-500)] transition-all duration-500 motion-reduce:transition-none"
-          :style="{ width: score + '%' }"
+          class="h-full rounded-full bg-[var(--color-primary-500)] transition-[transform] duration-500 motion-reduce:transition-none origin-left"
+          :style="{ transform: `scaleX(${score / 100})` }"
         />
       </div>
     </div>

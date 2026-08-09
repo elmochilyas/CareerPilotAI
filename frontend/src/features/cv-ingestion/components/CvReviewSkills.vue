@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { Check, X, Undo2, Globe } from '@lucide/vue'
 import type { CvSuggestion, LanguageValue, ReviewDecision } from '../types'
 import CvSkillChip from './CvSkillChip.vue'
@@ -93,6 +93,10 @@ function dismissUndo(): void {
     undoTimeout = null
   }
 }
+
+onUnmounted(() => {
+  if (undoTimeout) clearTimeout(undoTimeout)
+})
 
 function keepAll(category: string): void {
   const skills = groupedSkills.value[category] ?? []

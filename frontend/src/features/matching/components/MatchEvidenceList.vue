@@ -22,24 +22,20 @@ interface EvidenceTypeMeta {
   label: string
 }
 
-const typeMeta = (type: string | null | undefined): EvidenceTypeMeta => {
-  switch (type) {
-    case 'candidate_skill':
-    case 'skill':
-      return { icon: Code2, label: 'Skill' }
-    case 'experience':
-      return { icon: Briefcase, label: 'Experience' }
-    case 'project':
-      return { icon: FolderKanban, label: 'Project' }
-    case 'education':
-      return { icon: GraduationCap, label: 'Education' }
-    case 'certification':
-      return { icon: Award, label: 'Certification' }
-    case 'language':
-      return { icon: Languages, label: 'Language' }
-    default:
-      return { icon: FileText, label: 'Evidence' }
-  }
+const TYPE_META_MAP: Record<string, EvidenceTypeMeta> = {
+  candidate_skill: { icon: Code2, label: 'Skill' },
+  skill: { icon: Code2, label: 'Skill' },
+  experience: { icon: Briefcase, label: 'Experience' },
+  project: { icon: FolderKanban, label: 'Project' },
+  education: { icon: GraduationCap, label: 'Education' },
+  certification: { icon: Award, label: 'Certification' },
+  language: { icon: Languages, label: 'Language' },
+}
+
+const defaultMeta: EvidenceTypeMeta = { icon: FileText, label: 'Evidence' }
+
+function typeMeta(type: string | null | undefined): EvidenceTypeMeta {
+  return (type ? TYPE_META_MAP[type] : null) ?? defaultMeta
 }
 
 const refs = computed<MatchEvidenceRef[]>(() => props.finding.evidence_refs ?? [])

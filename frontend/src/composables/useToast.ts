@@ -10,16 +10,28 @@ export interface ToastItem {
 }
 
 let counter = 0
+const timers = new Map<number, ReturnType<typeof setTimeout>>()
 
 const toasts = ref<ToastItem[]>([])
+
+function dismiss(id: number): void {
+  const timer = timers.get(id)
+  if (timer) {
+    clearTimeout(timer)
+    timers.delete(id)
+  }
+  toasts.value = toasts.value.filter((t) => t.id !== id)
+}
 
 function add(message: string, variant: ToastVariant, duration = 3500): void {
   const id = ++counter
   toasts.value.push({ id, message, variant, duration })
-}
-
-function dismiss(id: number): void {
-  toasts.value = toasts.value.filter((t) => t.id !== id)
+  if (duration > 0) {
+    timers.set(
+      id,
+      setTimeout(() => dismiss(id), duration),
+    )
+  }
 }
 
 function toast(message: string, opts?: { variant?: ToastVariant; duration?: number }) {

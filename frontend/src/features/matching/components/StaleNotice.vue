@@ -24,12 +24,7 @@ const emit = defineEmits<{
         Recalculate to see an up-to-date match. The previous result stays visible below.
       </p>
     </div>
-    <Button
-      variant="warning"
-      size="sm"
-      :disabled="busy"
-      @click="emit('recalculate')"
-    >
+    <Button variant="warning" size="sm" :disabled="busy" @click="emit('recalculate')">
       {{ busy ? 'Recalculating…' : 'Recalculate' }}
     </Button>
   </div>

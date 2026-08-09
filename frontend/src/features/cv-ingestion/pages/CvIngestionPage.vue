@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { ArrowLeft, Check, Upload, Cog, ListChecks, FileCheck, Sparkles } from '@lucide/vue'
 import type { LucideIcon } from '@lucide/vue'
@@ -53,6 +53,7 @@ const {
 
 const importBusy = computed(() => importMutation.isPending.value)
 const toastVisible = ref(false)
+const toastTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 const activeStep = ref(0)
 
 const applyPending = computed(() => importMutation.isPending.value)
@@ -148,11 +149,16 @@ watch(
   (msg) => {
     if (!msg) return
     toastVisible.value = true
-    setTimeout(() => {
+    if (toastTimer.value) clearTimeout(toastTimer.value)
+    toastTimer.value = setTimeout(() => {
       toastVisible.value = false
     }, 3500)
   },
 )
+
+onUnmounted(() => {
+  if (toastTimer.value) clearTimeout(toastTimer.value)
+})
 
 function handleFileSelected(file: File): void {
   if (uploadError.value) uploadError.value = null
@@ -463,8 +469,8 @@ onBeforeRouteLeave(() => {
             aria-valuemax="100"
           >
             <div
-              class="h-1.5 rounded-full bg-[var(--color-primary-600)] transition-all duration-500 ease-out"
-              :style="{ width: uploadProgress + '%' }"
+              class="h-1.5 rounded-full bg-[var(--color-primary-600)] transition-[transform] duration-500 ease-out origin-left"
+              :style="{ transform: `scaleX(${uploadProgress / 100})` }"
             />
           </div>
         </div>
@@ -534,10 +540,14 @@ onBeforeRouteLeave(() => {
 
 <style scoped>
 .stage-enter-active {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .stage-leave-active {
-  transition: all 0.15s cubic-bezier(0.55, 0, 1, 0.45);
+  transition:
+    opacity 0.15s cubic-bezier(0.55, 0, 1, 0.45),
+    transform 0.15s cubic-bezier(0.55, 0, 1, 0.45);
 }
 .stage-enter-from {
   opacity: 0;

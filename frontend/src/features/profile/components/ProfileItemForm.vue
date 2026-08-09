@@ -528,16 +528,8 @@ function onTechKeydown(e: KeyboardEvent) {
             class="sticky bottom-0 rounded-b-2xl border-t border-[var(--border-subtle)]/80 bg-[var(--surface-primary)]/95 px-6 py-4 backdrop-blur-sm"
           >
             <div class="flex justify-end gap-2">
-              <Button variant="secondary" @click="emit('cancel')">
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                :disabled="saving"
-                :loading="saving"
-              >
-                Saving…
-              </Button>
+              <Button variant="secondary" @click="emit('cancel')"> Cancel </Button>
+              <Button variant="primary" :disabled="saving" :loading="saving"> Saving… </Button>
             </div>
           </div>
         </form>

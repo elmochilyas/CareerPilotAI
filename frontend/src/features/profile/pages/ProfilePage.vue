@@ -139,9 +139,7 @@ const completedAreas = computed(() => {
             Check your connection and try again. Your entered data has not been cleared.
           </p>
           <div class="mt-3">
-            <Button variant="secondary" @click="state.refetch()">
-              Retry
-            </Button>
+            <Button variant="secondary" @click="state.refetch()"> Retry </Button>
           </div>
         </div>
       </div>

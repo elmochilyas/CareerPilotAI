@@ -79,17 +79,12 @@ const statusConfig: Record<
         class="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--surface-secondary)] shadow-[var(--shadow-neo-inset)]"
       >
         <div
-          class="h-full rounded-full bg-[var(--color-primary-500)] transition-all duration-500"
-          :style="{ width: `${Math.min(100, Math.max(0, progress))}%` }"
+          class="h-full rounded-full bg-[var(--color-primary-500)] transition-[transform] duration-500 origin-left"
+          :style="{ transform: `scaleX(${Math.min(100, Math.max(0, progress)) / 100})` }"
         />
       </div>
     </div>
-    <Button
-      v-if="status === 'failed'"
-      variant="soft-danger"
-      size="sm"
-      @click="emit('retry')"
-    >
+    <Button v-if="status === 'failed'" variant="soft-danger" size="sm" @click="emit('retry')">
       <RotateCcw :size="12" aria-hidden="true" />
       Retry
     </Button>

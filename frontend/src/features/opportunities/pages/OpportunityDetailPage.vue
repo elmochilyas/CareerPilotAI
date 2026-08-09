@@ -41,7 +41,6 @@ const opportunityQuery = useQuery({
   queryKey: computed(() => opportunityKeys.detail(opportunityId.value ?? 0)),
   queryFn: () => fetchOpportunity(opportunityId.value!),
   enabled: computed(() => opportunityId.value !== null),
-  refetchOnMount: 'always',
 })
 
 const opportunity = opportunityQuery.data

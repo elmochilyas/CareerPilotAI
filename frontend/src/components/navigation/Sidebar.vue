@@ -61,7 +61,9 @@ async function handleLogout(): Promise<void> {
         :to="item.to"
         class="sidebar-nav-item group flex items-center rounded-xl text-sm font-medium no-underline transition-all duration-200"
         :class="[
-          isActive(item.to) ? 'sidebar-nav-item--active text-white' : 'text-white/70 hover:text-white',
+          isActive(item.to)
+            ? 'sidebar-nav-item--active text-white'
+            : 'text-white/70 hover:text-white',
           collapsed ? 'justify-center px-2 py-3' : 'gap-3 px-3 py-3',
         ]"
         :title="collapsed ? item.label : undefined"
@@ -117,11 +119,7 @@ async function handleLogout(): Promise<void> {
 
 <style scoped>
 .sidebar {
-  background: linear-gradient(
-    180deg,
-    #4a3ab5 0%,
-    #2a1f6e 100%
-  );
+  background: linear-gradient(180deg, #4a3ab5 0%, #2a1f6e 100%);
   position: relative;
   overflow: hidden;
   box-shadow: var(--shadow-neo-sidebar);

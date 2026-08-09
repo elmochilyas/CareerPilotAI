@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 
 const props = withDefaults(
   defineProps<{
@@ -59,6 +59,10 @@ function onMouseleave() {
   if (timeout) clearTimeout(timeout)
   visible.value = false
 }
+
+onUnmounted(() => {
+  if (timeout) clearTimeout(timeout)
+})
 </script>
 
 <template>

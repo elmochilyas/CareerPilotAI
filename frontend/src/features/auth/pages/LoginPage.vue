@@ -35,12 +35,18 @@ async function handleSubmit(): Promise<void> {
   } catch (e: unknown) {
     if (e && typeof e === 'object' && 'response' in e) {
       const error = e as {
-        response?: { data?: { errors?: Record<string, string[]>; detail?: string } }
+        response?: {
+          status?: number
+          data?: { errors?: Record<string, string[]>; detail?: string }
+        }
       }
       if (error.response?.data?.errors) {
         errors.value = error.response.data.errors
       } else if (error.response?.data?.detail) {
-        serverError.value = error.response.data.detail
+        serverError.value =
+          error.response.status && error.response.status >= 500
+            ? 'An unexpected error occurred. Please try again.'
+            : error.response.data.detail
       }
     }
   } finally {

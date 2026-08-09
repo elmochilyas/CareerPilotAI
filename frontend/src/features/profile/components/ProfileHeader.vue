@@ -132,11 +132,19 @@ const availabilityLabel: Record<string, string> = {
       <div class="mt-6 flex flex-wrap items-center gap-2.5 text-xs">
         <span
           class="flex items-center gap-2 rounded-xl bg-[var(--surface-secondary)] px-3 py-2 font-medium shadow-[var(--shadow-neo-raised-sm)]"
-          :class="profile.city || profile.country ? 'text-[var(--text-secondary)]' : 'text-[var(--text-muted)]'"
+          :class="
+            profile.city || profile.country
+              ? 'text-[var(--text-secondary)]'
+              : 'text-[var(--text-muted)]'
+          "
         >
           <MapPin
             :size="14"
-            :class="profile.city || profile.country ? 'text-[var(--color-primary-400)]' : 'text-[var(--text-muted)]'"
+            :class="
+              profile.city || profile.country
+                ? 'text-[var(--color-primary-400)]'
+                : 'text-[var(--text-muted)]'
+            "
           />
           {{ [profile.city, profile.country].filter(Boolean).join(', ') || 'Location not added' }}
         </span>

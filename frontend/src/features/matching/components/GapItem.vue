@@ -49,7 +49,7 @@ const hasEvidence = finding.evidence_refs.length > 0
     <div class="flex items-center justify-between gap-3">
       <div class="flex items-center gap-2.5">
         <span
-          class="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest           shadow-[var(--shadow-neo-raised-sm)]"
+          class="inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest shadow-[var(--shadow-neo-raised-sm)]"
           :class="
             isRequired
               ? 'bg-[var(--color-error-50)]/60 text-[var(--color-error-600)]'
@@ -78,7 +78,9 @@ const hasEvidence = finding.evidence_refs.length > 0
 
     <!-- Job needs + What we found side by side -->
     <div class="mt-4 grid grid-cols-2 gap-3">
-      <div class="rounded-[var(--radius-lg)] bg-[var(--surface-primary)] px-4 py-3 shadow-[var(--shadow-neo-raised-sm)]">
+      <div
+        class="rounded-[var(--radius-lg)] bg-[var(--surface-primary)] px-4 py-3 shadow-[var(--shadow-neo-raised-sm)]"
+      >
         <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
           What the job needs
         </p>
@@ -86,7 +88,9 @@ const hasEvidence = finding.evidence_refs.length > 0
           {{ finding.requirement_label ?? finding.requirement_text }}
         </p>
       </div>
-      <div class="rounded-[var(--radius-lg)] bg-[var(--surface-primary)] px-4 py-3 shadow-[var(--shadow-neo-raised-sm)]">
+      <div
+        class="rounded-[var(--radius-lg)] bg-[var(--surface-primary)] px-4 py-3 shadow-[var(--shadow-neo-raised-sm)]"
+      >
         <p class="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
           What we found
         </p>

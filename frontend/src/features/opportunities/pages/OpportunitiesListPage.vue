@@ -51,14 +51,17 @@ const currentPage = computed(() => {
 const ingestionsQuery = useQuery({
   queryKey: computed(() => opportunityKeys.ingestions(currentPage.value)),
   queryFn: () => fetchIngestions({ page: currentPage.value }),
-  refetchInterval: 10000,
-  refetchOnMount: 'always',
+  refetchInterval: (query) => {
+    const hasActive = query.state.data?.data?.some((i) =>
+      ['draft', 'queued', 'processing'].includes(i.status),
+    )
+    return hasActive ? 10000 : false
+  },
 })
 
 const opportunitiesQuery = useQuery({
   queryKey: computed(() => opportunityKeys.list(currentPage.value)),
   queryFn: () => fetchOpportunities({ page: currentPage.value }),
-  refetchOnMount: 'always',
 })
 
 const ingestions = computed(() => ingestionsQuery.data.value?.data ?? [])

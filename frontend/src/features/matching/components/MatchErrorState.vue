@@ -26,13 +26,7 @@ const emit = defineEmits<{
   >
     <h2 class="text-base font-semibold text-slate-900">{{ title }}</h2>
     <p v-if="detail" class="mt-2 text-sm leading-relaxed text-slate-600">{{ detail }}</p>
-    <Button
-      variant="primary"
-      :disabled="busy"
-      :loading="busy"
-      class="mt-5"
-      @click="emit('retry')"
-    >
+    <Button variant="primary" :disabled="busy" :loading="busy" class="mt-5" @click="emit('retry')">
       Retrying…
     </Button>
   </div>

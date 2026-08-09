@@ -33,7 +33,11 @@ const categoryCounts = computed(() => {
 const categoryMeta: Record<MatchCategory, { icon: typeof Wrench; label: string; color: string }> = {
   required_skills: { icon: Wrench, label: 'Skills', color: 'text-[var(--color-primary-600)]' },
   preferred_skills: { icon: Wrench, label: 'Skills', color: 'text-[var(--color-primary-600)]' },
-  experience_education: { icon: Briefcase, label: 'Experience', color: 'text-[var(--color-info-600)]' },
+  experience_education: {
+    icon: Briefcase,
+    label: 'Experience',
+    color: 'text-[var(--color-info-600)]',
+  },
   language_soft: { icon: Globe, label: 'Languages', color: 'text-[var(--color-success-600)]' },
   evidence: { icon: FileSearch, label: 'Evidence', color: 'text-[var(--color-warning-600)]' },
 }
@@ -68,9 +72,7 @@ function answerQuestion(): void {
   <div class="space-y-8">
     <header class="space-y-3">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
-          Gaps to review
-        </h1>
+        <h1 class="text-2xl font-bold tracking-tight text-[var(--text-primary)]">Gaps to review</h1>
         <p class="mt-1 text-sm leading-relaxed text-[var(--text-secondary)]">
           {{ totalGaps }} requirement{{ totalGaps === 1 ? '' : 's' }} need attention before you're a
           stronger match.
@@ -94,20 +96,28 @@ function answerQuestion(): void {
           :key="item.key"
           class="flex items-center gap-2 rounded-[var(--radius-lg)] bg-[var(--surface-secondary)] px-3.5 py-2 shadow-[var(--shadow-neo-raised-sm)]"
         >
-          <component :is="item.icon" class="size-4 shrink-0" :class="item.color" aria-hidden="true" />
+          <component
+            :is="item.icon"
+            class="size-4 shrink-0"
+            :class="item.color"
+            aria-hidden="true"
+          />
           <span class="text-sm font-medium text-[var(--text-primary)]">{{ item.count }}</span>
           <span class="text-xs text-[var(--text-muted)]">{{ item.label }}</span>
         </div>
       </div>
 
       <!-- Visual bar -->
-      <div class="mt-4 flex h-2.5 overflow-hidden rounded-full bg-[var(--surface-secondary)] shadow-[var(--shadow-neo-inset)]">
+      <div
+        class="mt-4 flex h-2.5 overflow-hidden rounded-full bg-[var(--surface-secondary)] shadow-[var(--shadow-neo-inset)]"
+      >
         <div
           v-for="item in overviewItems"
           :key="item.key"
           class="transition-all"
           :class="{
-            'bg-[var(--color-primary-500)]': item.key === 'required_skills' || item.key === 'preferred_skills',
+            'bg-[var(--color-primary-500)]':
+              item.key === 'required_skills' || item.key === 'preferred_skills',
             'bg-[var(--color-info-500)]': item.key === 'experience_education',
             'bg-[var(--color-success-500)]': item.key === 'language_soft',
             'bg-[var(--color-warning-500)]': item.key === 'evidence',
@@ -153,7 +163,9 @@ function answerQuestion(): void {
     />
 
     <!-- Bottom CTA -->
-    <div class="flex items-center justify-between rounded-[var(--radius-xl)] bg-[var(--surface-secondary)] px-6 py-4 shadow-[var(--shadow-neo-raised-sm)]">
+    <div
+      class="flex items-center justify-between rounded-[var(--radius-xl)] bg-[var(--surface-secondary)] px-6 py-4 shadow-[var(--shadow-neo-raised-sm)]"
+    >
       <p class="text-sm text-[var(--text-secondary)]">Want the full picture?</p>
       <RouterLink
         :to="{

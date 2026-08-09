@@ -58,7 +58,11 @@ const loadErrorDetail = computed(() => {
     | unknown
     | null
     | undefined
-  return extractProblemDetail(error as never)?.detail ?? null
+  const detail = extractProblemDetail(error as never)
+  if (!detail) return null
+  return detail.status >= 500
+    ? 'An unexpected error occurred. Please try again.'
+    : (detail.detail ?? null)
 })
 
 const classifierUnavailable = computed(
