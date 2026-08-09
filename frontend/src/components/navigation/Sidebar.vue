@@ -44,11 +44,6 @@ async function handleLogout(): Promise<void> {
   >
     <div class="flex items-center gap-3 px-4 pt-6 pb-5">
       <img :src="logo" alt="CareerPilot" class="sidebar-logo" />
-      <Transition name="fade">
-        <span v-if="!collapsed" class="text-lg font-bold tracking-tight text-white">
-          CareerPilot
-        </span>
-      </Transition>
     </div>
 
     <nav class="flex-1 space-y-1.5 px-3 pt-2">

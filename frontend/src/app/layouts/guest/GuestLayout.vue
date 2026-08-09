@@ -12,7 +12,6 @@ import logo from '@/assets/images/logo.png'
     <div class="auth-bg__content">
       <RouterLink to="/" class="auth-bg__logo" aria-label="CareerPilot home">
         <img :src="logo" alt="CareerPilot" class="auth-bg__logo-img" />
-        <span class="text-xl font-bold tracking-tight text-white"> CareerPilot </span>
       </RouterLink>
 
       <div class="auth-bg__card ds-animate-fade-in">
