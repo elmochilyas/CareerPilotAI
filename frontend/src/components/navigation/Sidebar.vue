@@ -42,7 +42,7 @@ async function handleLogout(): Promise<void> {
     class="sidebar flex h-full flex-col"
     :aria-label="collapsed ? 'Navigation (collapsed)' : 'Main navigation'"
   >
-    <div class="flex items-center gap-3 px-4 pt-6 pb-5">
+    <div class="flex items-center justify-center px-4 pt-3 pb-5">
       <img :src="logo" alt="CareerPilot" class="sidebar-logo" />
     </div>
 
@@ -131,7 +131,7 @@ async function handleLogout(): Promise<void> {
 }
 
 .sidebar-logo {
-  width: 100%;
+  width: 80%;
   height: auto;
 }
 
