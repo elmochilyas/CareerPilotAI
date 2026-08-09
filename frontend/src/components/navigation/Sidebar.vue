@@ -131,19 +131,8 @@ async function handleLogout(): Promise<void> {
 }
 
 .sidebar-logo {
-  width: 2.25rem;
-  height: 2.25rem;
-  border-radius: 0.75rem;
-  box-shadow: var(--shadow-neo-sidebar);
-  transition: all 0.2s ease;
-  object-fit: contain;
-}
-
-.sidebar-logo:hover {
-  background: rgba(255, 255, 255, 0.18);
-  box-shadow:
-    var(--shadow-neo-sidebar),
-    inset 0 1px 2px rgba(255, 255, 255, 0.15);
+  height: 2.5rem;
+  width: auto;
 }
 
 .sidebar-nav-item {

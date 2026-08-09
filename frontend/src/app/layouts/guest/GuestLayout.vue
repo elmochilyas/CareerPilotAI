@@ -68,10 +68,8 @@ import logo from '@/assets/images/logo.png'
 }
 
 .auth-bg__logo-img {
-  height: 2.25rem;
+  height: 3rem;
   width: auto;
-  border-radius: 0.75rem;
-  box-shadow: var(--shadow-neo-raised);
 }
 
 .auth-bg__card {
