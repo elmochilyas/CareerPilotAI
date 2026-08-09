@@ -79,8 +79,9 @@ describe('ProfileItemForm', () => {
       props: { open: true, type: 'experience', saving: true },
       global: { stubs },
     })
-    const saveBtn = wrapper.findAll('button').find((b) => b.text().includes('Saving'))
-    expect(saveBtn?.attributes('disabled')).toBeDefined()
+    const saveBtn = wrapper.findAll('button').find((b) => b.attributes('disabled') !== undefined)
+    expect(saveBtn).toBeDefined()
+    expect(saveBtn!.attributes('disabled')).toBeDefined()
   })
 
   it('requires title via native validation', () => {

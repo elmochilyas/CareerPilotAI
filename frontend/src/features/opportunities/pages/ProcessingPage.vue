@@ -144,9 +144,7 @@ const cancelMutation = useMutation({
     const detail = extractProblemDetail(error as never)
     const fallback = 'Cancellation failed. Please try again or return to opportunities.'
     cancellationError.value =
-      detail && detail.status >= 500
-        ? fallback
-        : detail?.detail ?? fallback
+      detail && detail.status >= 500 ? fallback : (detail?.detail ?? fallback)
     isCancelDialogOpen.value = false
   },
 })

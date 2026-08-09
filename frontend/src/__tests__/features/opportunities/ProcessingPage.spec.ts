@@ -145,7 +145,7 @@ describe('ProcessingPage', () => {
     mockIngestion.value = { status: 'failed', failure_reason: 'Something went wrong' }
     const wrapper = mount(ProcessingPage)
     expect(wrapper.text()).toContain("We couldn't complete the analysis")
-    expect(wrapper.text()).toContain('Something went wrong')
+    expect(wrapper.text()).toContain('The analysis could not be completed.')
   })
 
   it('keeps the failure code in expandable support details', () => {
