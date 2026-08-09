@@ -17,15 +17,23 @@ const gaps = computed(() => gapSentence(important.value.gaps))
 </script>
 
 <template>
-  <section aria-labelledby="match-summary" class="space-y-6">
+  <section
+    aria-labelledby="match-summary"
+    class="rounded-[var(--radius-xl)] bg-[var(--surface-primary)] p-6 shadow-[var(--shadow-neo-raised)] sm:p-8"
+  >
     <div class="grid gap-6 sm:grid-cols-[auto_1fr] sm:items-center sm:gap-10">
       <ScoreAnchor :score="score" />
 
-      <div class="min-w-0 sm:border-l sm:border-slate-200 sm:pl-10">
-        <h2 id="match-summary" class="text-lg font-semibold tracking-tight text-slate-900">
+      <div class="min-w-0 sm:border-l sm:border-[var(--border-subtle)] sm:pl-10">
+        <h2
+          id="match-summary"
+          class="text-lg font-semibold tracking-tight text-[var(--text-primary)]"
+        >
           {{ sentence }}
         </h2>
-        <p class="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500">{{ gaps }}</p>
+        <p class="mt-1 max-w-2xl text-sm leading-relaxed text-[var(--text-secondary)]">
+          {{ gaps }}
+        </p>
       </div>
     </div>
   </section>

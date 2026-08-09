@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Button from '@/components/ui/Button.vue'
+
 withDefaults(
   defineProps<{
     title?: string
@@ -20,17 +22,18 @@ const emit = defineEmits<{
 <template>
   <div
     role="alert"
-    class="mx-auto max-w-md rounded-xl border border-slate-200 bg-white p-6 text-center"
+    class="mx-auto max-w-md rounded-[var(--radius-xl)] bg-[var(--surface-primary)] p-6 text-center shadow-[var(--shadow-neo-raised)]"
   >
     <h2 class="text-base font-semibold text-slate-900">{{ title }}</h2>
     <p v-if="detail" class="mt-2 text-sm leading-relaxed text-slate-600">{{ detail }}</p>
-    <button
-      type="button"
+    <Button
+      variant="primary"
       :disabled="busy"
-      class="mt-5 inline-flex min-h-10 items-center justify-center rounded-lg bg-primary-600 px-4 text-sm font-medium text-white hover:bg-primary-700 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+      :loading="busy"
+      class="mt-5"
       @click="emit('retry')"
     >
-      {{ busy ? 'Retrying…' : 'Try again' }}
-    </button>
+      Retrying…
+    </Button>
   </div>
 </template>

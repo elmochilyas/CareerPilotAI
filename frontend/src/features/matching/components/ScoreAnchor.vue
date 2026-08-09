@@ -23,7 +23,9 @@ const labelClasses: Record<AlignmentTier, string> = {
 </script>
 
 <template>
-  <div class="flex flex-col items-center gap-1 lg:items-start">
+  <div
+    class="flex flex-col items-center gap-1 rounded-[var(--radius-2xl)] bg-[var(--surface-primary)] px-8 py-6 shadow-[var(--shadow-neo-raised-lg)] lg:items-start"
+  >
     <p class="flex items-baseline gap-1" :aria-label="`Match score ${score} out of 100`">
       <span class="text-5xl font-bold tracking-tight tabular-nums" :class="valueClasses[tier]">
         {{ score }}%

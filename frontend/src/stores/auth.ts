@@ -82,7 +82,6 @@ export const useAuthStore = defineStore('auth', () => {
   async function logout(): Promise<void> {
     loading.value = true
     try {
-      await fetchCsrfCookie()
       await logoutUser()
     } catch {
       // Ignore server errors (e.g. 401 for already-expired session)

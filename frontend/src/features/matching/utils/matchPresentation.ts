@@ -172,3 +172,72 @@ export function evidenceEmptyMessage(finding: MatchFinding): string {
 export function findingKey(finding: MatchFinding): string {
   return `${finding.source_type}:${finding.source_id}:${finding.display_order}`
 }
+
+export interface CategoryGroup {
+  key: string
+  label: string
+  categories: MatchCategory[]
+}
+
+export const CATEGORY_GROUPS: CategoryGroup[] = [
+  { key: 'skills', label: 'Skills', categories: ['required_skills', 'preferred_skills'] },
+  {
+    key: 'experience',
+    label: 'Experience & education',
+    categories: ['experience_education'],
+  },
+  { key: 'languages', label: 'Languages & certifications', categories: ['language_soft'] },
+  { key: 'evidence', label: 'Evidence gaps', categories: ['evidence'] },
+]
+
+export function whatWeFound(finding: MatchFinding): string {
+  if (finding.evidence_refs.length > 0) {
+    const count = finding.evidence_refs.length
+    return `Found ${count} related evidence item${count === 1 ? '' : 's'}.`
+  }
+  if (finding.match_state === 'unknown') {
+    return 'Insufficient data to evaluate this requirement.'
+  }
+  return `No trusted ${labelOf(finding)} evidence in your profile.`
+}
+
+export function suggestedNextStep(finding: MatchFinding): string {
+  if (finding.importance === 'required') {
+    return 'Add evidence if you have relevant experience.'
+  }
+  return 'Consider adding evidence if this applies to you.'
+}
+
+export function overviewText(findings: MatchFinding[]): string {
+  const gaps = findings.filter((f) => f.match_state === 'gap')
+  const total = gaps.length
+  if (total === 0) return ''
+
+  const byGroup = CATEGORY_GROUPS.map((group) => {
+    const count = gaps.filter((f) => group.categories.includes(f.category!)).length
+    return { label: group.label, count }
+  }).filter((g) => g.count > 0)
+
+  const parts = byGroup.map((g) => {
+    const shortLabel = g.label
+      .replace(' & certifications', '')
+      .replace(' & education', '')
+      .replace('Experience', 'Experience')
+      .replace('Languages', 'Languages')
+    return `${g.count} ${shortLabel}`
+  })
+
+  return `${total} gap${total === 1 ? '' : 's'} \u00B7 ${parts.join(' \u00B7 ')}`
+}
+
+export function groupFindings(
+  findings: MatchFinding[],
+): { group: CategoryGroup; items: MatchFinding[] }[] {
+  const gaps = findings.filter((f) => f.match_state === 'gap')
+  const sorted = [...gaps].sort((a, b) => gapPriority(a) - gapPriority(b))
+
+  return CATEGORY_GROUPS.map((group) => ({
+    group,
+    items: sorted.filter((f) => group.categories.includes(f.category!)),
+  })).filter((g) => g.items.length > 0)
+}

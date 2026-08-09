@@ -20,13 +20,18 @@ const updatedAt = computed(() =>
 </script>
 
 <template>
-  <details id="score-details" class="group rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
+  <details
+    id="score-details"
+    class="group rounded-[var(--radius-xl)] bg-[var(--surface-primary)] p-6 shadow-[var(--shadow-neo-raised)] sm:p-8"
+  >
     <summary
-      class="flex cursor-pointer list-none items-center justify-between gap-3 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none"
+      class="flex cursor-pointer list-none items-center justify-between gap-3 focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] focus-visible:outline-none"
     >
       <span>
-        <span class="text-base font-semibold text-slate-900">How this match was calculated</span>
-        <span class="mt-0.5 block text-sm text-slate-500">
+        <span class="text-base font-semibold text-[var(--text-primary)]"
+          >How this match was calculated</span
+        >
+        <span class="mt-0.5 block text-sm text-[var(--text-secondary)]">
           The score combines how well your profile covers the job's requirements.
         </span>
       </span>
@@ -46,13 +51,13 @@ const updatedAt = computed(() =>
           :has-data="component.has_candidate_data"
         />
       </div>
-      <p v-else class="text-sm text-slate-500">
+      <p v-else class="text-sm text-[var(--text-secondary)]">
         No category scores are available for this analysis.
       </p>
 
-      <p class="mt-6 border-t border-slate-100 pt-4 text-xs text-slate-400">
+      <p class="mt-6 border-t border-[var(--border-subtle)] pt-4 text-xs text-[var(--text-muted)]">
         Evidence coverage
-        <span class="font-semibold text-slate-600">
+        <span class="font-semibold text-[var(--text-secondary)]">
           {{ evidenceCoverage === null ? 'not measured' : `${evidenceCoverage}%` }}
         </span>
         <template v-if="updatedAt"> · Analysis updated {{ updatedAt }}</template>

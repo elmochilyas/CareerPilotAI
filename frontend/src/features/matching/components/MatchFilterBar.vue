@@ -22,7 +22,7 @@ const emit = defineEmits<{
 const options: Array<{ value: MatchFilterValue; label: string }> = [
   { value: 'all', label: 'All' },
   { value: 'matched', label: 'Matches' },
-  { value: 'gap', label: 'Needs attention' },
+  { value: 'gap', label: 'Gaps' },
 ]
 
 const stateCounts = computed<Record<string, number>>(() => {
@@ -50,18 +50,20 @@ const preferredChecked = computed(() => props.importance.includes('preferred'))
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+  <div
+    class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[var(--radius-xl)] bg-[var(--surface-secondary)] px-4 py-3 shadow-[var(--shadow-neo-inset)]"
+  >
     <div role="group" aria-label="Filter by result" class="flex flex-wrap gap-1.5">
       <button
         v-for="option in options"
         :key="option.value"
         type="button"
         :aria-pressed="matchFilter === option.value"
-        class="rounded-full border px-3 py-1 text-xs font-medium focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 focus-visible:outline-none"
+        class="rounded-full px-3 py-1 text-xs font-medium focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] focus-visible:ring-offset-1 focus-visible:outline-none"
         :class="
           matchFilter === option.value
-            ? 'border-primary-600 bg-primary-600 text-white ring-1 ring-primary-600'
-            : 'border-slate-300 bg-white text-slate-600 hover:bg-slate-50'
+            ? 'bg-[var(--color-primary-600)] text-white shadow-[var(--shadow-neo-button)]'
+            : 'bg-[var(--surface-primary)] text-[var(--text-secondary)] shadow-[var(--shadow-neo-raised-sm)] hover:bg-[var(--surface-secondary)]'
         "
         @click="emit('update:matchFilter', option.value)"
       >
@@ -74,7 +76,7 @@ const preferredChecked = computed(() => props.importance.includes('preferred'))
 
     <details class="group relative">
       <summary
-        class="flex cursor-pointer list-none items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1 focus-visible:outline-none"
+        class="flex cursor-pointer list-none items-center gap-1 rounded-[var(--radius-md)] bg-[var(--surface-primary)] px-2.5 py-1 text-xs font-medium text-[var(--text-secondary)] shadow-[var(--shadow-neo-raised-sm)] hover:bg-[var(--surface-secondary)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] focus-visible:ring-offset-1 focus-visible:outline-none"
       >
         More filters
         <ChevronDown
@@ -83,10 +85,10 @@ const preferredChecked = computed(() => props.importance.includes('preferred'))
         />
       </summary>
       <div
-        class="absolute right-0 z-10 mt-2 w-48 rounded-xl border border-slate-200 bg-white p-4 shadow-lg"
+        class="absolute right-0 z-10 mt-2 w-48 rounded-[var(--radius-lg)] bg-[var(--surface-primary)] p-4 shadow-[var(--shadow-neo-raised-lg)]"
       >
         <fieldset>
-          <legend class="text-xs font-medium text-slate-500">Importance</legend>
+          <legend class="text-xs font-medium text-[var(--text-secondary)]">Importance</legend>
           <div class="mt-2 space-y-2.5">
             <Checkbox
               id="filter-required"
@@ -102,7 +104,7 @@ const preferredChecked = computed(() => props.importance.includes('preferred'))
             />
           </div>
         </fieldset>
-        <div class="mt-3 border-t border-slate-100 pt-3">
+        <div class="mt-3 border-t border-[var(--border-subtle)] pt-3">
           <Checkbox
             id="filter-unknown"
             label="Unknown"

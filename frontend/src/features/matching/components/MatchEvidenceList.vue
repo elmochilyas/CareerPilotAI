@@ -51,17 +51,17 @@ const refs = computed<MatchEvidenceRef[]>(() => props.finding.evidence_refs ?? [
       <li
         v-for="(ref, index) in refs"
         :key="`${ref.type}:${ref.id ?? 'x'}:${index}`"
-        class="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 py-1 pr-2.5 pl-2 text-xs text-slate-700"
+        class="inline-flex max-w-full items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--surface-secondary)] py-1 pr-2.5 pl-2 text-xs text-[var(--text-secondary)] shadow-[var(--shadow-neo-raised-sm)]"
       >
         <component
           :is="typeMeta(ref.type).icon"
-          class="size-3.5 shrink-0 text-slate-400"
+          class="size-3.5 shrink-0 text-[var(--text-muted)]"
           aria-hidden="true"
         />
         <span class="sr-only">{{ typeMeta(ref.type).label }}: </span>
         <span class="truncate">{{ ref.label }}</span>
       </li>
     </ul>
-    <p v-else class="text-sm text-slate-500">{{ evidenceEmptyMessage(finding) }}</p>
+    <p v-else class="text-sm text-[var(--text-muted)]">{{ evidenceEmptyMessage(finding) }}</p>
   </div>
 </template>

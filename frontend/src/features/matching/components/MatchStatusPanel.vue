@@ -14,10 +14,10 @@ const label = computed(() =>
   <div
     role="status"
     aria-live="polite"
-    class="flex flex-col items-center gap-3 rounded-xl border border-slate-200 bg-white px-6 py-10 text-center"
+    class="flex flex-col items-center gap-3 rounded-[var(--radius-xl)] bg-[var(--surface-primary)] px-6 py-10 text-center shadow-[var(--shadow-neo-raised)]"
   >
     <div
-      class="size-8 animate-spin rounded-full border-2 border-slate-200 border-t-primary-600 motion-reduce:animate-none"
+      class="size-8 animate-spin rounded-full border-2 border-slate-200 border-t-[var(--color-primary-600)] motion-reduce:animate-none"
       aria-hidden="true"
     />
     <div>

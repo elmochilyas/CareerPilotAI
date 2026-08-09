@@ -78,7 +78,7 @@ const router = createRouter({
           component: () => import('@/features/profile/pages/ProfilePage.vue'),
         },
         {
-          path: 'profile/cv',
+          path: 'cv',
           name: 'cv-ingestion',
           meta: { requiresAuth: true },
           component: () => import('@/features/cv-ingestion/pages/CvIngestionPage.vue'),

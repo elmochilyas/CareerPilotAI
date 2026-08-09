@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { ChevronDown, Loader2 } from '@lucide/vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useQuery } from '@tanstack/vue-query'
@@ -8,7 +8,9 @@ import Button from '@/components/ui/Button.vue'
 import EmptyState from '@/components/ui/EmptyState.vue'
 import { fetchOpportunity, opportunityKeys } from '@/features/opportunities/api'
 import ClarificationEntryCard from '@/features/clarification/components/ClarificationEntryCard.vue'
+import { useClarificationSession } from '@/features/clarification/composables/useClarificationSession'
 import { useMatchAnalysis } from '../composables/useMatchAnalysis'
+import GapReviewSection from '../components/GapReviewSection.vue'
 import InsufficientProfileGate from '../components/InsufficientProfileGate.vue'
 import MatchAtAGlance from '../components/MatchAtAGlance.vue'
 import MatchBriefHeader from '../components/MatchBriefHeader.vue'
@@ -92,14 +94,20 @@ const classifierUnavailable = computed(
   () => completedAnalysis.value?.classifier.status === 'unavailable',
 )
 
-const fullAnalysisOpen = ref(false)
+const isGapReviewMode = computed(
+  () => route.query.view === 'analysis' && route.query.filter === 'gaps',
+)
+
+const fullAnalysisOpen = ref(route.query.view === 'analysis')
+
+const clarificationAnalysisId = computed(() =>
+  isGapReviewMode.value ? (completedAnalysis.value?.id ?? null) : null,
+)
+
+const { questions } = useClarificationSession(clarificationAnalysisId)
 
 function onFullAnalysisToggle(event: Event): void {
   fullAnalysisOpen.value = (event.target as HTMLDetailsElement).open
-}
-
-function openFullAnalysis(): void {
-  fullAnalysisOpen.value = true
 }
 
 function openClarifications(): void {
@@ -110,21 +118,36 @@ function openClarifications(): void {
 
 function viewGaps(): void {
   matchFilter.value = 'gap'
-  openFullAnalysis()
+  fullAnalysisOpen.value = true
+  if (opportunityId.value !== null) {
+    void router.replace({ query: { ...route.query, view: 'analysis', filter: 'gaps' } })
+  }
 }
 
 function viewAll(): void {
   matchFilter.value = 'all'
-  openFullAnalysis()
+  fullAnalysisOpen.value = true
+  if (opportunityId.value !== null) {
+    const query = Object.fromEntries(
+      Object.entries(route.query).filter(([key]) => key !== 'filter'),
+    )
+    void router.replace({ query: { ...query, view: 'analysis' } })
+  }
 }
 
 function viewUnknown(): void {
   matchFilter.value = 'all'
   includeUnknown.value = true
-  openFullAnalysis()
+  fullAnalysisOpen.value = true
+  if (opportunityId.value !== null) {
+    const query = Object.fromEntries(
+      Object.entries(route.query).filter(([key]) => key !== 'filter'),
+    )
+    void router.replace({ query: { ...query, view: 'analysis' } })
+  }
 }
 
-const matchFilter = ref<'all' | 'matched' | 'gap'>('all')
+const matchFilter = ref<'all' | 'matched' | 'gap'>(route.query.filter === 'gaps' ? 'gap' : 'all')
 const importanceFilter = ref<MatchImportance[]>([])
 const includeUnknown = ref(false)
 
@@ -143,6 +166,27 @@ const filteredFindings = computed(() => {
     return true
   })
 })
+
+watch(
+  () => route.query,
+  (query) => {
+    fullAnalysisOpen.value = query.view === 'analysis'
+    matchFilter.value = query.filter === 'gaps' ? 'gap' : 'all'
+  },
+)
+
+watch(matchFilter, (newFilter) => {
+  if (opportunityId.value === null) return
+
+  if (newFilter === 'gap') {
+    void router.replace({ query: { ...route.query, view: 'analysis', filter: 'gaps' } })
+  } else {
+    const query = Object.fromEntries(
+      Object.entries(route.query).filter(([key]) => key !== 'filter'),
+    )
+    void router.replace({ query: { ...query, view: 'analysis' } })
+  }
+})
 </script>
 
 <template>
@@ -160,9 +204,13 @@ const filteredFindings = computed(() => {
 
     <div v-else-if="loading" class="mt-10" role="status">
       <div class="mx-auto max-w-md space-y-4">
-        <div class="h-6 w-40 animate-pulse rounded-lg bg-slate-100" />
-        <div class="h-28 animate-pulse rounded-xl border border-slate-200 bg-white shadow-sm" />
-        <div class="h-40 animate-pulse rounded-xl border border-slate-200 bg-white shadow-sm" />
+        <div class="h-6 w-40 animate-pulse rounded-lg bg-[var(--color-neutral-100)]" />
+        <div
+          class="h-28 animate-pulse rounded-[var(--radius-xl)] bg-[var(--surface-primary)] shadow-[var(--shadow-neo-raised)]"
+        />
+        <div
+          class="h-40 animate-pulse rounded-[var(--radius-xl)] bg-[var(--surface-primary)] shadow-[var(--shadow-neo-raised)]"
+        />
       </div>
       <span class="sr-only">Loading the Career Intelligence Brief…</span>
     </div>
@@ -208,21 +256,24 @@ const filteredFindings = computed(() => {
         v-if="processing"
         role="status"
         aria-live="polite"
-        class="mt-8 flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700"
+        class="mt-8 flex items-center gap-2 rounded-[var(--radius-xl)] bg-[var(--color-info-50)] px-4 py-3 text-sm text-[var(--color-info-700)] shadow-[var(--shadow-neo-raised-sm)]"
       >
-        <Loader2 class="size-4 shrink-0 animate-spin text-blue-500" aria-hidden="true" />
+        <Loader2
+          class="size-4 shrink-0 animate-spin text-[var(--color-info-500)]"
+          aria-hidden="true"
+        />
         A new analysis is running. The previous result stays visible below.
       </div>
       <div
         v-else-if="failedNewest"
         role="alert"
-        class="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        class="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-xl)] bg-[var(--color-error-50)] px-4 py-3 text-sm text-[var(--color-error-700)] shadow-[var(--shadow-neo-raised-sm)]"
       >
         <span>The latest analysis failed. The previous result is shown below.</span>
         <button
           type="button"
           :disabled="isStarting"
-          class="rounded-lg bg-red-600 px-3.5 py-1.5 text-sm font-medium text-white hover:bg-red-700 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1 focus-visible:outline-none disabled:opacity-50"
+          class="rounded-[var(--radius-md)] bg-[var(--color-error-600)] px-3.5 py-1.5 text-sm font-medium text-white shadow-[var(--shadow-neo-button)] hover:bg-[var(--color-error-700)] focus-visible:ring-2 focus-visible:ring-[var(--color-error-500)] focus-visible:ring-offset-1 focus-visible:outline-none disabled:opacity-50"
           @click="startAnalysis"
         >
           Retry
@@ -236,83 +287,94 @@ const filteredFindings = computed(() => {
         @recalculate="recalculate"
       />
 
-      <MatchSummaryHero :analysis="completedAnalysis" class="mt-6" />
+      <template v-if="isGapReviewMode">
+        <GapReviewSection
+          class="mt-6"
+          :findings="completedAnalysis.findings"
+          :questions="questions"
+          :opportunity-id="opportunityId!"
+        />
+      </template>
 
-      <MatchAtAGlance
-        :findings="completedAnalysis.findings"
-        class="mt-6"
-        @view-gaps="viewGaps"
-        @expand-all="viewAll"
-        @expand-unknown="viewUnknown"
-      />
+      <template v-else>
+        <MatchSummaryHero :analysis="completedAnalysis" class="mt-6" />
 
-      <ClarificationEntryCard
-        v-if="completedAnalysis"
-        class="mt-6"
-        :analysis-id="completedAnalysis.id"
-        @open="openClarifications"
-      />
+        <MatchAtAGlance
+          :findings="completedAnalysis.findings"
+          class="mt-6"
+          @view-gaps="viewGaps"
+          @expand-all="viewAll"
+          @expand-unknown="viewUnknown"
+        />
 
-      <details
-        id="full-analysis"
-        class="group mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
-        :open="fullAnalysisOpen"
-        @toggle="onFullAnalysisToggle"
-      >
-        <summary
-          class="flex cursor-pointer list-none items-center justify-between gap-3 p-6 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:outline-none sm:p-8"
+        <ClarificationEntryCard
+          v-if="completedAnalysis"
+          class="mt-6"
+          :analysis-id="completedAnalysis.id"
+          @open="openClarifications"
+        />
+
+        <details
+          id="full-analysis"
+          class="group mt-6 overflow-hidden rounded-[var(--radius-xl)] bg-[var(--surface-primary)] shadow-[var(--shadow-neo-raised)]"
+          :open="fullAnalysisOpen"
+          @toggle="onFullAnalysisToggle"
         >
-          <span>
-            <span class="text-base font-semibold text-slate-900">Full analysis</span>
-            <span class="text-slate-400">
-              ({{ completedAnalysis.findings.length }} requirement{{
-                completedAnalysis.findings.length === 1 ? '' : 's'
-              }})
-            </span>
-          </span>
-          <span class="flex items-center gap-2 text-sm font-medium text-slate-500">
-            <span>{{ fullAnalysisOpen ? 'Hide details' : 'View full analysis' }}</span>
-            <ChevronDown
-              class="size-5 text-slate-400 transition-transform group-open:rotate-180"
-              aria-hidden="true"
-            />
-          </span>
-        </summary>
-
-        <div class="border-t border-slate-100 p-6 sm:p-8">
-          <MatchFilterBar
-            v-model:match-filter="matchFilter"
-            v-model:importance="importanceFilter"
-            v-model:include-unknown="includeUnknown"
-            :findings="completedAnalysis.findings"
-          />
-
-          <ul
-            v-if="filteredFindings.length"
-            class="mt-5 grid gap-4"
-            aria-label="Match requirements"
+          <summary
+            class="flex cursor-pointer list-none items-center justify-between gap-3 p-6 focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] focus-visible:outline-none sm:p-8"
           >
-            <li v-for="finding in filteredFindings" :key="findingKey(finding)">
-              <RequirementResultRow :finding="finding" />
-            </li>
-          </ul>
-          <EmptyState
-            v-else
-            :title="
-              completedAnalysis.findings.length === 0
-                ? 'No requirement results'
-                : 'No requirements match these filters'
-            "
-            :description="
-              completedAnalysis.findings.length === 0
-                ? 'This analysis has no per-requirement results to show.'
-                : 'Adjust the filters to see more requirement results.'
-            "
-          />
-        </div>
-      </details>
+            <span>
+              <span class="text-base font-semibold text-[var(--text-primary)]">Full analysis</span>
+              <span class="text-[var(--text-muted)]">
+                ({{ completedAnalysis.findings.length }} requirement{{
+                  completedAnalysis.findings.length === 1 ? '' : 's'
+                }})
+              </span>
+            </span>
+            <span class="flex items-center gap-2 text-sm font-medium text-[var(--text-secondary)]">
+              <span>{{ fullAnalysisOpen ? 'Hide details' : 'View full analysis' }}</span>
+              <ChevronDown
+                class="size-5 text-slate-400 transition-transform group-open:rotate-180"
+                aria-hidden="true"
+              />
+            </span>
+          </summary>
 
-      <MatchScoreDetails :analysis="completedAnalysis" class="mt-6" />
+          <div class="border-t border-[var(--border-subtle)] p-6 sm:p-8">
+            <MatchFilterBar
+              v-model:match-filter="matchFilter"
+              v-model:importance="importanceFilter"
+              v-model:include-unknown="includeUnknown"
+              :findings="completedAnalysis.findings"
+            />
+
+            <ul
+              v-if="filteredFindings.length"
+              class="mt-5 grid gap-4"
+              aria-label="Match requirements"
+            >
+              <li v-for="finding in filteredFindings" :key="findingKey(finding)">
+                <RequirementResultRow :finding="finding" />
+              </li>
+            </ul>
+            <EmptyState
+              v-else
+              :title="
+                completedAnalysis.findings.length === 0
+                  ? 'No requirement results'
+                  : 'No requirements match these filters'
+              "
+              :description="
+                completedAnalysis.findings.length === 0
+                  ? 'This analysis has no per-requirement results to show.'
+                  : 'Adjust the filters to see more requirement results.'
+              "
+            />
+          </div>
+        </details>
+
+        <MatchScoreDetails :analysis="completedAnalysis" class="mt-6" />
+      </template>
     </template>
   </div>
 </template>
