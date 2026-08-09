@@ -165,7 +165,7 @@ class AnalyzeCvTextAction
 
         $keys = [];
         foreach ($existing as $suggestion) {
-            $typeValue = is_string($suggestion->type) ? $suggestion->type : $suggestion->type->value;
+            $typeValue = $suggestion->type->value;
             $keys[$typeValue.'|'.($suggestion->field_name ?? '')] = true;
         }
 

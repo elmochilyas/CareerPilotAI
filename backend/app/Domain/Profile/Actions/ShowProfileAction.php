@@ -12,7 +12,7 @@ class ShowProfileAction
         return $user->candidateProfile()->with('items')->first()
             ?? tap(new CandidateProfile, function ($profile) use ($user) {
                 $profile->user_id = $user->id;
-                $profile->profile_completion = 0;
+                $profile->profile_completion = '0';
             });
     }
 }
