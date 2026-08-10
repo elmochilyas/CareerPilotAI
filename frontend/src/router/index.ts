@@ -123,6 +123,12 @@ const router = createRouter({
           meta: { requiresAuth: true },
           component: () => import('@/features/clarification/pages/ClarificationPage.vue'),
         },
+        {
+          path: 'opportunities/:id/tailor',
+          name: 'opportunities-tailor',
+          meta: { requiresAuth: true },
+          component: () => import('@/features/cv-tailoring/pages/TailoringWorkspacePage.vue'),
+        },
       ],
     },
     {

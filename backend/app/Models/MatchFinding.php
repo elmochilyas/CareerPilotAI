@@ -59,6 +59,7 @@ class MatchFinding extends Model
         'confidence',
         'classifier_source',
         'display_order',
+        'tailoring_relevance',
     ];
 
     protected function casts(): array
@@ -72,6 +73,17 @@ class MatchFinding extends Model
             'evidence_refs' => 'array',
             'display_order' => 'integer',
         ];
+    }
+
+    public function computeTailoringRelevance(): ?string
+    {
+        return match (true) {
+            $this->match_state === MatchState::Matched && $this->importance === MatchImportance::Required => 'high',
+            $this->match_state === MatchState::Matched && $this->importance === MatchImportance::Preferred => 'medium',
+            $this->match_state === MatchState::Partial => 'medium',
+            $this->match_state === MatchState::Gap => null,
+            default => null,
+        };
     }
 
     /** @return BelongsTo<MatchAnalysis, $this> */

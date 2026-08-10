@@ -151,6 +151,7 @@ final readonly class MatchAnalysisData
                 confidence: $finding->confidence,
                 classifierSource: $finding->classifier_source,
                 displayOrder: $finding->display_order,
+                tailoringRelevance: $finding->tailoring_relevance,
             ))
             ->values()
             ->all();
