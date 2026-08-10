@@ -87,6 +87,41 @@ it('confirms a review_ready ingestion with all decisions made', function () {
         ->assertJsonPath('data.confirmed_opportunity_id', $response->json('data.id'));
 });
 
+it('confirms for a candidate who has not persisted a profile yet', function () {
+    $this->user->candidateProfile()->delete();
+
+    $ingestion = JobOpportunityIngestion::factory()->reviewReady()->create([
+        'user_id' => $this->user->id,
+    ]);
+    JobOpportunitySuggestion::factory()->accepted()->create([
+        'ingestion_id' => $ingestion->id,
+        'type' => 'job_title',
+        'extracted_value' => ['value' => 'Junior Laravel Developer'],
+    ]);
+
+    $preview = $this->actingAs($this->user)
+        ->postJson("/api/v1/opportunities/ingestions/{$ingestion->id}/preview")
+        ->assertOk();
+
+    expect($this->user->candidateProfile()->exists())->toBeFalse();
+
+    $response = $this->actingAs($this->user)
+        ->postJson("/api/v1/opportunities/ingestions/{$ingestion->id}/confirm", [
+            'version_token' => $preview->json('data.version_token'),
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.title', 'Junior Laravel Developer');
+
+    $profile = $this->user->candidateProfile()->firstOrFail();
+
+    expect($profile->profile_completion)->toBe('0.00');
+    $this->assertDatabaseHas('job_opportunities', [
+        'id' => $response->json('data.id'),
+        'candidate_profile_id' => $profile->id,
+        'ingestion_id' => $ingestion->id,
+    ]);
+});
+
 it('rejects confirm when ingestion is not review_ready', function () {
     $ingestion = JobOpportunityIngestion::factory()->draft()->create([
         'user_id' => $this->user->id,
