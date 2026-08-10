@@ -83,10 +83,10 @@ function excludeRequirement(): void {
 .requirement-item {
   position: relative;
   border: 1px solid transparent;
-  border-radius: var(--cp-radius-xl);
+  border-radius: var(--radius-xl);
   padding: 1rem;
-  background: var(--cp-color-card);
-  transition: all var(--cp-duration-fast) var(--cp-ease-out);
+  background: var(--surface-primary);
+  transition: all var(--duration-fast) var(--ease-out);
 }
 
 .requirement-item::before {
@@ -95,28 +95,28 @@ function excludeRequirement(): void {
   bottom: 0;
   left: 0;
   width: 3px;
-  background: var(--cp-color-border);
+  background: var(--border-default);
   content: '';
 }
 
 .requirement-item:hover {
-  border-color: var(--cp-color-border);
+  border-color: var(--border-default);
 }
 
 .requirement-item-included {
-  background: var(--cp-color-success-soft);
+  background: var(--color-success-50);
 }
 
 .requirement-item-included::before {
-  background: var(--cp-color-success);
+  background: var(--color-success-600);
 }
 
 .requirement-item-excluded {
-  background: var(--cp-color-accent);
+  background: var(--surface-secondary);
 }
 
 .requirement-item-excluded::before {
-  background: var(--cp-color-danger);
+  background: var(--color-error-600);
 }
 
 .requirement-item-excluded .requirement-main {
@@ -131,7 +131,7 @@ function excludeRequirement(): void {
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  color: var(--cp-color-foreground);
+  color: var(--text-primary);
   font-size: 0.75rem;
   font-weight: 650;
   line-height: 1.125rem;
@@ -140,13 +140,13 @@ function excludeRequirement(): void {
 .requirement-category svg {
   width: 0.875rem;
   height: 0.875rem;
-  color: var(--cp-color-primary);
+  color: var(--color-primary-600);
 }
 
 .requirement-title {
   margin-top: 0.5rem;
   overflow-wrap: anywhere;
-  color: var(--cp-color-foreground);
+  color: var(--text-primary);
   font-size: 1rem;
   font-weight: 610;
   letter-spacing: -0.008em;

@@ -11,6 +11,7 @@ This change redesigns the opportunity detail page as a fresh two-column layout w
 - **Primary "View match brief" CTA** linking to the existing named route `opportunities-match` (`/opportunities/:id/match`) for the same opportunity id, shown at the top of the rail on desktop and as a full-width action in the stacked rail on mobile.
 - **Skill chips**: required and preferred skills render as compact chips in two separated groups instead of full-width list rows (per design-system §17).
 - **Preserved behavior**: identical data fetching (`opportunityKeys.detail` + `fetchOpportunity`), identical computed partitions and guards, all current states (invalid id, loading skeleton, error with retry), empty sections hidden.
+- **Persistent gap-review completion**: when the existing clarification session reports prior questions with no remaining actionable questions, the detail-page match brief shows a visible “Gap review complete” confirmation after navigation or refresh, plus an optional continuation when another capped batch is available.
 - **Design-language cleanup**: the page drops its bespoke scoped CSS in favor of the global design tokens and the reusable UI kit (`Button`, `Badge`, `Skeleton`), giving the page the same visual language as the rest of the product without cloning the review/design-lab pages.
 
 ### Contradictions resolved
@@ -79,3 +80,4 @@ None. The mandatory design system (`docs/design/CAREERPILOT_PREMIUM_DESIGN_SYSTE
 - OPDETAIL-004: Required and preferred skills render as separate compact chip groups.
 - OPDETAIL-005: All existing states and data sections are preserved with identical behavior.
 - OPDETAIL-006: Responsive, accessible, and conformant to the CAREERPILOT_PREMIUM_DESIGN_SYSTEM.
+- OPDETAIL-007: Persisted clarification progress is reflected as a visible completed gap-review state on the opportunity detail page.

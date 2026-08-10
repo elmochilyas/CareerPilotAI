@@ -153,9 +153,9 @@ function handleViewOriginal(): void {
   width: 2.75rem;
   min-height: 2.75rem;
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   background: transparent;
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
   font-size: 0.875rem;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -169,12 +169,12 @@ function handleViewOriginal(): void {
 }
 
 .overflow-trigger:hover {
-  background: var(--cp-surface-muted);
-  color: var(--cp-ink);
+  background: var(--surface-inset);
+  color: var(--text-primary);
 }
 
 .overflow-trigger:focus-visible {
-  outline: 2px solid var(--cp-primary);
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 2px;
 }
 
@@ -186,10 +186,10 @@ function handleViewOriginal(): void {
   display: grid;
   min-width: 12rem;
   gap: 0.125rem;
-  border: 1px solid var(--cp-border);
-  border-radius: 0.5rem;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
   padding: 0.375rem;
-  background: var(--cp-surface);
+  background: var(--surface-primary);
   box-shadow: 0 12px 32px rgb(16 24 40 / 0.14);
 }
 
@@ -201,7 +201,7 @@ function handleViewOriginal(): void {
   border-radius: 0.375rem;
   padding: 0.5rem 0.75rem;
   background: transparent;
-  color: var(--cp-text);
+  color: var(--text-primary);
   font-size: 0.8125rem;
   font-weight: 560;
   text-align: left;
@@ -211,16 +211,16 @@ function handleViewOriginal(): void {
 }
 
 .overflow-panel button:hover {
-  background: var(--cp-surface-subtle);
+  background: var(--surface-secondary);
 }
 
 .overflow-panel button:focus-visible {
-  outline: 2px solid var(--cp-primary);
+  outline: 2px solid var(--color-primary-600);
   outline-offset: -2px;
 }
 
 .action-exclude {
-  color: var(--cp-danger);
+  color: var(--color-error-600);
 }
 
 @media (prefers-reduced-motion: reduce) {

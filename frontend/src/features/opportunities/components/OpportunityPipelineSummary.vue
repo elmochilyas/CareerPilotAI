@@ -117,9 +117,9 @@ const summaryItems = computed<SummaryItem[]>(() => [
 }
 
 .summary-card {
-  --summary-accent: var(--cp-text-muted);
-  --summary-accent-soft: var(--cp-surface-muted);
-  --summary-card-border: var(--cp-border);
+  --summary-accent: var(--text-muted);
+  --summary-accent-soft: var(--surface-inset);
+  --summary-card-border: var(--border-default);
 
   display: grid;
   position: relative;
@@ -129,32 +129,29 @@ const summaryItems = computed<SummaryItem[]>(() => [
   column-gap: 0.75rem;
   overflow: hidden;
   border: 1px solid var(--summary-card-border);
-  border-radius: 0.875rem;
+  border-radius: var(--radius-lg);
   padding: 0.875rem 1rem;
-  background: var(--cp-surface);
-  box-shadow:
-    0 1px 2px rgb(16 24 40 / 0.04),
-    0 7px 18px rgb(16 24 40 / 0.05),
-    inset 0 1px 0 rgb(255 255 255 / 0.88);
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-neo-raised-sm);
 }
 
 .summary-card-saved {
-  --summary-accent: var(--cp-success);
-  --summary-accent-soft: var(--cp-success-soft);
+  --summary-accent: var(--color-success-600);
+  --summary-accent-soft: var(--color-success-50);
 }
 
 .summary-card-active {
-  --summary-accent: var(--cp-info);
-  --summary-accent-soft: var(--cp-info-soft);
+  --summary-accent: var(--color-info-600);
+  --summary-accent-soft: var(--color-info-50);
 }
 
 .summary-card-attention {
-  --summary-accent: var(--cp-warning);
-  --summary-accent-soft: var(--cp-warning-soft);
+  --summary-accent: var(--color-warning-600);
+  --summary-accent-soft: var(--color-warning-50);
 }
 
 .summary-card-attention.summary-card-has-items {
-  --summary-card-border: var(--cp-warning-border);
+  --summary-card-border: var(--color-warning-200);
 }
 
 .summary-heading {
@@ -170,11 +167,9 @@ const summaryItems = computed<SummaryItem[]>(() => [
   height: 2.25rem;
   flex: 0 0 auto;
   place-items: center;
-  border-radius: 0.625rem;
+  border-radius: var(--radius-md);
   background: var(--summary-accent-soft);
-  box-shadow:
-    0 1px 2px rgb(16 24 40 / 0.05),
-    inset 0 1px 0 rgb(255 255 255 / 0.75);
+  box-shadow: var(--shadow-neo-raised-sm);
   color: var(--summary-accent);
 }
 
@@ -201,7 +196,7 @@ const summaryItems = computed<SummaryItem[]>(() => [
 
 .summary-heading-copy h3 {
   margin-top: 0.125rem;
-  color: var(--cp-ink);
+  color: var(--text-primary);
   font-size: 0.8125rem;
   font-weight: 680;
   letter-spacing: -0.012em;
@@ -221,7 +216,7 @@ const summaryItems = computed<SummaryItem[]>(() => [
 }
 
 .summary-count {
-  color: var(--cp-ink);
+  color: var(--text-primary);
   font-size: 1.625rem;
   font-variant-numeric: tabular-nums;
   font-weight: 740;
@@ -230,7 +225,7 @@ const summaryItems = computed<SummaryItem[]>(() => [
 }
 
 .summary-unit {
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
   font-size: 0.6875rem;
   font-weight: 620;
   line-height: 1rem;
@@ -241,7 +236,7 @@ const summaryItems = computed<SummaryItem[]>(() => [
   grid-column: 1 / -1;
   margin-top: 0.625rem;
   overflow: hidden;
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
   font-size: 0.6875rem;
   line-height: 1rem;
   text-wrap: pretty;
@@ -256,9 +251,9 @@ const summaryItems = computed<SummaryItem[]>(() => [
   gap: 0.5rem;
   grid-column: 1 / -1;
   margin-top: 0.625rem;
-  border-top: 1px solid var(--cp-border);
+  border-top: 1px solid var(--border-default);
   padding-top: 0.5rem;
-  color: var(--cp-text);
+  color: var(--text-primary);
   font-size: 0.625rem;
   font-weight: 620;
   line-height: 1rem;
@@ -268,7 +263,7 @@ const summaryItems = computed<SummaryItem[]>(() => [
   width: 0.375rem;
   height: 0.375rem;
   flex: 0 0 auto;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   background: var(--summary-accent);
   box-shadow: 0 0 0 0.1875rem var(--summary-accent-soft);
 }

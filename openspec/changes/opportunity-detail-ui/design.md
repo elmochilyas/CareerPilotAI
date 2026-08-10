@@ -87,6 +87,12 @@ The first rewrite rendered correctly but read as flat as a Wikipedia article, so
 
 Rejected alternatives: a full hero card, per-section cards, gradient/glassmorphism surfaces, and a second accent color.
 
+### Decision 9: Persistent gap-review completion on the detail page
+
+The shared `ClarificationEntryCard` keeps its existing hidden-empty behavior by default for the match brief. The opportunity detail page opts into a completed state when the session has historical questions (`progress.total > 0`) but no actionable questions. If another capped batch can be generated, the completed state acknowledges the finished round and offers an optional “Review more gaps” action. This uses the existing clarification session resource, adds no API or business rule, survives refresh, and avoids treating a never-started empty session as completed.
+
+The same derived completion signal is passed into `MatchAtAGlance`. That card replaces its primary “Review gaps” prompt with a success status and secondary “Review gaps again” action, while continuing to list the deterministic gaps until a profile change and match recalculation alter them.
+
 ## Risks / Trade-offs
 
 - **Density on mobile**: the rail stacks below the main content; the CTA appears once, above the rail, so it is reachable without scrolling past the entire detail. Trade-off accepted over a sticky mobile action bar (kept as a possible follow-up).

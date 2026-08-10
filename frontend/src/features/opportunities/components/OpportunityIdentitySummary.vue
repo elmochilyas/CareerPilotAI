@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { BriefcaseBusiness, Building2, MapPin, Monitor } from '@lucide/vue'
+import type { Component } from 'vue'
 import type { JobSuggestion } from '../types'
 import { getSuggestionField, isSuggestionDisplayable } from '../utils/suggestionFormatters'
+import MetadataChip from './MetadataChip.vue'
 
 const props = defineProps<{
   suggestions: JobSuggestion[]
@@ -25,23 +28,48 @@ const companyInitials = computed(() => {
   return (parts[0]![0]! + parts[parts.length - 1]![0]!).toUpperCase()
 })
 
-const locationParts = computed(() => {
+const locationLabel = computed(() => {
   const parts: string[] = []
   if (city.value) parts.push(city.value)
   if (region.value) parts.push(region.value)
-  return parts
+  return parts.join(', ')
 })
 
-const metadataItems = computed(() => {
-  const items: string[] = []
-  if (workMode.value) items.push(workMode.value)
-  if (locationParts.value.length > 0) items.push(locationParts.value.join(', '))
-  if (contractType.value) items.push(contractType.value)
-  if (compensation.value) items.push(compensation.value)
-  return items
+interface MetaChip {
+  label: string
+  icon: Component
+  tone?: 'neutral' | 'primary' | 'success' | 'warning'
+}
+
+const metadataChips = computed<MetaChip[]>(() => {
+  const chips: MetaChip[] = []
+  if (workMode.value) {
+    chips.push({ label: formatMetadata(workMode.value), icon: workModeIcon.value })
+  }
+  if (locationLabel.value) {
+    chips.push({ label: locationLabel.value, icon: MapPin })
+  }
+  if (contractType.value) {
+    chips.push({ label: formatMetadata(contractType.value), icon: BriefcaseBusiness })
+  }
+  if (compensation.value) {
+    chips.push({ label: compensation.value, icon: Monitor, tone: 'success' })
+  }
+  return chips
 })
 
-const hasMetadata = computed(() => metadataItems.value.length > 0)
+const workModeIcon = computed(() => {
+  const mode = workMode.value
+  if (mode === 'remote') return Monitor
+  if (mode === 'hybrid') return Monitor
+  return Building2
+})
+
+const hasMetadata = computed(() => metadataChips.value.length > 0)
+
+function formatMetadata(value: string): string {
+  return value.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
 
 function findDisplayableValue(type: string): string {
   const sug = props.suggestions.find((s) => s.type === type && isSuggestionDisplayable(s))
@@ -65,11 +93,14 @@ function findDisplayableValue(type: string): string {
         <h2 class="identity-title">{{ jobTitle || 'Untitled position' }}</h2>
         <p v-if="companyName" class="identity-company">{{ companyName }}</p>
 
-        <div v-if="hasMetadata" class="identity-metadata">
-          <span v-for="(item, idx) in metadataItems" :key="idx" class="metadata-item">
-            <span v-if="idx > 0" class="metadata-sep" aria-hidden="true">·</span>
-            {{ item }}
-          </span>
+        <div v-if="hasMetadata" class="identity-metadata" aria-label="Job metadata">
+          <MetadataChip
+            v-for="(chip, idx) in metadataChips"
+            :key="idx"
+            :label="chip.label"
+            :icon="chip.icon"
+            :tone="chip.tone"
+          />
         </div>
 
         <div class="identity-progress">
@@ -100,7 +131,7 @@ function findDisplayableValue(type: string): string {
 
 <style scoped>
 .opportunity-identity {
-  border-bottom: 1px solid var(--cp-divider);
+  border-bottom: 1px solid var(--border-default);
   padding-bottom: 1.25rem;
 }
 
@@ -116,9 +147,9 @@ function findDisplayableValue(type: string): string {
   width: 3.25rem;
   height: 3.25rem;
   place-items: center;
-  border-radius: 0.625rem;
-  background: var(--cp-primary);
-  color: var(--cp-text-inverse);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-600);
+  color: var(--text-inverse);
 }
 
 .monogram-letters {
@@ -134,7 +165,7 @@ function findDisplayableValue(type: string): string {
 
 .identity-title {
   overflow-wrap: anywhere;
-  color: var(--cp-ink);
+  color: var(--text-primary);
   font-size: 1.25rem;
   font-weight: 650;
   letter-spacing: -0.022em;
@@ -144,7 +175,7 @@ function findDisplayableValue(type: string): string {
 
 .identity-company {
   margin-top: 0.125rem;
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
   font-size: 0.875rem;
   line-height: 1.375rem;
 }
@@ -152,38 +183,25 @@ function findDisplayableValue(type: string): string {
 .identity-metadata {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem;
+  gap: 0.5rem;
   margin-top: 0.625rem;
-}
-
-.metadata-item {
-  color: var(--cp-text-muted);
-  font-size: 0.8125rem;
-  font-weight: 540;
-  line-height: 1.25rem;
-}
-
-.metadata-sep {
-  margin-right: 0.25rem;
-  color: var(--cp-text-faint);
 }
 
 .identity-progress {
   margin-top: 0.875rem;
   padding-top: 0.75rem;
-  border-top: 1px solid var(--cp-divider);
+  border-top: 1px solid var(--border-default);
 }
 
 .progress-label {
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   line-height: 1.125rem;
 }
 
 .progress-label strong {
-  color: var(--cp-text);
+  color: var(--text-primary);
   font-weight: 640;
 }
 
@@ -192,8 +210,8 @@ function findDisplayableValue(type: string): string {
   height: 0.1875rem;
   margin-top: 0.5rem;
   overflow: hidden;
-  border-radius: 999px;
-  background: var(--cp-surface-muted);
+  border-radius: var(--radius-full);
+  background: var(--surface-inset);
 }
 
 .progress-track > span {
@@ -201,7 +219,7 @@ function findDisplayableValue(type: string): string {
   width: 100%;
   height: 100%;
   border-radius: inherit;
-  background: var(--cp-primary);
+  background: var(--color-primary-600);
   transform-origin: left center;
   transition: transform 150ms ease;
 }
@@ -231,5 +249,16 @@ function findDisplayableValue(type: string): string {
   .progress-track > span {
     transition: none;
   }
+}
+
+.opportunity-identity :deep(.metadata-chip) {
+  background: var(--surface-secondary);
+  color: var(--text-muted);
+  box-shadow: var(--shadow-neo-raised-sm);
+}
+
+.opportunity-identity :deep(.metadata-chip-success) {
+  background: var(--color-success-50);
+  color: var(--color-success-600);
 }
 </style>

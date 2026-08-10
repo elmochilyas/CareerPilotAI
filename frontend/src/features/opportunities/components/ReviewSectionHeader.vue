@@ -39,7 +39,7 @@ defineProps<{
 .section-header {
   display: flex;
   gap: 1rem;
-  border-bottom: 1px solid var(--cp-color-border);
+  border-bottom: 1px solid var(--border-default);
   padding-bottom: 1.5rem;
 }
 
@@ -49,10 +49,10 @@ defineProps<{
   height: 2.75rem;
   flex: 0 0 auto;
   place-items: center;
-  border: 1px solid var(--cp-color-border);
+  border: 1px solid var(--border-default);
   border-radius: 0.625rem;
-  background: var(--cp-color-primary);
-  color: var(--cp-color-primary-foreground);
+  background: var(--color-primary-600);
+  color: var(--text-inverse);
 }
 
 .section-icon :deep(svg) {
@@ -72,7 +72,7 @@ defineProps<{
 }
 
 .section-title-row h2 {
-  color: var(--cp-color-foreground);
+  color: var(--text-primary);
   font-size: 1.375rem;
   font-weight: 690;
   letter-spacing: -0.025em;
@@ -82,18 +82,18 @@ defineProps<{
 .section-title-row p {
   max-width: 42rem;
   margin-top: 0.25rem;
-  color: var(--cp-color-muted-foreground);
+  color: var(--text-muted);
   font-size: 0.875rem;
   line-height: 1.375rem;
 }
 
 .section-count {
   align-self: flex-start;
-  border: 1px solid var(--cp-color-border);
+  border: 1px solid var(--border-default);
   border-radius: 999px;
   padding: 0.25rem 0.625rem;
-  background: var(--cp-color-accent);
-  color: var(--cp-color-muted-foreground);
+  background: var(--surface-secondary);
+  color: var(--text-muted);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   font-weight: 650;
@@ -106,7 +106,7 @@ defineProps<{
   align-items: center;
   gap: 0.375rem;
   margin-top: 0.75rem;
-  color: var(--cp-color-muted-foreground);
+  color: var(--text-muted);
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   font-weight: 570;
@@ -114,7 +114,7 @@ defineProps<{
 
 .section-hint {
   flex-basis: 100%;
-  color: var(--cp-color-info);
+  color: var(--color-info-600);
 }
 
 @media (min-width: 40rem) {

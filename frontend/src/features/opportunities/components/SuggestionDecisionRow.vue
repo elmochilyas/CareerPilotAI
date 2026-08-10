@@ -79,23 +79,23 @@ const emit = defineEmits<{
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  border-bottom: 1px solid var(--cp-divider);
+  border-bottom: 1px solid var(--border-default);
   background: transparent;
   padding: 1rem 0;
 }
 
 .suggestion-row-accepted {
-  border-bottom-color: var(--cp-success-border);
-  background: var(--cp-success-soft);
+  border-bottom-color: var(--color-success-200);
+  background: var(--color-success-50);
 }
 
 .suggestion-row-rejected {
-  border-bottom-color: var(--cp-danger-border);
-  background: var(--cp-danger-soft);
+  border-bottom-color: var(--color-error-200);
+  background: var(--color-error-50);
 }
 
 .suggestion-label {
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
   font-size: 0.75rem;
   font-weight: 600;
   line-height: 1.125rem;
@@ -109,17 +109,17 @@ const emit = defineEmits<{
 }
 
 .suggestion-state-included {
-  color: var(--cp-success);
+  color: var(--color-success-700);
 }
 
 .suggestion-state-rejected {
-  color: var(--cp-danger);
+  color: var(--color-error-700);
 }
 
 .suggestion-value {
   margin-top: 0.5rem;
   overflow-wrap: anywhere;
-  color: var(--cp-ink);
+  color: var(--text-primary);
   font-size: 0.875rem;
   font-weight: 500;
   line-height: 1.5rem;
@@ -127,15 +127,15 @@ const emit = defineEmits<{
 
 .suggestion-evidence {
   margin-top: 0.75rem;
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
   font-size: 0.75rem;
 }
 
 .evidence-copy {
   margin-top: 0.5rem;
-  border-left: 2px solid var(--cp-divider);
+  border-left: 2px solid var(--border-default);
   padding-left: 0.75rem;
-  color: var(--cp-text);
+  color: var(--text-primary);
   line-height: 1.25rem;
 }
 
@@ -145,33 +145,33 @@ const emit = defineEmits<{
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
-  border: 1px solid var(--cp-border-strong);
-  border-radius: var(--cp-radius-control);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
   padding: 0.45rem 0.75rem;
-  background: var(--cp-surface);
-  color: var(--cp-text-muted);
+  background: var(--surface-primary);
+  color: var(--text-muted);
   font-size: 0.76rem;
   font-weight: 700;
 }
 
 .decision-button:focus-visible,
 .evidence-summary:focus-visible {
-  outline: 2px solid var(--cp-primary);
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 2px;
 }
 
 .decision-keep:hover,
 .decision-keep[aria-pressed='true'] {
-  border-color: var(--cp-success-border);
-  background: var(--cp-success-soft);
-  color: var(--cp-success);
+  border-color: var(--color-success-200);
+  background: var(--color-success-50);
+  color: var(--color-success-700);
 }
 
 .decision-remove:hover,
 .decision-remove[aria-pressed='true'] {
-  border-color: var(--cp-danger-border);
-  background: var(--cp-danger-soft);
-  color: var(--cp-danger);
+  border-color: var(--color-error-200);
+  background: var(--color-error-50);
+  color: var(--color-error-700);
 }
 
 .evidence-summary {
@@ -179,7 +179,7 @@ const emit = defineEmits<{
   cursor: pointer;
   align-items: center;
   gap: 0.35rem;
-  border-radius: 0.25rem;
+  border-radius: var(--radius-sm);
   font-weight: 650;
 }
 

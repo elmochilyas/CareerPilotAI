@@ -115,3 +115,20 @@ The page SHALL follow the CAREERPILOT_PREMIUM_DESIGN_SYSTEM: a warm neutral page
 - **GIVEN** the detail page
 - **THEN** the page SHALL use a single H1 and semantic sectioning
 - **AND** all API content SHALL render as escaped text without unsanitized `v-html`
+
+### Requirement: Persistent gap-review completion (OPDETAIL-007)
+The opportunity detail page SHALL reflect completed clarification work from the existing session resource without requiring the candidate to reopen the match brief.
+
+#### Scenario: Completed gap review remains visible
+- **GIVEN** the latest completed match analysis has prior clarification questions
+- **AND** its session has no actionable questions
+- **WHEN** the candidate opens or refreshes the opportunity detail page
+- **THEN** the Match Brief section SHALL show a visible “Gap review complete” status
+- **AND** the “Your match at a glance” card SHALL replace its initial “Review gaps” prompt with the completed status and a “Review gaps again” action
+- **AND** SHALL explain that reviewed gaps remain listed until profile evidence changes and the match is recalculated
+- **AND** when another question batch is available, the status SHALL offer an optional “Review more gaps” action without hiding the completed-round confirmation
+
+#### Scenario: Never-started review is not marked complete
+- **GIVEN** the clarification session has no historical questions
+- **WHEN** the opportunity detail page renders
+- **THEN** the page SHALL NOT label the gap review complete

@@ -57,6 +57,7 @@ async function handleKeydown(event: KeyboardEvent, index: number): Promise<void>
         :class="{
           'compact-rail-item-current': item.isCurrent,
           'compact-rail-item-complete': item.status === 'complete',
+          'compact-rail-item-in-progress': item.status === 'in-progress',
           'compact-rail-item-blocked': item.status === 'blocked',
           'compact-rail-item-summary': item.kind === 'summary',
         }"
@@ -64,7 +65,10 @@ async function handleKeydown(event: KeyboardEvent, index: number): Promise<void>
         <span
           v-if="idx < items.length - 1"
           class="compact-rail-connector"
-          :class="{ 'compact-rail-connector-done': item.status === 'complete' }"
+          :class="{
+            'compact-rail-connector-done': item.status === 'complete',
+            'compact-rail-connector-in-progress': item.status === 'in-progress',
+          }"
           aria-hidden="true"
         />
 
@@ -98,7 +102,10 @@ async function handleKeydown(event: KeyboardEvent, index: number): Promise<void>
 <style scoped>
 .compact-rail {
   display: none;
-  padding: 0.25rem 0;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-xl);
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-neo-raised-sm);
 }
 
 .compact-rail-list {
@@ -107,28 +114,37 @@ async function handleKeydown(event: KeyboardEvent, index: number): Promise<void>
   margin: 0;
   padding: 0;
   list-style: none;
-  align-items: stretch;
+  align-items: flex-start;
 }
 
 .compact-rail-item {
   position: relative;
   flex: 1 1 0;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .compact-rail-connector {
   position: absolute;
   z-index: 0;
-  top: 0.875rem;
-  left: calc(50% + 1rem);
-  width: calc(100% - 2rem);
+  top: 0.9375rem;
+  left: calc(50% + 1.25rem);
+  width: calc(100% - 2.5rem);
   height: 2px;
-  background: var(--cp-surface-muted);
+  background: var(--surface-inset);
+  border-radius: 1px;
   pointer-events: none;
+  transition: background-color 200ms ease;
 }
 
 .compact-rail-connector-done {
-  background: var(--cp-primary);
+  background: linear-gradient(90deg, var(--color-primary-500), var(--color-primary-600));
+}
+
+.compact-rail-connector-in-progress {
+  background: linear-gradient(90deg, var(--color-primary-200), var(--color-primary-300));
 }
 
 .compact-rail-button {
@@ -138,85 +154,111 @@ async function handleKeydown(event: KeyboardEvent, index: number): Promise<void>
   width: 100%;
   flex-direction: column;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.5rem;
   border: 0;
-  padding: 0.25rem;
+  padding: 0;
   background: transparent;
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
   text-align: center;
   touch-action: manipulation;
   cursor: pointer;
-  transition: color 120ms ease;
+  transition: color 150ms ease;
   -webkit-tap-highlight-color: transparent;
 }
 
 .compact-rail-button:hover {
-  color: var(--cp-ink);
+  color: var(--text-primary);
 }
 
 .compact-rail-button:focus-visible {
-  outline: 2px solid var(--cp-primary);
-  outline-offset: 2px;
+  outline: 2px solid var(--color-primary-600);
+  outline-offset: 4px;
+  border-radius: var(--radius-md);
 }
 
 .compact-rail-marker {
   display: grid;
-  width: 1.5rem;
-  height: 1.5rem;
-  flex: 0 0 1.5rem;
+  width: 1.875rem;
+  height: 1.875rem;
+  flex: 0 0 1.875rem;
   place-items: center;
-  border: 1.5px solid var(--cp-border);
-  border-radius: 999px;
-  background: var(--cp-surface);
-  color: var(--cp-text-faint);
-  font-size: 0.6875rem;
+  border: 2px solid var(--border-default);
+  border-radius: var(--radius-full);
+  background: var(--surface-primary);
+  color: var(--text-tertiary);
+  font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
-  font-weight: 720;
+  font-weight: 700;
   line-height: 1;
+  box-shadow: var(--shadow-neo-raised-sm);
   transition:
-    background-color 120ms ease,
-    border-color 120ms ease,
-    color 120ms ease;
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease,
+    box-shadow 200ms ease,
+    transform 200ms ease;
+}
+
+.compact-rail-button:hover .compact-rail-marker {
+  transform: scale(1.08);
 }
 
 .compact-rail-item-current .compact-rail-marker {
-  border-color: var(--cp-primary);
-  background: var(--cp-primary);
-  color: var(--cp-text-inverse);
+  border-color: var(--color-primary-500);
+  background: linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700));
+  color: var(--text-inverse);
+  box-shadow:
+    0 0 0 4px var(--color-primary-100),
+    0 4px 12px rgb(80 65 200 / 0.3);
 }
 
 .compact-rail-item-current .compact-rail-button {
-  color: var(--cp-ink);
+  color: var(--text-primary);
   font-weight: 650;
 }
 
+.compact-rail-item-in-progress .compact-rail-marker {
+  border-color: var(--color-primary-300);
+  background: var(--color-primary-50);
+  color: var(--color-primary-600);
+  box-shadow: 0 2px 8px rgb(80 65 200 / 0.12);
+}
+
+.compact-rail-item-in-progress .compact-rail-button {
+  color: var(--text-primary);
+  font-weight: 620;
+}
+
 .compact-rail-item-complete .compact-rail-marker {
-  border-color: var(--cp-primary);
-  background: var(--cp-primary);
-  color: var(--cp-text-inverse);
+  border-color: var(--color-success-600);
+  background: var(--color-success-500);
+  color: var(--text-inverse);
+  box-shadow: 0 2px 8px rgb(3 152 85 / 0.25);
 }
 
 .compact-rail-item-complete .compact-rail-button {
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
 }
 
 .compact-rail-item-blocked .compact-rail-marker {
-  border-color: var(--cp-warning-border);
-  color: var(--cp-warning);
+  border-color: var(--color-warning-300);
+  background: var(--color-warning-50);
+  color: var(--color-warning-600);
+  box-shadow: 0 2px 8px rgb(181 71 8 / 0.15);
 }
 
 .marker-icon {
-  width: 0.8125rem;
-  height: 0.8125rem;
+  width: 0.9375rem;
+  height: 0.9375rem;
   stroke-width: 2.5;
 }
 
 .marker-warning {
-  color: var(--cp-warning);
+  color: var(--color-warning-600);
 }
 
 .compact-rail-item-current .marker-warning {
-  color: var(--cp-text-inverse);
+  color: var(--color-warning-600);
 }
 
 .marker-number {
@@ -225,38 +267,64 @@ async function handleKeydown(event: KeyboardEvent, index: number): Promise<void>
 
 .compact-rail-label {
   overflow: hidden;
-  max-width: 6rem;
+  max-width: 6.5rem;
   color: currentColor;
   font-size: 0.6875rem;
   font-weight: 560;
-  line-height: 0.875rem;
+  line-height: 1rem;
   text-overflow: ellipsis;
   white-space: nowrap;
   text-wrap: nowrap;
 }
 
 .compact-rail-item-current .compact-rail-label {
-  font-weight: 680;
+  font-weight: 700;
+}
+
+.compact-rail-item-complete .compact-rail-label {
+  color: var(--text-muted);
 }
 
 @media (min-width: 48rem) {
+  .compact-rail {
+    padding: 0.875rem 1.25rem;
+  }
+
   .compact-rail-label {
-    max-width: 7rem;
+    max-width: 7.5rem;
     font-size: 0.75rem;
-    line-height: 1rem;
+    line-height: 1.125rem;
+  }
+
+  .compact-rail-marker {
+    width: 2rem;
+    height: 2rem;
+    flex: 0 0 2rem;
+    font-size: 0.8125rem;
+  }
+
+  .compact-rail-connector {
+    top: 1rem;
+    left: calc(50% + 1.375rem);
+    width: calc(100% - 2.75rem);
   }
 }
 
 @media (min-width: 63.9375rem) {
   .compact-rail {
-    display: block;
+    display: flex;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .compact-rail-button,
-  .compact-rail-marker {
+  .compact-rail-marker,
+  .compact-rail-connector {
     transition: none;
+  }
+
+  .compact-rail-button:hover .compact-rail-marker {
+    transform: none;
   }
 }
 </style>

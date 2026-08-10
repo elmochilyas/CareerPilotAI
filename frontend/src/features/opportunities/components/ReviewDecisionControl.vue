@@ -92,9 +92,9 @@ const emit = defineEmits<{
 .decision-actions {
   display: inline-flex;
   overflow: hidden;
-  border: 1px solid var(--cp-border);
-  border-radius: var(--cp-radius-input);
-  background: var(--cp-surface-lifted);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--surface-elevated);
   box-shadow:
     0 1px 0 rgb(255 255 255 / 0.9) inset,
     0 0.25rem 0.75rem rgb(16 24 40 / 0.05);
@@ -107,10 +107,10 @@ const emit = defineEmits<{
   justify-content: center;
   gap: 0.375rem;
   border: 0;
-  border-right: 1px solid var(--cp-border);
+  border-right: 1px solid var(--border-default);
   padding: 0.5rem 0.8125rem;
   background: transparent;
-  color: var(--cp-text);
+  color: var(--text-primary);
   font-size: 0.8125rem;
   font-weight: 650;
   cursor: pointer;
@@ -124,26 +124,26 @@ const emit = defineEmits<{
 }
 
 .action-btn:hover {
-  background: var(--cp-surface-muted);
+  background: var(--surface-inset);
 }
 
 .action-keep {
-  background: var(--cp-primary-soft);
-  color: var(--cp-primary-deep);
+  background: var(--color-primary-50);
+  color: var(--color-primary-800);
 }
 
 .action-keep:hover {
-  background: color-mix(in srgb, var(--cp-primary-soft) 60%, var(--cp-primary-border));
-  color: var(--cp-primary-deep);
+  background: color-mix(in srgb, var(--color-primary-50) 60%, var(--color-primary-200));
+  color: var(--color-primary-800);
 }
 
 .action-exclude {
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
 }
 
 .action-exclude:hover {
-  background: var(--cp-danger-soft);
-  color: var(--cp-danger);
+  background: var(--color-error-50);
+  color: var(--color-error-600);
 }
 
 .action-icon {
@@ -168,10 +168,10 @@ const emit = defineEmits<{
   align-items: center;
   gap: 0.3rem;
   border: 0;
-  border-radius: var(--cp-radius-control);
+  border-radius: var(--radius-md);
   padding: 0.375rem 0.625rem;
   background: transparent;
-  color: var(--cp-primary-deep);
+  color: var(--color-primary-800);
   font-size: 0.75rem;
   font-weight: 650;
   cursor: pointer;
@@ -179,12 +179,12 @@ const emit = defineEmits<{
 }
 
 .action-link:hover {
-  background: var(--cp-primary-soft);
+  background: var(--color-primary-50);
 }
 
 .action-btn:focus-visible,
 .action-link:focus-visible {
-  outline: 2px solid var(--cp-primary);
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 2px;
 }
 
@@ -194,16 +194,16 @@ const emit = defineEmits<{
   justify-content: space-between;
   gap: 0.75rem;
   min-height: 2.5rem;
-  border-radius: var(--cp-radius-control);
+  border-radius: var(--radius-md);
   padding: 0.375rem 0.5rem 0.375rem 0.75rem;
 }
 
 .decision-included-status {
-  background: color-mix(in srgb, var(--cp-success-soft) 72%, var(--cp-surface));
+  background: color-mix(in srgb, var(--color-success-50) 72%, var(--surface-primary));
 }
 
 .decision-excluded-status {
-  background: color-mix(in srgb, var(--cp-surface-muted) 84%, var(--cp-surface));
+  background: color-mix(in srgb, var(--surface-inset) 84%, var(--surface-primary));
 }
 
 .status-summary {
@@ -220,11 +220,11 @@ const emit = defineEmits<{
 }
 
 .decision-included-status .status-summary {
-  color: var(--cp-success);
+  color: var(--color-success-600);
 }
 
 .decision-excluded-status .status-summary {
-  color: var(--cp-danger);
+  color: var(--color-error-600);
 }
 
 @media (prefers-reduced-motion: reduce) {
