@@ -42,8 +42,8 @@ export function useClarificationSession(analysisId: MaybeRefOrGetter<number | nu
   const sessionProblemCode = computed(() => clarificationProblemCode(sessionQuery.error.value))
 
   const questions = computed(() => session.value?.questions ?? [])
-  const totalQuestions = computed(() => session.value?.progress.total ?? 0)
-  const answeredCount = computed(() => session.value?.progress.answered ?? 0)
+  const totalQuestions = computed(() => session.value?.progress?.total ?? 0)
+  const answeredCount = computed(() => session.value?.progress?.answered ?? 0)
   const openQuestionCount = computed(
     () => questions.value.filter((question) => question.status === 'pending').length,
   )

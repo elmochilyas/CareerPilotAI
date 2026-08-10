@@ -28,6 +28,7 @@ import MatchErrorState from '@/features/matching/components/MatchErrorState.vue'
 import StaleNotice from '@/features/matching/components/StaleNotice.vue'
 import InsufficientProfileGate from '@/features/matching/components/InsufficientProfileGate.vue'
 import ClarificationEntryCard from '@/features/clarification/components/ClarificationEntryCard.vue'
+import { useClarificationSession } from '@/features/clarification/composables/useClarificationSession'
 
 const route = useRoute()
 const router = useRouter()
@@ -73,6 +74,13 @@ const noAnalyses = computed(() => (listQuery.data.value?.data?.length ?? 0) === 
 
 const insufficientProfile = computed(
   () => noAnalyses.value && createProblemCode.value === 'insufficient_profile',
+)
+
+const clarificationAnalysisId = computed(() => completedAnalysis.value?.id ?? null)
+const { questions: clarificationQuestions, totalQuestions: clarificationTotalQuestions } =
+  useClarificationSession(clarificationAnalysisId)
+const gapReviewCompleted = computed(
+  () => clarificationTotalQuestions.value > 0 && clarificationQuestions.value.length === 0,
 )
 
 function viewGaps(): void {
@@ -442,6 +450,7 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
 
                 <MatchAtAGlance
                   :findings="completedAnalysis.findings"
+                  :gap-review-completed="gapReviewCompleted"
                   class="mt-4"
                   @view-gaps="viewGaps"
                 />
@@ -449,8 +458,19 @@ function formatSalaryValue(value: string | null, currency: string | null): strin
                 <ClarificationEntryCard
                   class="mt-4"
                   :analysis-id="completedAnalysis.id"
+                  show-completed
                   @open="openClarifications"
                 />
+
+                <Button
+                  class="mt-4"
+                  @click="
+                    router.push({ name: 'opportunities-tailor', params: { id: opportunityId } })
+                  "
+                >
+                  <Sparkles class="mr-2 size-4" aria-hidden="true" />
+                  Tailor CV
+                </Button>
               </template>
             </div>
           </section>

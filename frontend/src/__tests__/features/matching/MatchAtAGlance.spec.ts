@@ -146,6 +146,20 @@ describe('MatchAtAGlance', () => {
     expect(withoutGaps.text()).toContain('View full analysis')
   })
 
+  it('visibly marks a completed gap review while keeping the gaps factual', () => {
+    const wrapper = mount(MatchAtAGlance, {
+      props: {
+        findings: [makeFinding({ requirement_text: 'German C1', match_state: 'gap' })],
+        gapReviewCompleted: true,
+      },
+    })
+
+    expect(wrapper.text()).toContain('Gap review complete')
+    expect(wrapper.text()).toContain('Review gaps again')
+    expect(wrapper.text()).toContain('You reviewed these gaps.')
+    expect(gapsGroup(wrapper).text()).toContain('German C1')
+  })
+
   it('shows a neutral note for unknown requirements and emits expand-unknown', async () => {
     const wrapper = mount(MatchAtAGlance, {
       props: {

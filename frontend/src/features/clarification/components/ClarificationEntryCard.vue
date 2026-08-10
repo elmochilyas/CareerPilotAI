@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { HelpCircle } from '@lucide/vue'
+import { CheckCircle2, HelpCircle } from '@lucide/vue'
 import Button from '@/components/ui/Button.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
 import { useClarificationSession } from '../composables/useClarificationSession'
 
-const props = defineProps<{ analysisId: number }>()
+const props = withDefaults(defineProps<{ analysisId: number; showCompleted?: boolean }>(), {
+  showCompleted: false,
+})
 const emit = defineEmits<{ open: [] }>()
 
 const {
@@ -13,16 +15,18 @@ const {
   isSessionError,
   sessionErrorDetail,
   questions,
+  totalQuestions,
   openQuestionCount,
   generableCount,
   refetchSession,
 } = useClarificationSession(() => props.analysisId)
 
-type EntryState = 'answer' | 'review' | 'generate' | null
+type EntryState = 'answer' | 'review' | 'generate' | 'completed' | null
 
 const state = computed<EntryState>(() => {
   if (openQuestionCount.value > 0) return 'answer'
   if (questions.value.length > 0) return 'review'
+  if (props.showCompleted && totalQuestions.value > 0) return 'completed'
   if (generableCount.value > 0) return 'generate'
   return null
 })
@@ -30,11 +34,17 @@ const state = computed<EntryState>(() => {
 const noun = computed(() => (openQuestionCount.value === 1 ? 'question' : 'questions'))
 
 const heading = computed(() => {
+  if (state.value === 'completed') return 'Gap review complete'
   if (state.value === 'review') return 'Review a profile change'
   return 'Clarify your profile'
 })
 
 const detail = computed(() => {
+  if (state.value === 'completed') {
+    return generableCount.value > 0
+      ? 'You finished this review round. More gaps are available if you want to continue.'
+      : 'You finished reviewing the available gaps for this match.'
+  }
   if (state.value === 'answer') {
     return `Answer ${openQuestionCount.value} quick ${noun.value} to improve this match.`
   }
@@ -83,6 +93,27 @@ const actionLabel = computed(() => {
       </div>
     </div>
     <Button variant="outline" size="sm" @click="refetchSession">Retry</Button>
+  </div>
+
+  <div
+    v-else-if="state === 'completed'"
+    role="status"
+    class="flex flex-col gap-4 rounded-[var(--radius-2xl)] bg-[var(--color-success-50)] p-5 shadow-[var(--shadow-neo-raised)] sm:flex-row sm:items-center sm:justify-between sm:p-6"
+  >
+    <div class="flex items-start gap-3">
+      <span
+        class="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--color-success-100)] text-[var(--color-success-700)] shadow-[var(--shadow-neo-inset)]"
+      >
+        <CheckCircle2 class="size-5" aria-hidden="true" />
+      </span>
+      <div>
+        <h2 class="text-sm font-semibold text-[var(--color-success-900)]">{{ heading }}</h2>
+        <p class="mt-1 text-sm text-[var(--color-success-800)]">{{ detail }}</p>
+      </div>
+    </div>
+    <Button v-if="generableCount > 0" variant="outline" @click="emit('open')">
+      Review more gaps
+    </Button>
   </div>
 
   <div
