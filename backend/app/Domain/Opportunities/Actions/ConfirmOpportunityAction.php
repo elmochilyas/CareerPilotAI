@@ -10,6 +10,7 @@ use App\Models\JobOpportunity;
 use App\Models\JobOpportunityIngestion;
 use App\Models\JobOpportunitySkill;
 use App\Models\JobRequirement;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class ConfirmOpportunityAction
@@ -56,9 +57,10 @@ class ConfirmOpportunityAction
                 );
             }
 
-            $candidateProfile = CandidateProfile::query()
-                ->where('user_id', $lockedIngestion->user_id)
-                ->firstOrFail();
+            $candidateProfile = User::query()
+                ->findOrFail($lockedIngestion->user_id)
+                ->candidateProfile()
+                ->firstOrCreate([], ['profile_completion' => 0]);
             $previewData = $preview['data'];
 
             $opportunity = JobOpportunity::query()->create(

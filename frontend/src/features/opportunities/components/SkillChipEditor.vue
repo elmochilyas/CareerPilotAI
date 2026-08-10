@@ -143,9 +143,11 @@ function keepOriginalLabel(): void {
 .skill-review-item {
   display: grid;
   gap: 0.75rem;
-  border: 1px solid var(--cp-border);
-  border-radius: 0.5rem;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
   padding: 0.875rem;
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-neo-raised-sm);
 }
 
 .skill-review-item-excluded .skill-review-main {
@@ -167,13 +169,13 @@ function keepOriginalLabel(): void {
 
 .skill-label {
   overflow-wrap: anywhere;
-  color: var(--cp-ink);
+  color: var(--text-primary);
   font-size: 0.875rem;
   font-weight: 620;
 }
 
 .resolution-badge {
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   padding: 0.125rem 0.5rem;
   font-size: 0.6875rem;
   font-weight: 650;
@@ -181,18 +183,18 @@ function keepOriginalLabel(): void {
 }
 
 .resolution-ambiguous {
-  background: var(--cp-warning-soft);
-  color: var(--cp-warning);
+  background: var(--color-warning-50);
+  color: var(--color-warning-700);
 }
 
 .resolution-complete {
-  background: var(--cp-success-soft);
-  color: var(--cp-success);
+  background: var(--color-success-50);
+  color: var(--color-success-700);
 }
 
 .skill-evidence {
   margin-top: 0.5rem;
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
   font-size: 0.75rem;
 }
 
@@ -214,7 +216,7 @@ function keepOriginalLabel(): void {
 }
 
 .skill-resolution-panel > label {
-  color: var(--cp-ink);
+  color: var(--text-primary);
   font-size: 0.8125rem;
   font-weight: 650;
 }
@@ -222,22 +224,22 @@ function keepOriginalLabel(): void {
 .skill-action {
   min-height: 2.75rem;
   border: 0;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   padding: 0.5rem 0.75rem;
   background: transparent;
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
   font-size: 0.8125rem;
   font-weight: 620;
   cursor: pointer;
 }
 
 .skill-action:hover {
-  background: var(--cp-surface-muted);
-  color: var(--cp-ink);
+  background: var(--surface-inset);
+  color: var(--text-primary);
 }
 
 .skill-action:focus-visible {
-  outline: 2px solid var(--cp-primary);
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 2px;
 }
 
@@ -247,17 +249,17 @@ function keepOriginalLabel(): void {
 }
 
 .skill-action-resolve {
-  background: var(--cp-warning-soft);
-  color: var(--cp-warning);
+  background: var(--color-warning-50);
+  color: var(--color-warning-700);
 }
 
 .skill-action-kept,
 .skill-action-restore {
-  color: var(--cp-success);
+  color: var(--color-success-700);
 }
 
 .skill-action-remove {
-  color: var(--cp-danger);
+  color: var(--color-error-700);
 }
 
 @media (min-width: 48rem) {

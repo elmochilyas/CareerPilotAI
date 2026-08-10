@@ -26,6 +26,7 @@ class MatchFindingResource extends JsonResource
             'confidence' => $this->confidence,
             'classifier_source' => $this->classifierSource,
             'display_order' => $this->displayOrder,
+            'tailoring_relevance' => $this->tailoringRelevance,
         ];
     }
 }

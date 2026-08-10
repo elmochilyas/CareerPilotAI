@@ -27,6 +27,7 @@ class JobOpportunitySkill extends Model
         return $this->belongsTo(JobOpportunity::class, 'job_opportunity_id');
     }
 
+    /** @return BelongsTo<Skill, $this> */
     public function skill(): BelongsTo
     {
         return $this->belongsTo(Skill::class);

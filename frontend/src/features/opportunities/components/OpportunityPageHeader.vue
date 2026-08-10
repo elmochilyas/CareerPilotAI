@@ -39,7 +39,7 @@ const emit = defineEmits<{
 
 <style scoped>
 .opportunity-header {
-  border-bottom: 1px solid var(--cp-divider);
+  border-bottom: 1px solid var(--border-default);
   padding: 0.25rem 0 1.5rem;
 }
 
@@ -55,7 +55,7 @@ const emit = defineEmits<{
 .opportunity-title {
   max-width: 56rem;
   overflow-wrap: anywhere;
-  color: var(--cp-ink);
+  color: var(--text-primary);
   font-size: 1.75rem;
   font-weight: 700;
   letter-spacing: -0.025em;
@@ -66,7 +66,7 @@ const emit = defineEmits<{
 .opportunity-description {
   margin-top: 0.375rem;
   max-width: 72ch;
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
   font-size: 0.875rem;
   line-height: 1.375rem;
   text-wrap: pretty;
@@ -74,7 +74,7 @@ const emit = defineEmits<{
 
 .opportunity-meta {
   margin-top: 0.625rem;
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
   font-size: 0.8125rem;
   line-height: 1.25rem;
 }
@@ -85,19 +85,19 @@ const emit = defineEmits<{
   align-items: center;
   gap: 0.45rem;
   margin: -0.25rem 0 0.5rem;
-  border-radius: 0.375rem;
-  color: var(--cp-text-muted);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
   font-size: 0.8125rem;
   font-weight: 600;
   line-height: 1.25rem;
 }
 
 .opportunity-back-link:hover {
-  color: var(--cp-primary-hover);
+  color: var(--color-primary-700);
 }
 
 .opportunity-back-link:focus-visible {
-  outline: 2px solid var(--cp-primary);
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 3px;
 }
 

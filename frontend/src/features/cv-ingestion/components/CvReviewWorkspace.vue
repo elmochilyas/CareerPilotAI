@@ -355,8 +355,31 @@ const normalSuggestions = computed(() => {
 const reviewedCount = computed(
   () => props.suggestions.filter((s) => s.review_status !== 'pending').length,
 )
+const pendingSuggestions = computed(() =>
+  props.suggestions.filter((suggestion) => suggestion.review_status === 'pending'),
+)
 const totalCount = computed(() => props.suggestions.length)
 const conflictCount = computed(() => props.preview?.conflicts?.length ?? 0)
+
+function acceptAllPending(): void {
+  if (
+    props.readonly ||
+    !props.documentReviewable ||
+    props.batchSavePending ||
+    props.updateSuggestionPending ||
+    pendingSuggestions.value.length === 0
+  ) {
+    return
+  }
+
+  emit(
+    'batchSave',
+    pendingSuggestions.value.map((suggestion) => ({
+      id: suggestion.id,
+      decision: 'accepted',
+    })),
+  )
+}
 </script>
 
 <template>
@@ -377,7 +400,7 @@ const conflictCount = computed(() => props.preview?.conflicts?.length ?? 0)
 
     <!-- Header -->
     <div
-      class="flex items-start justify-between border-b border-slate-100 bg-gradient-to-b from-white to-slate-50/50 px-8 py-5"
+      class="flex flex-col items-start justify-between gap-4 border-b border-slate-100 bg-gradient-to-b from-white to-slate-50/50 px-8 py-5 sm:flex-row"
     >
       <div class="flex items-start gap-4">
         <div
@@ -405,16 +428,25 @@ const conflictCount = computed(() => props.preview?.conflicts?.length ?? 0)
           </p>
         </div>
       </div>
-      <Button
-        v-if="!readonly"
-        variant="outline"
-        size="sm"
-        class="shrink-0"
-        @click="emit('uploadNew')"
-      >
-        <ArrowRight class="mr-1 h-3.5 w-3.5 rotate-180" aria-hidden="true" />
-        Upload different CV
-      </Button>
+      <div v-if="!readonly" class="flex shrink-0 flex-wrap justify-start gap-2 sm:justify-end">
+        <Button
+          v-if="pendingSuggestions.length > 0"
+          size="sm"
+          :disabled="!documentReviewable || batchSavePending || updateSuggestionPending"
+          @click="acceptAllPending"
+        >
+          <CheckCircle2 class="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+          {{
+            batchSavePending
+              ? 'Accepting suggestions…'
+              : `Accept all pending (${pendingSuggestions.length})`
+          }}
+        </Button>
+        <Button variant="outline" size="sm" @click="emit('uploadNew')">
+          <ArrowRight class="mr-1 h-3.5 w-3.5 rotate-180" aria-hidden="true" />
+          Upload different CV
+        </Button>
+      </div>
     </div>
 
     <!-- Stepper -->

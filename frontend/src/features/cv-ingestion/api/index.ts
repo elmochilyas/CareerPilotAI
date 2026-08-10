@@ -84,7 +84,7 @@ export async function batchUpdateSuggestions(
   decisions: BatchDecisionItem[],
 ): Promise<CvSuggestion[]> {
   return (
-    await client.patch<ApiData<CvSuggestion[]>>(`/api/v1/cv/${documentId}/suggestions/batch`, {
+    await client.post<ApiData<CvSuggestion[]>>(`/api/v1/cv/${documentId}/suggestions/batch`, {
       decisions,
     })
   ).data.data

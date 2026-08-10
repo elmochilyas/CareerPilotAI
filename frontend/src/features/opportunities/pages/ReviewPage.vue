@@ -442,6 +442,14 @@ async function executeAcceptAll(): Promise<void> {
       ? `${decisions.length} items accepted. Preview is outdated — regenerate to confirm.`
       : `${decisions.length} items accepted.`
     await Promise.all([refetchSuggestions(), refetchIngestion()])
+
+    if (!isLastStep.value) {
+      currentStep.value = visibleSteps.value.length - 1
+    }
+
+    if (allReviewed.value && !hasAmbiguous.value && pendingMutationCount.value === 0) {
+      void generatePreviewAction()
+    }
   } catch (err: unknown) {
     hasMutationError.value = true
     const detail = (err as { response?: { data?: { code?: string; detail?: string } } })?.response
@@ -473,7 +481,6 @@ async function confirmAction() {
     if (problem?.code === 'stale_preview') {
       previewData.value = null
     }
-  } finally {
     isConfirming.value = false
   }
 }
@@ -1071,16 +1078,6 @@ const isPrimaryDisabled = computed(() => {
             </div>
           </div>
 
-          <button
-            v-if="!previewData"
-            class="preview-btn"
-            type="button"
-            :disabled="!allReviewed || hasAmbiguous || pendingMutationCount > 0 || hasMutationError"
-            @click="generatePreviewAction"
-          >
-            {{ previewIsStale ? 'Regenerate preview' : 'Generate preview' }}
-          </button>
-
           <div v-if="previewData" class="final-preview">
             <PreviewSummary :preview="previewData" />
           </div>
@@ -1109,7 +1106,14 @@ const isPrimaryDisabled = computed(() => {
   width: 100%;
   max-width: 74rem;
   margin: 0 auto;
+  padding: var(--space-8) var(--space-4);
   color: var(--text-primary);
+}
+
+@media (min-width: 64rem) {
+  .review-page {
+    padding: var(--space-8) var(--space-6);
+  }
 }
 
 .review-page-meta {
@@ -1222,6 +1226,16 @@ const isPrimaryDisabled = computed(() => {
 .step-section {
   display: grid;
   gap: 1.25rem;
+  border-radius: var(--radius-xl);
+  background: var(--surface-primary);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-neo-raised);
+}
+
+@media (min-width: 64rem) {
+  .step-section {
+    padding: var(--space-8);
+  }
 }
 
 .step-heading {
@@ -1444,12 +1458,13 @@ const isPrimaryDisabled = computed(() => {
   border-radius: var(--radius-md);
   padding: 0.625rem 1.25rem;
   background: var(--color-primary-600);
-  color: #ffffff;
+  color: var(--text-inverse);
   font-size: 0.875rem;
   font-weight: 650;
   cursor: pointer;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--duration-fast) var(--ease-default);
 }
 
 .preview-btn:hover:not(:disabled) {
@@ -1499,12 +1514,12 @@ const isPrimaryDisabled = computed(() => {
 
 .review-state {
   margin-top: 1.5rem;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   background: var(--surface-primary);
   padding: 1.5rem;
   color: var(--text-secondary);
   text-align: center;
+  box-shadow: var(--shadow-neo-raised);
 }
 
 .review-state-error {
@@ -1530,11 +1545,16 @@ const isPrimaryDisabled = computed(() => {
   border-radius: var(--radius-md);
   background: var(--color-primary-600);
   padding: 0.5rem 1rem;
-  color: #ffffff;
+  color: var(--text-inverse);
   font-size: 0.875rem;
   font-weight: 600;
   border: none;
   cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-default);
+}
+
+.confirmed-btn-primary:hover {
+  background: var(--color-primary-700);
 }
 
 .confirmed-btn-secondary {
@@ -1545,6 +1565,11 @@ const isPrimaryDisabled = computed(() => {
   color: var(--text-primary);
   font-size: 0.875rem;
   cursor: pointer;
+  transition: background-color var(--duration-fast) var(--ease-default);
+}
+
+.confirmed-btn-secondary:hover {
+  background: var(--surface-secondary);
 }
 
 .confirmed-btn-primary:focus-visible,

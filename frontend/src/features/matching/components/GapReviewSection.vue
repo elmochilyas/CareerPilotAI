@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ArrowRight, Briefcase, FileSearch, Globe, Layers, Wrench } from '@lucide/vue'
+import {
+  ArrowRight,
+  Briefcase,
+  FileSearch,
+  Globe,
+  Layers,
+  MessageCircle,
+  Wrench,
+} from '@lucide/vue'
 import { RouterLink, useRouter } from 'vue-router'
 import type { ClarificationQuestion } from '@/features/clarification/types'
 import EmptyState from '@/components/ui/EmptyState.vue'
@@ -70,14 +78,25 @@ function answerQuestion(): void {
 
 <template>
   <div class="space-y-8">
-    <header class="space-y-3">
-      <div>
+    <header class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+      <div class="min-w-0">
         <h1 class="text-2xl font-bold tracking-tight text-[var(--text-primary)]">Gaps to review</h1>
         <p class="mt-1 text-sm leading-relaxed text-[var(--text-secondary)]">
           {{ totalGaps }} requirement{{ totalGaps === 1 ? '' : 's' }} need attention before you're a
           stronger match.
         </p>
       </div>
+      <RouterLink
+        :to="{
+          name: 'opportunities-match-clarifications',
+          params: { id: opportunityId },
+        }"
+        class="inline-flex shrink-0 items-center gap-2 rounded-[var(--radius-lg)] bg-[var(--color-primary-600)] px-4 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-neo-raised-sm)] transition-shadow hover:bg-[var(--color-primary-700)] hover:shadow-[var(--shadow-neo-raised)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] focus-visible:ring-offset-2"
+      >
+        <MessageCircle class="size-4" aria-hidden="true" />
+        Validate gaps
+        <ArrowRight class="size-3.5" aria-hidden="true" />
+      </RouterLink>
     </header>
 
     <!-- Overview card with category breakdown -->

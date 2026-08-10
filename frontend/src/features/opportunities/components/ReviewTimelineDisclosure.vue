@@ -41,41 +41,46 @@ const stepProgressScale = computed(() => {
 .step-indicator {
   display: block;
   min-width: 0;
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius-xl);
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-neo-raised-sm);
 }
 
 .step-indicator-row {
   display: flex;
   align-items: baseline;
-  gap: 0.25rem;
+  gap: 0.375rem;
 }
 
 .step-position {
-  color: var(--cp-text-muted);
-  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
-  font-weight: 570;
-  line-height: 1.125rem;
+  font-weight: 600;
+  line-height: 1.25rem;
 }
 
 .step-sep {
-  color: var(--cp-text-faint);
-  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  font-size: 0.8125rem;
 }
 
 .step-label {
-  color: var(--cp-ink);
+  color: var(--text-primary);
   font-size: 0.9375rem;
-  font-weight: 650;
+  font-weight: 680;
   line-height: 1.375rem;
   overflow-wrap: anywhere;
 }
 
 .step-progress {
-  height: 0.1875rem;
-  margin-top: 0.625rem;
+  height: 0.25rem;
+  margin-top: 0.75rem;
   overflow: hidden;
-  border-radius: 999px;
-  background: var(--cp-surface-muted);
+  border-radius: var(--radius-full);
+  background: var(--surface-inset);
+  box-shadow: var(--shadow-neo-inset);
 }
 
 .step-progress > span {
@@ -83,9 +88,9 @@ const stepProgressScale = computed(() => {
   width: 100%;
   height: 100%;
   border-radius: inherit;
-  background: var(--cp-primary);
+  background: linear-gradient(90deg, var(--color-primary-400), var(--color-primary-600));
   transform-origin: left center;
-  transition: transform 150ms ease;
+  transition: transform 200ms ease;
 }
 
 @media (min-width: 63.9375rem) {

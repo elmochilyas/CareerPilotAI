@@ -37,6 +37,7 @@ class MatchAnalysisResource extends JsonResource
             ],
             'stale' => $this->stale,
             'latest' => $this->latest,
+            'tailorable' => $this->status->value === 'completed',
             'warnings' => $this->warnings,
             'failure' => [
                 'code' => $this->failureCode,

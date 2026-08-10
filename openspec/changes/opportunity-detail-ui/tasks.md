@@ -43,3 +43,10 @@
 ## 8. OpenSpec verification
 
 - [ ] 8.1 Confirm all artifacts present and `/opsx:verify` resolves with no unresolved critical findings
+
+## 9. Persistent gap-review completion
+
+- [x] 9.1 Add an opt-in completed state to `ClarificationEntryCard` based on persisted session progress, while preserving its hidden-empty default behavior
+- [x] 9.2 Enable the completed state in `OpportunityDetailPage.vue` and add focused regression coverage
+- [x] 9.3 Record the reviewed behavior in the proposal, design, and OPDETAIL-007 delta requirement
+- [x] 9.4 Surface the persisted completion state directly in `MatchAtAGlance` with regression coverage

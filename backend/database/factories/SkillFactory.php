@@ -21,7 +21,7 @@ class SkillFactory extends Factory
 
         return [
             'name' => $name,
-            'normalized_name' => strtolower($name),
+            'normalized_name' => fn (array $attributes) => strtolower($attributes['name']),
             'category' => fake()->randomElement(['language', 'framework', 'database', 'tool', 'cloud', 'methodology', 'soft-skill', null]),
             'is_active' => true,
         ];

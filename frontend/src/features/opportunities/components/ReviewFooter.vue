@@ -79,16 +79,16 @@ const emit = defineEmits<{
   z-index: 5;
   grid-template-columns: minmax(0, 1fr);
   gap: 0.625rem;
-  border: 1px solid var(--cp-color-border);
-  border-radius: var(--cp-radius-xl);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
   padding: 0.8125rem;
-  background: var(--cp-color-card);
+  background: var(--surface-primary);
 }
 
 .footer-primary,
 .footer-secondary {
   min-height: 2.75rem;
-  border-radius: var(--cp-radius-lg);
+  border-radius: var(--radius-lg);
   padding: 0.625rem 1rem;
   font-size: 0.875rem;
   font-weight: 650;
@@ -97,29 +97,29 @@ const emit = defineEmits<{
 
 .footer-primary {
   border: none;
-  background: var(--cp-color-primary);
-  color: var(--cp-color-primary-foreground);
-  transition: all var(--cp-duration-fast) var(--cp-ease-out);
+  background: var(--color-primary-600);
+  color: var(--text-inverse);
+  transition: all var(--duration-fast) var(--ease-out);
 }
 
 .footer-primary:hover:not(:disabled) {
-  background: var(--cp-color-primary-darker);
+  background: var(--color-primary-700);
 }
 
 .footer-secondary {
-  border: 1px solid var(--cp-color-border);
-  background: var(--cp-color-card);
-  color: var(--cp-color-foreground);
-  transition: all var(--cp-duration-fast) var(--cp-ease-out);
+  border: 1px solid var(--border-default);
+  background: var(--surface-primary);
+  color: var(--text-primary);
+  transition: all var(--duration-fast) var(--ease-out);
 }
 
 .footer-secondary:hover:not(:disabled) {
-  background: var(--cp-color-accent);
+  background: var(--surface-secondary);
 }
 
 .footer-primary:focus-visible,
 .footer-secondary:focus-visible {
-  outline: 2px solid var(--cp-color-primary);
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 2px;
 }
 
@@ -135,14 +135,14 @@ const emit = defineEmits<{
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--cp-color-muted-foreground);
+  color: var(--text-muted);
   font-size: 0.75rem;
   line-height: 1.125rem;
   text-align: center;
 }
 
 .footer-status strong {
-  color: var(--cp-color-foreground);
+  color: var(--text-primary);
   font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
   font-weight: 650;
@@ -150,7 +150,7 @@ const emit = defineEmits<{
 
 .footer-status span {
   margin-top: 0.125rem;
-  color: var(--cp-color-warning);
+  color: var(--color-warning-600);
 }
 
 .footer-progress {
@@ -159,8 +159,8 @@ const emit = defineEmits<{
   height: 0.1875rem;
   margin-top: 0.375rem;
   overflow: hidden;
-  border-radius: 999px;
-  background: var(--cp-color-accent);
+  border-radius: var(--radius-full);
+  background: var(--surface-secondary);
 }
 
 .footer-progress > span {
@@ -169,9 +169,9 @@ const emit = defineEmits<{
   height: 100%;
   margin: 0;
   border-radius: inherit;
-  background: var(--cp-color-primary);
+  background: var(--color-primary-600);
   transform-origin: left center;
-  transition: transform var(--cp-duration-fast) var(--cp-ease-out);
+  transition: transform var(--duration-fast) var(--ease-out);
 }
 
 .footer-spacer {

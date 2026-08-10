@@ -26,5 +26,6 @@ final readonly class MatchFindingResult
         public ?string $confidence,
         public ?string $classifierSource,
         public int $displayOrder,
+        public ?string $tailoringRelevance = null,
     ) {}
 }

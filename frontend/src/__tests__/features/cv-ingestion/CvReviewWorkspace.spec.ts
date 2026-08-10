@@ -224,6 +224,76 @@ describe('CvReviewWorkspace', () => {
     expect(readonlyWrapper.text()).not.toContain('Upload different CV')
   })
 
+  it('accepts every pending suggestion in one batch without changing reviewed decisions', async () => {
+    const suggestions = [
+      makeSuggestion('basic_information', { id: 11 }),
+      makeSuggestion('experience', { id: 12, review_status: 'rejected' }),
+      makeSuggestion('skill', { id: 13 }),
+    ]
+    const wrapper = mount(CvReviewWorkspace, {
+      props: {
+        suggestions,
+        preview: null,
+        allReviewed: false,
+        applyPending: false,
+        updateSuggestionPending: false,
+        batchSavePending: false,
+        batchSaveError: false,
+        documentReviewable: true,
+      },
+    })
+
+    const acceptAllButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Accept all pending (2)'))
+
+    expect(acceptAllButton).toBeDefined()
+    await acceptAllButton!.trigger('click')
+
+    expect(wrapper.emitted('batchSave')).toEqual([
+      [
+        [
+          { id: 11, decision: 'accepted' },
+          { id: 13, decision: 'accepted' },
+        ],
+      ],
+    ])
+  })
+
+  it('hides the accept-all action when there are no pending suggestions or review is readonly', () => {
+    const reviewedSuggestion = makeSuggestion('basic_information', {
+      review_status: 'accepted',
+    })
+    const reviewedWrapper = mount(CvReviewWorkspace, {
+      props: {
+        suggestions: [reviewedSuggestion],
+        preview: null,
+        allReviewed: true,
+        applyPending: false,
+        updateSuggestionPending: false,
+        batchSavePending: false,
+        batchSaveError: false,
+        documentReviewable: true,
+      },
+    })
+    const readonlyWrapper = mount(CvReviewWorkspace, {
+      props: {
+        suggestions: [makeSuggestion('basic_information')],
+        preview: null,
+        allReviewed: false,
+        readonly: true,
+        applyPending: false,
+        updateSuggestionPending: false,
+        batchSavePending: false,
+        batchSaveError: false,
+        documentReviewable: true,
+      },
+    })
+
+    expect(reviewedWrapper.text()).not.toContain('Accept all pending')
+    expect(readonlyWrapper.text()).not.toContain('Accept all pending')
+  })
+
   it('shows no-suggestions message when suggestions array is empty', () => {
     const wrapper = mount(CvReviewWorkspace, {
       props: {

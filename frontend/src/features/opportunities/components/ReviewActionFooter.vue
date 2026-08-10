@@ -85,10 +85,11 @@ const emit = defineEmits<{
   z-index: 5;
   grid-template-columns: minmax(0, 1fr);
   gap: 0.625rem;
-  border: 1px solid var(--cp-border);
-  border-radius: 0.75rem;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
   padding: 0.8125rem;
-  background: var(--cp-surface);
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-neo-raised-sm);
 }
 
 .footer-btn {
@@ -96,7 +97,7 @@ const emit = defineEmits<{
   align-items: center;
   justify-content: center;
   min-height: 2.75rem;
-  border-radius: 0.5rem;
+  border-radius: var(--radius-md);
   padding: 0.625rem 1rem;
   font-size: 0.875rem;
   font-weight: 650;
@@ -107,28 +108,28 @@ const emit = defineEmits<{
 
 .footer-btn-primary {
   border: none;
-  background: var(--cp-primary);
-  color: var(--cp-text-inverse);
-  transition: background-color 120ms ease;
+  background: var(--color-primary-600);
+  color: var(--text-inverse);
+  transition: background-color var(--duration-fast) var(--ease-default);
 }
 
 .footer-btn-primary:hover:not(:disabled) {
-  background: var(--cp-primary-hover);
+  background: var(--color-primary-700);
 }
 
 .footer-btn-secondary {
-  border: 1px solid var(--cp-border);
-  background: var(--cp-surface);
-  color: var(--cp-ink);
-  transition: background-color 120ms ease;
+  border: 1px solid var(--border-default);
+  background: var(--surface-primary);
+  color: var(--text-primary);
+  transition: background-color var(--duration-fast) var(--ease-default);
 }
 
 .footer-btn-secondary:hover:not(:disabled) {
-  background: var(--cp-surface-subtle);
+  background: var(--surface-secondary);
 }
 
 .footer-btn:focus-visible {
-  outline: 2px solid var(--cp-primary);
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 2px;
 }
 
@@ -143,7 +144,7 @@ const emit = defineEmits<{
   align-items: center;
   justify-content: center;
   gap: 0.375rem;
-  color: var(--cp-text-muted);
+  color: var(--text-muted);
   font-size: 0.75rem;
   line-height: 1.125rem;
   text-align: center;
@@ -154,11 +155,11 @@ const emit = defineEmits<{
 }
 
 .footer-sep {
-  color: var(--cp-text-faint);
+  color: var(--text-tertiary);
 }
 
 .footer-progress-text {
-  color: var(--cp-text);
+  color: var(--text-primary);
   font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
   font-weight: 640;
@@ -169,8 +170,8 @@ const emit = defineEmits<{
   flex-basis: 100%;
   height: 0.1875rem;
   overflow: hidden;
-  border-radius: 999px;
-  background: var(--cp-surface-muted);
+  border-radius: var(--radius-full);
+  background: var(--surface-inset);
 }
 
 .footer-progress-bar > span {
@@ -178,7 +179,7 @@ const emit = defineEmits<{
   width: 100%;
   height: 100%;
   border-radius: inherit;
-  background: var(--cp-primary);
+  background: var(--color-primary-600);
   transform-origin: left center;
   transition: transform 150ms ease;
 }

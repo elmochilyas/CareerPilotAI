@@ -30,6 +30,7 @@ const isCancelDialogOpen = shallowRef(false)
 const cancellationError = shallowRef('')
 const isReanalyzeDialogOpen = shallowRef(false)
 const reanalysisError = shallowRef('')
+const retryError = shallowRef('')
 
 const ingestionId = computed<number | null>(() => {
   const routeId = Array.isArray(route.params.id) ? route.params.id[0] : route.params.id
@@ -170,6 +171,25 @@ const reanalyzeMutation = useMutation({
   },
 })
 
+const retryMutation = useMutation({
+  mutationFn: async () => {
+    if (ingestionId.value === null) throw new Error('Invalid ingestion identifier.')
+    return retryIngestion(ingestionId.value)
+  },
+  onSuccess: async (requeuedIngestion) => {
+    queryClient.setQueryData(opportunityKeys.ingestion(requeuedIngestion.id), requeuedIngestion)
+    await queryClient.invalidateQueries({ queryKey: opportunityKeys.ingestions(), exact: true })
+    retryError.value = ''
+  },
+  onError: (error) => {
+    const detail = extractProblemDetail(error as never)
+    retryError.value =
+      detail && detail.status < 500
+        ? detail.detail
+        : "We couldn't restart the analysis. Please try again in a moment."
+  },
+})
+
 watch(
   [() => ingestion.value?.status, ingestionId],
   ([status, id]) => {
@@ -179,9 +199,10 @@ watch(
   { immediate: true },
 )
 
-async function handleRetry(): Promise<void> {
-  if (ingestionId.value === null) return
-  await retryIngestion(ingestionId.value)
+function handleRetry(): void {
+  if (ingestionId.value === null || retryMutation.isPending.value) return
+  retryError.value = ''
+  retryMutation.mutate()
 }
 
 function requestCancellation(): void {
@@ -364,9 +385,18 @@ async function viewConfirmedOpportunity(): Promise<void> {
         <p class="mt-2 break-words text-[var(--color-error-600)]">{{ failureMessage }}</p>
 
         <div class="mt-4 flex flex-wrap gap-2">
-          <Button v-if="isRetryable" size="sm" :disabled="isPending" @click="handleRetry">
-            <RefreshCw class="size-3.5" aria-hidden="true" />
-            Retry
+          <Button
+            v-if="isRetryable"
+            size="sm"
+            :disabled="isPending || retryMutation.isPending.value"
+            @click="handleRetry"
+          >
+            <RefreshCw
+              class="size-3.5"
+              :class="{ 'animate-spin': retryMutation.isPending.value }"
+              aria-hidden="true"
+            />
+            {{ retryMutation.isPending.value ? 'Retrying...' : 'Retry' }}
           </Button>
           <Button
             variant="outline"
@@ -396,6 +426,14 @@ async function viewConfirmedOpportunity(): Promise<void> {
           aria-live="assertive"
         >
           {{ cancellationError }}
+        </p>
+        <p
+          v-if="retryError"
+          class="mt-3 break-words font-medium text-red-700"
+          role="alert"
+          aria-live="assertive"
+        >
+          {{ retryError }}
         </p>
       </div>
 

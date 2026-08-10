@@ -105,20 +105,7 @@ const sidebarWidth = collapsed.value ? 'var(--sidebar-collapsed-width)' : 'var(-
       >
         <router-view v-slot="{ Component }">
           <Transition name="ds-page" mode="out-in">
-            <Suspense>
-              <component :is="Component" />
-              <template #fallback>
-                <div
-                  class="flex items-center justify-center py-32"
-                  role="status"
-                  aria-live="polite"
-                >
-                  <div
-                    class="size-8 animate-spin rounded-full border-4 border-[var(--color-neutral-200)] border-t-[var(--color-primary-600)]"
-                  />
-                </div>
-              </template>
-            </Suspense>
+            <component :is="Component" />
           </Transition>
         </router-view>
       </div>

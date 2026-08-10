@@ -23,6 +23,7 @@ use App\Domain\Opportunities\Policies\JobOpportunitySuggestionPolicy;
 use App\Domain\Opportunities\Services\Contracts\JobAnalyzer;
 use App\Domain\Opportunities\Services\OpenAiJobAnalyzer;
 use App\Domain\Profile\Policies\ProfileItemPolicy;
+use App\Domain\Resumes\Policies\ResumePolicy;
 use App\Models\ClarificationAnswer;
 use App\Models\ClarificationProposal;
 use App\Models\ClarificationQuestion;
@@ -34,6 +35,7 @@ use App\Models\JobOpportunityIngestion;
 use App\Models\JobOpportunitySuggestion;
 use App\Models\MatchAnalysis;
 use App\Models\ProfileItem;
+use App\Models\Resume;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
@@ -66,6 +68,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ClarificationQuestion::class, ClarificationQuestionPolicy::class);
         Gate::policy(ClarificationAnswer::class, ClarificationAnswerPolicy::class);
         Gate::policy(ClarificationProposal::class, ClarificationProposalPolicy::class);
+        Gate::policy(Resume::class, ResumePolicy::class);
 
         Event::listen(ProposalAccepted::class, WriteClarificationAuditEventListener::class);
 
@@ -83,7 +86,7 @@ class AppServiceProvider extends ServiceProvider
             ->by($this->rateLimitKey($request)));
         RateLimiter::for('opportunity-preview', fn (Request $request): Limit => Limit::perHour(10)
             ->by($this->rateLimitKey($request)));
-        RateLimiter::for('opportunity-confirm', fn (Request $request): Limit => Limit::perHour(5)
+        RateLimiter::for('opportunity-confirm', fn (Request $request): Limit => Limit::perHour(30)
             ->by($this->rateLimitKey($request)));
 
         RateLimiter::for('matching-create', fn (Request $request): Limit => $this->matchingLimit($request, 'create_rate_limit'));
@@ -141,6 +144,17 @@ class AppServiceProvider extends ServiceProvider
             }
 
             return JobOpportunity::whereHas('candidateProfile', fn ($q) => $q->where('user_id', $userId))
+                ->findOrFail($value);
+        });
+
+        Route::bind('resume', function (string $value): Resume {
+            $userId = request()->user()?->id;
+
+            if ($userId === null) {
+                throw new ModelNotFoundException;
+            }
+
+            return Resume::whereHas('candidateProfile', fn ($q) => $q->where('user_id', $userId))
                 ->findOrFail($value);
         });
 

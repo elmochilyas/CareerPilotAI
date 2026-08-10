@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
+import { computed, ref, watch, onMounted } from 'vue'
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import { ArrowLeft, Check, Upload, Cog, ListChecks, FileCheck, Sparkles } from '@lucide/vue'
 import type { LucideIcon } from '@lucide/vue'
@@ -15,6 +15,7 @@ import CvImportResult from '../components/CvImportResult.vue'
 import Button from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import Toast from '@/components/ui/Toast.vue'
+import { useToast } from '@/composables/useToast'
 
 const router = useRouter()
 const route = useRoute()
@@ -51,9 +52,9 @@ const {
   reset,
 } = useCvIngestion()
 
+const { toast } = useToast()
+
 const importBusy = computed(() => importMutation.isPending.value)
-const toastVisible = ref(false)
-const toastTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 const activeStep = ref(0)
 
 const applyPending = computed(() => importMutation.isPending.value)
@@ -148,17 +149,9 @@ watch(
   () => announcement.value,
   (msg) => {
     if (!msg) return
-    toastVisible.value = true
-    if (toastTimer.value) clearTimeout(toastTimer.value)
-    toastTimer.value = setTimeout(() => {
-      toastVisible.value = false
-    }, 3500)
+    toast.success(msg)
   },
 )
-
-onUnmounted(() => {
-  if (toastTimer.value) clearTimeout(toastTimer.value)
-})
 
 function handleFileSelected(file: File): void {
   if (uploadError.value) uploadError.value = null
@@ -534,7 +527,7 @@ onBeforeRouteLeave(() => {
       </div>
     </Transition>
 
-    <Toast :message="announcement" :visible="toastVisible" @close="toastVisible = false" />
+    <Toast />
   </div>
 </template>
 

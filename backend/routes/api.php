@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\JobOpportunityIngestionController;
 use App\Http\Controllers\Api\V1\JobOpportunitySuggestionController;
 use App\Http\Controllers\Api\V1\MatchAnalysisController;
 use App\Http\Controllers\Api\V1\ProfileController;
+use App\Http\Controllers\Api\V1\ResumeController;
 use App\Http\Controllers\Api\V1\SkillController;
 use Illuminate\Support\Facades\Route;
 
@@ -107,6 +108,9 @@ Route::prefix('v1')->group(function (): void {
                 ->name('matches.store');
             Route::get('/{opportunity}/matches', [MatchAnalysisController::class, 'index'])
                 ->name('matches.index');
+
+            Route::get('/{opportunity}/resumes', [ResumeController::class, 'index']);
+            Route::post('/{opportunity}/resumes', [ResumeController::class, 'store']);
         });
 
         Route::get('/matches/{matchAnalysis}', [MatchAnalysisController::class, 'show'])
@@ -129,5 +133,12 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/clarifications/{clarificationQuestion}/skip', [ClarificationController::class, 'skip'])
             ->middleware('throttle:clarification-write')
             ->name('clarifications.skip');
+
+        Route::apiResource('resumes', ResumeController::class)->except(['edit', 'create']);
+        Route::post('resumes/{resume}/tailor', [ResumeController::class, 'tailor']);
+        Route::post('resumes/{resume}/approve', [ResumeController::class, 'approve']);
+        Route::get('resumes/{resume}/preview', [ResumeController::class, 'preview']);
+        Route::get('resumes/{resume}/document-preview', [ResumeController::class, 'documentPreview']);
+        Route::get('resumes/{resume}/download/pdf', [ResumeController::class, 'downloadPdf']);
     });
 });

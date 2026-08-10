@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import App from '../App.vue'
 import { createRouter, createWebHistory } from 'vue-router'
+import { createPinia } from 'pinia'
 
 describe('App', () => {
   it('renders without errors', () => {
@@ -9,8 +10,9 @@ describe('App', () => {
       history: createWebHistory(),
       routes: [],
     })
+    const pinia = createPinia()
     const wrapper = mount(App, {
-      global: { plugins: [router] },
+      global: { plugins: [router, pinia] },
     })
     expect(wrapper.exists()).toBe(true)
   })

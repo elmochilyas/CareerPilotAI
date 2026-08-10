@@ -68,13 +68,13 @@ function makeSession(
 let wrapper: VueWrapper | undefined
 let queryClient: QueryClient | undefined
 
-async function mountCard(): Promise<VueWrapper> {
+async function mountCard(props: { showCompleted?: boolean } = {}): Promise<VueWrapper> {
   queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   })
 
   wrapper = mount(ClarificationEntryCard, {
-    props: { analysisId: 9 },
+    props: { analysisId: 9, ...props },
     global: { plugins: [[VueQueryPlugin, { queryClient }]] },
   })
 
@@ -161,6 +161,19 @@ describe('ClarificationEntryCard with Vue Query', () => {
 
     expect(page.find('div').exists()).toBe(false)
     expect(page.text()).toBe('')
+  })
+
+  it('shows a persistent completion state when requested by the host page', async () => {
+    mocks.fetchSession.mockResolvedValue(
+      makeSession([], { progress: { answered: 3, total: 3 }, generable_count: 2 }),
+    )
+
+    const page = await mountCard({ showCompleted: true })
+
+    expect(page.text()).toContain('Gap review complete')
+    expect(page.text()).toContain('You finished this review round.')
+    expect(page.text()).toContain('Review more gaps')
+    expect(page.attributes('role')).toBe('status')
   })
 
   it('prompts to continue the review when answers await a decision', async () => {

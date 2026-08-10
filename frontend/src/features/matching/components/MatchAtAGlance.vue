@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { AlertCircle, Check, ChevronRight } from '@lucide/vue'
+import { AlertCircle, Check, CheckCircle2, ChevronRight } from '@lucide/vue'
 import Button from '@/components/ui/Button.vue'
 import type { MatchFinding } from '../types'
 import { countUnknown, findingKey, gapsOf, labelOf, strengthsOf } from '../utils/matchPresentation'
 
 const props = defineProps<{
   findings: MatchFinding[]
+  gapReviewCompleted?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -46,9 +47,29 @@ const unknownCount = computed(() => countUnknown(props.findings))
           The requirements that matter most.
         </p>
       </div>
-      <Button v-if="gaps.length > 0" @click="emit('view-gaps')">Review gaps</Button>
+      <div v-if="gaps.length > 0" class="flex flex-wrap items-center gap-2">
+        <span
+          v-if="gapReviewCompleted"
+          role="status"
+          class="inline-flex items-center gap-1.5 rounded-full bg-[var(--color-success-50)] px-3 py-1.5 text-sm font-semibold text-[var(--color-success-700)]"
+        >
+          <CheckCircle2 class="size-4" aria-hidden="true" />
+          Gap review complete
+        </span>
+        <Button :variant="gapReviewCompleted ? 'outline' : 'primary'" @click="emit('view-gaps')">
+          {{ gapReviewCompleted ? 'Review gaps again' : 'Review gaps' }}
+        </Button>
+      </div>
       <Button v-else variant="outline" @click="emit('expand-all')">View full analysis</Button>
     </header>
+
+    <p
+      v-if="gapReviewCompleted && gaps.length > 0"
+      class="mt-4 rounded-lg bg-[var(--color-success-50)] px-4 py-3 text-sm text-[var(--color-success-800)]"
+    >
+      You reviewed these gaps. They remain listed until your profile changes and the match is
+      recalculated.
+    </p>
 
     <div class="mt-6 grid gap-8 sm:grid-cols-2 sm:gap-10">
       <div aria-label="Strengths">

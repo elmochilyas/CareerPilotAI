@@ -162,13 +162,14 @@ function exclude(): void {
   position: relative;
   margin-top: 0.75rem;
   border: 1px solid transparent;
-  border-radius: var(--cp-radius-xl);
+  border-radius: var(--radius-xl);
   padding: 1.125rem;
-  background: var(--cp-color-card);
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-neo-raised-sm);
   transition:
-    border-color var(--cp-duration-fast) var(--cp-ease-out),
-    background-color var(--cp-duration-fast) var(--cp-ease-out),
-    opacity var(--cp-duration-fast) var(--cp-ease-out);
+    border-color var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    opacity var(--duration-fast) var(--ease-out);
 }
 
 .scalar-review-item::before {
@@ -178,12 +179,12 @@ function exclude(): void {
   left: 0;
   width: 3px;
   border-radius: 0 3px 3px 0;
-  background: var(--cp-color-border);
+  background: var(--border-default);
   content: '';
 }
 
 .scalar-review-item:hover {
-  border-color: var(--cp-color-border);
+  border-color: var(--border-default);
 }
 
 .scalar-review-item-complete {
@@ -192,27 +193,27 @@ function exclude(): void {
 }
 
 .scalar-review-item-included {
-  background: var(--cp-color-success-soft);
+  background: var(--color-success-50);
 }
 
 .scalar-review-item-included::before {
-  background: var(--cp-color-success);
+  background: var(--color-success-600);
 }
 
 .scalar-review-item-edited {
-  background: var(--cp-color-warning-soft);
+  background: var(--color-warning-50);
 }
 
 .scalar-review-item-edited::before {
-  background: var(--cp-color-primary);
+  background: var(--color-primary-600);
 }
 
 .scalar-review-item-excluded {
-  background: var(--cp-color-accent);
+  background: var(--color-error-50);
 }
 
 .scalar-review-item-excluded::before {
-  background: var(--cp-color-danger);
+  background: var(--color-error-600);
 }
 
 .scalar-review-item-excluded .scalar-main {
@@ -232,11 +233,11 @@ function exclude(): void {
 .scalar-icon {
   width: 0.9375rem;
   height: 0.9375rem;
-  color: var(--cp-color-primary);
+  color: var(--color-primary-600);
 }
 
 .scalar-label {
-  color: var(--cp-color-foreground);
+  color: var(--text-primary);
   font-size: 0.8125rem;
   font-weight: 640;
   line-height: 1.25rem;
@@ -246,7 +247,7 @@ function exclude(): void {
   max-width: 42rem;
   margin-top: 0.5rem;
   overflow-wrap: anywhere;
-  color: var(--cp-color-foreground);
+  color: var(--text-primary);
   font-size: 1.0625rem;
   font-weight: 580;
   letter-spacing: -0.008em;
@@ -260,7 +261,7 @@ function exclude(): void {
 }
 
 .scalar-edit-form label {
-  color: var(--cp-color-foreground);
+  color: var(--text-primary);
   font-size: 0.8125rem;
   font-weight: 650;
 }
@@ -269,11 +270,11 @@ function exclude(): void {
 .scalar-edit-form textarea {
   width: 100%;
   min-height: 2.75rem;
-  border: 1px solid var(--cp-color-border);
-  border-radius: var(--cp-radius-lg);
-  background: var(--cp-color-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--surface-primary);
   padding: 0.625rem 0.75rem;
-  color: var(--cp-color-foreground);
+  color: var(--text-primary);
   font-size: 0.875rem;
   line-height: 1.375rem;
 }
@@ -286,7 +287,7 @@ function exclude(): void {
 .scalar-edit-form input:focus-visible,
 .scalar-edit-form textarea:focus-visible,
 .scalar-edit-actions button:focus-visible {
-  outline: 2px solid var(--cp-color-primary);
+  outline: 2px solid var(--color-primary-600);
   outline-offset: 2px;
 }
 
@@ -298,7 +299,7 @@ function exclude(): void {
 
 .scalar-edit-actions button {
   min-height: 2.75rem;
-  border-radius: var(--cp-radius-lg);
+  border-radius: var(--radius-lg);
   padding: 0.5rem 0.75rem;
   font-size: 0.8125rem;
   font-weight: 650;
@@ -307,14 +308,14 @@ function exclude(): void {
 
 .edit-save {
   border: none;
-  background: var(--cp-color-primary);
-  color: var(--cp-color-primary-foreground);
+  background: var(--color-primary-600);
+  color: var(--text-inverse);
 }
 
 .edit-cancel {
-  border: 1px solid var(--cp-color-border);
-  background: var(--cp-color-card);
-  color: var(--cp-color-foreground);
+  border: 1px solid var(--border-default);
+  background: var(--surface-primary);
+  color: var(--text-primary);
 }
 
 .edit-save:disabled {
