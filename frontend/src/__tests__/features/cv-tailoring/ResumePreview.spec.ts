@@ -65,12 +65,13 @@ describe('ResumePreview', () => {
         isLoading: false,
         isGenerating: false,
         generationFailed: false,
+        showActions: true,
       },
     })
 
     expect(wrapper.text()).toContain('PHP Backend Developer')
     expect(wrapper.text()).toContain('Builds reliable Laravel APIs.')
     expect(wrapper.text()).toContain('Built Laravel APIs.')
-    expect(wrapper.text()).toContain('Continue to Selection')
+    expect(wrapper.text()).toContain('Continue to Review')
   })
 })
