@@ -8,7 +8,6 @@ use App\Models\CandidateProfile;
 use App\Models\JobOpportunity;
 use App\Models\MatchAnalysis;
 use App\Models\MatchFinding;
-use Illuminate\Support\Collection;
 
 final readonly class TailoringAnalyzer
 {
@@ -36,9 +35,9 @@ final readonly class TailoringAnalyzer
      * to the given opportunity based on match_findings with tailoring_relevance.
      *
      * Returns an array keyed by section type (skills, experience, education, projects, certifications, languages),
-     * each value is a Collection of profile item IDs with their relevance data.
+     * each value is an array of profile item data with their relevance scores.
      *
-     * @return array<string, Collection<int, array{profile_item_id: int, relevance: string, score: float, justification: string|null, source_type: string, source_id: int}>>
+     * @return array<string, array<int, array{profile_item_id: int, relevance: string, score: float, justification: string|null, source_type: string, source_id: int}>>
      */
     public function analyzeRelevance(CandidateProfile $profile, JobOpportunity $opportunity): array
     {
@@ -79,14 +78,14 @@ final readonly class TailoringAnalyzer
                 continue;
             }
 
-            $grouped[$sectionKey]->push([
+            $grouped[$sectionKey][] = [
                 'profile_item_id' => $profileItemId,
                 'relevance' => $relevance->value,
                 'score' => (float) $finding->factor,
                 'justification' => $finding->justification,
                 'source_type' => $finding->source_type->value,
                 'source_id' => $finding->source_id,
-            ]);
+            ];
         }
 
         return $grouped;
@@ -164,17 +163,17 @@ final readonly class TailoringAnalyzer
     }
 
     /**
-     * @return array<string, Collection<int, array{profile_item_id: int, relevance: string, score: float, justification: string|null, source_type: string, source_id: int}>>
+     * @return array<string, array<int, array{profile_item_id: int, relevance: string, score: float, justification: string|null, source_type: string, source_id: int}>>
      */
     private function emptyResult(): array
     {
         return [
-            'skills' => collect(),
-            'experience' => collect(),
-            'education' => collect(),
-            'projects' => collect(),
-            'certifications' => collect(),
-            'languages' => collect(),
+            'skills' => [],
+            'experience' => [],
+            'education' => [],
+            'projects' => [],
+            'certifications' => [],
+            'languages' => [],
         ];
     }
 }

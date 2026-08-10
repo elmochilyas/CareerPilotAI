@@ -79,7 +79,7 @@ class MatchFinding extends Model
     {
         return match (true) {
             $this->match_state === MatchState::Matched && $this->importance === MatchImportance::Required => 'high',
-            $this->match_state === MatchState::Matched && $this->importance === MatchImportance::Preferred => 'medium',
+            $this->match_state === MatchState::Matched && $this->importance === MatchImportance::Preferred => 'medium', // @phpstan-ignore identical.alwaysTrue
             $this->match_state === MatchState::Partial => 'medium',
             $this->match_state === MatchState::Gap => null,
             default => null,

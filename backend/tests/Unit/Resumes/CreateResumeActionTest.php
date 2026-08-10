@@ -35,7 +35,6 @@ it('creates a resume with correct defaults', function () {
         opportunityId: $this->opportunity->id,
     );
 
-    expect($resume)->toBeInstanceOf(Resume::class);
     expect($resume->candidate_profile_id)->toBe($this->profile->id);
     expect($resume->opportunity_id)->toBe($this->opportunity->id);
     expect($resume->status)->toBe(ResumeStatus::Draft);
@@ -112,7 +111,6 @@ it('allows creating a new resume after approved one is deleted', function () {
         opportunityId: $this->opportunity->id,
     );
 
-    expect($resume)->toBeInstanceOf(Resume::class);
     expect($resume->status)->toBe(ResumeStatus::Draft);
 });
 

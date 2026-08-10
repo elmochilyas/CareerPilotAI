@@ -7,7 +7,6 @@ use App\Domain\Resumes\Data\TailoringResult;
 use App\Domain\Resumes\Enums\TailoringChangeType;
 use App\Models\Resume;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
-use Illuminate\Support\Collection;
 
 use function Laravel\Ai\agent;
 
@@ -19,12 +18,12 @@ final readonly class TailoringRewriter
      *
      * Returns TailoringResult with proposed changes per section.
      *
-     * @param  Collection<int, array{profile_item_id: int, relevance: string, score: float, justification: string|null, source_type: string, source_id: int}>  $relevantItems
+     * @param  array<int, array{profile_item_id: int, relevance: string, score: float, justification: string|null, source_type: string, source_id: int}>  $relevantItems
      * @param  array<string, mixed>  $opportunityContext
      */
     public function rewrite(
         Resume $resume,
-        Collection $relevantItems,
+        array $relevantItems,
         array $opportunityContext,
     ): TailoringResult {
         $startTime = microtime(true);
@@ -145,16 +144,16 @@ INSTRUCTIONS;
     }
 
     /**
-     * @param  Collection<int, array{profile_item_id: int, relevance: string, score: float, justification: string|null, source_type: string, source_id: int}>  $relevantItems
+     * @param  array<int, array{profile_item_id: int, relevance: string, score: float, justification: string|null, source_type: string, source_id: int}>  $relevantItems
      * @param  array<string, mixed>  $opportunityContext
      */
     private function buildPrompt(
         Resume $resume,
-        Collection $relevantItems,
+        array $relevantItems,
         array $opportunityContext,
     ): string {
         $currentContent = $resume->content ?? [];
-        $itemsJson = $relevantItems->toJson(JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+        $itemsJson = json_encode($relevantItems, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
         $contextJson = json_encode($opportunityContext, JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
 
         return <<<PROMPT

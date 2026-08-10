@@ -66,8 +66,8 @@ it('returns relevant items grouped by section type', function () {
     expect($result)->toHaveKeys(['skills', 'experience', 'education', 'projects', 'certifications', 'languages']);
     expect($result['skills'])->toHaveCount(1);
     expect($result['experience'])->toHaveCount(1);
-    expect($result['skills']->first()['relevance'])->toBe('high');
-    expect($result['experience']->first()['relevance'])->toBe('medium');
+    expect($result['skills'][0]['relevance'])->toBe('high');
+    expect($result['experience'][0]['relevance'])->toBe('medium');
 });
 
 it('excludes items with low relevance', function () {

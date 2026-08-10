@@ -17,7 +17,7 @@ use Illuminate\Support\Carbon;
  * @property string $original_text
  * @property string $proposed_text
  * @property string $change_type
- * @property string $status
+ * @property TailoringProposalStatus $status
  * @property string|null $edited_text
  * @property Carbon|null $accepted_at
  * @property array|null $ai_metadata

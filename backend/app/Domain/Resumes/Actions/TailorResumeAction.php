@@ -9,7 +9,6 @@ use App\Domain\Resumes\Services\TailoringSchemaValidator;
 use App\Domain\Skills\Enums\SkillState;
 use App\Models\Resume;
 use App\Models\TailoringProposal;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 final readonly class TailorResumeAction
@@ -36,16 +35,16 @@ final readonly class TailorResumeAction
             'generated_by' => $useAi ? 'ai' : 'manual',
         ]);
 
-        $allRelevant = collect();
+        $allRelevant = [];
         foreach ($relevantItems as $items) {
-            $allRelevant = $allRelevant->concat($items);
+            $allRelevant = array_merge($allRelevant, $items);
         }
 
         $opportunityContext = [
             'title' => $opportunity->title,
             'summary' => $opportunity->summary,
             'skills' => $opportunity->skills->map(fn ($s) => [
-                'name' => $s->skill->name ?? $s->skill_name,
+                'name' => $s->skill->name,
                 'classification' => $s->classification,
             ])->toArray(),
         ];
@@ -72,7 +71,7 @@ final readonly class TailorResumeAction
 
         $result = $this->rewriter->rewrite($resume, $allRelevant, $opportunityContext);
 
-        $validIds = $allRelevant->pluck('profile_item_id')->values()->all();
+        $validIds = array_column($allRelevant, 'profile_item_id');
         $validatorInput = ['proposals' => array_map(fn ($p) => [
             'source_type' => $p->sourceType,
             'source_id' => $p->sourceId,
@@ -97,7 +96,7 @@ final readonly class TailorResumeAction
     }
 
     /**
-     * @param  array<string, Collection<int, array{profile_item_id: int, relevance: string, score: float, justification: string|null, source_type: string, source_id: int}>>  $relevantItems
+     * @param  array<string, array<int, array{profile_item_id: int, relevance: string, score: float, justification: string|null, source_type: string, source_id: int}>>  $relevantItems
      * @return array<string, array{title: string, items: array<int, array{source_id: int, source_type: string, text: string, display_order: int, metadata: array<string, mixed>|null}>, display_order: int}>
      */
     private function buildDeterministicContent(Resume $resume, array $relevantItems): array
@@ -131,8 +130,7 @@ final readonly class TailorResumeAction
 
         foreach ($sectionTitles as $type => $title) {
             $relevantKey = $type === 'project' ? 'projects' : ($type === 'certification' ? 'certifications' : $type);
-            $scores = $relevantItems[$relevantKey]
-                ->pluck('score', 'profile_item_id');
+            $scores = array_column($relevantItems[$relevantKey], 'score', 'profile_item_id');
 
             $items = $profile->items
                 ->filter(fn ($item): bool => $item->type->value === $type)
@@ -162,7 +160,7 @@ final readonly class TailorResumeAction
             }
         }
 
-        $skillScores = $relevantItems['skills']->pluck('score', 'profile_item_id');
+        $skillScores = array_column($relevantItems['skills'], 'score', 'profile_item_id');
         $skills = $profile->candidateSkills
             ->filter(fn ($candidateSkill): bool => in_array($candidateSkill->state, [SkillState::Verified, SkillState::Claimed], true))
             ->sortByDesc(fn ($candidateSkill): float => (float) ($skillScores[$candidateSkill->id] ?? 0))
@@ -170,7 +168,7 @@ final readonly class TailorResumeAction
             ->map(fn ($candidateSkill, int $index): array => [
                 'source_id' => $candidateSkill->id,
                 'source_type' => 'candidate_skill',
-                'text' => $candidateSkill->skill?->name ?? $candidateSkill->custom_skill_name ?? '',
+                'text' => $candidateSkill->skill !== null ? $candidateSkill->skill->name : ($candidateSkill->custom_skill_name ?? ''),
                 'display_order' => $index,
                 'metadata' => [
                     'state' => $candidateSkill->state->value,
@@ -192,7 +190,7 @@ final readonly class TailorResumeAction
             ->map(fn (array $language, int $index): array => [
                 'source_id' => $profile->id,
                 'source_type' => 'candidate_profile_language',
-                'text' => trim(($language['language'] ?? '').' — '.($language['proficiency'] ?? ''), ' —'),
+                'text' => trim(($language['language']).' — '.($language['proficiency']), ' —'),
                 'display_order' => $index,
                 'metadata' => null,
             ])

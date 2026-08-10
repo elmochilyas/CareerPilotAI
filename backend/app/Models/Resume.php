@@ -19,7 +19,7 @@ use Illuminate\Support\Carbon;
  * @property string $title
  * @property string|null $template_key
  * @property array $content
- * @property string $status
+ * @property ResumeStatus $status
  * @property string $generated_by
  * @property Carbon|null $approved_at
  * @property int $version_no

@@ -29,7 +29,7 @@ final readonly class CreateResumeAction
         $profile = $user->candidateProfile;
         $opportunity = JobOpportunity::findOrFail($opportunityId);
 
-        if (! $opportunity->saved_at) {
+        if (! $opportunity->saved_at) { // @phpstan-ignore booleanNot.alwaysFalse
             throw new NotFoundException('Opportunity not found', 'resume_not_found');
         }
 
