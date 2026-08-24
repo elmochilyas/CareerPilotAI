@@ -18,7 +18,9 @@ function val(s: CvSuggestion<'experience'>): ExperienceValue {
 }
 
 function hasCurrent(s: CvSuggestion<'experience'>): boolean {
-  return s.current_value !== null && Object.keys(s.current_value).length > 0 && !isPossibleDuplicate(s)
+  return (
+    s.current_value !== null && Object.keys(s.current_value).length > 0 && !isPossibleDuplicate(s)
+  )
 }
 
 function isPossibleDuplicate(s: CvSuggestion<'experience'>): boolean {
@@ -29,15 +31,19 @@ function isPossibleDuplicate(s: CvSuggestion<'experience'>): boolean {
   )
 }
 
-function possibleCurrent(s: CvSuggestion<'experience'>): ExperienceValue & { similarity?: number; reason?: string } | null {
+function possibleCurrent(
+  s: CvSuggestion<'experience'>,
+): (ExperienceValue & { similarity?: number; reason?: string }) | null {
   if (!s.current_value) return null
   const cv = s.current_value as Record<string, unknown>
-  if (cv.is_possible_duplicate) return cv as unknown as ExperienceValue & { similarity?: number; reason?: string }
+  if (cv.is_possible_duplicate)
+    return cv as unknown as ExperienceValue & { similarity?: number; reason?: string }
   if (!props.preview) return null
   const conflict = props.preview.conflicts.find(
     (c) => c.type === 'possible_duplicate' && (c as Record<string, unknown>).suggestion_id === s.id,
   ) as Record<string, unknown> | undefined
-  if (conflict?.current) return conflict.current as unknown as ExperienceValue & { similarity?: number; reason?: string }
+  if (conflict?.current)
+    return conflict.current as unknown as ExperienceValue & { similarity?: number; reason?: string }
   return null
 }
 
@@ -217,19 +223,29 @@ const decisionBadgeClasses = (s: CvSuggestion): string => {
           <p class="mt-1 text-xs text-blue-600">
             This looks similar to an existing entry. Please choose how to handle it.
             <span v-if="possibleReason(s)" class="font-medium"> — {{ possibleReason(s) }}</span>
-            <span v-if="possibleSimilarity(s)" class="ml-1">({{ Math.round((possibleSimilarity(s) as number) * 100) }}% similar)</span>
+            <span v-if="possibleSimilarity(s)" class="ml-1"
+              >({{ Math.round((possibleSimilarity(s) as number) * 100) }}% similar)</span
+            >
           </p>
           <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div class="rounded-lg border border-slate-200 bg-white p-3">
               <p class="text-xs font-medium text-slate-500">Existing profile</p>
-              <p class="mt-1 text-sm font-semibold text-slate-900 truncate">{{ possibleCurrent(s)?.title }}</p>
-              <p class="text-xs text-slate-600 flex items-center gap-1 mt-0.5">
-                <Building2 class="h-3 w-3" aria-hidden="true" /> {{ possibleCurrent(s)?.organization }}
+              <p class="mt-1 text-sm font-semibold text-slate-900 truncate">
+                {{ possibleCurrent(s)?.title }}
               </p>
-              <p v-if="possibleCurrent(s)?.start_date || (possibleCurrent(s) as unknown as Record<string,unknown>)?.start_date" class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+              <p class="text-xs text-slate-600 flex items-center gap-1 mt-0.5">
+                <Building2 class="h-3 w-3" aria-hidden="true" />
+                {{ possibleCurrent(s)?.organization }}
+              </p>
+              <p
+                v-if="possibleCurrent(s)?.start_date"
+                class="text-xs text-slate-500 mt-1 flex items-center gap-1"
+              >
                 <Calendar class="h-3 w-3" aria-hidden="true" />
-                {{ (possibleCurrent(s) as unknown as Record<string,unknown>)?.start_date as string || (possibleCurrent(s) as unknown as Record<string,unknown>)?.start_date }}
-                <template v-if="(possibleCurrent(s) as unknown as Record<string,unknown>)?.end_date"> – {{ (possibleCurrent(s) as unknown as Record<string,unknown>)?.end_date as string }}</template>
+                {{ possibleCurrent(s)?.start_date }}
+                <template v-if="possibleCurrent(s)?.end_date">
+                  – {{ possibleCurrent(s)?.end_date }}</template
+                >
                 <template v-else> – Present</template>
               </p>
             </div>
@@ -239,7 +255,10 @@ const decisionBadgeClasses = (s: CvSuggestion): string => {
               <p class="text-xs text-slate-600 flex items-center gap-1 mt-0.5">
                 <Building2 class="h-3 w-3" aria-hidden="true" /> {{ val(s).organization }}
               </p>
-              <p v-if="val(s).start_date" class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+              <p
+                v-if="val(s).start_date"
+                class="text-xs text-slate-500 mt-1 flex items-center gap-1"
+              >
                 <Calendar class="h-3 w-3" aria-hidden="true" />
                 {{ val(s).start_date }}
                 <template v-if="val(s).is_current"> – Present</template>

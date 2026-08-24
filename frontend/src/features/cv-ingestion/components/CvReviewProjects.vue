@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Check, X, FileText, ExternalLink, Calendar, FolderKanban, User } from '@lucide/vue'
 import type { CvSuggestion, ProjectValue, ReviewDecision, ImportPreview } from '../types'
+import { fieldOf } from '../utils/suggestionFields'
 import Button from '@/components/ui/Button.vue'
 
 const props = defineProps<{
@@ -22,20 +23,26 @@ function isReviewed(s: CvSuggestion): boolean {
 }
 
 function hasCurrent(s: CvSuggestion<'project'>): boolean {
-  return s.current_value !== null && Object.keys(s.current_value).length > 0 && !isPossibleDuplicate(s)
+  return (
+    s.current_value !== null && Object.keys(s.current_value).length > 0 && !isPossibleDuplicate(s)
+  )
 }
 
 function isPossibleDuplicate(s: CvSuggestion<'project'>): boolean {
   if ((s.current_value as Record<string, unknown> | null)?.is_possible_duplicate) return true
   if (!props.preview) return false
-  return props.preview.conflicts.some((c) => c.type === 'possible_duplicate' && (c as Record<string, unknown>).suggestion_id === s.id)
+  return props.preview.conflicts.some(
+    (c) => c.type === 'possible_duplicate' && (c as Record<string, unknown>).suggestion_id === s.id,
+  )
 }
 
 function possibleCurrent(s: CvSuggestion<'project'>): Record<string, unknown> | null {
   if (s.current_value && (s.current_value as Record<string, unknown>).is_possible_duplicate)
     return s.current_value as Record<string, unknown>
   if (!props.preview) return null
-  const conflict = props.preview.conflicts.find((c) => c.type === 'possible_duplicate' && (c as Record<string, unknown>).suggestion_id === s.id) as Record<string, unknown> | undefined
+  const conflict = props.preview.conflicts.find(
+    (c) => c.type === 'possible_duplicate' && (c as Record<string, unknown>).suggestion_id === s.id,
+  ) as Record<string, unknown> | undefined
   return (conflict?.current as Record<string, unknown>) ?? null
 }
 
@@ -45,7 +52,9 @@ function possibleReason(s: CvSuggestion<'project'>): string | null {
   const cv = s.current_value as Record<string, unknown> | null
   if (cv?.reason) return String(cv.reason)
   if (!props.preview) return null
-  const conflict = props.preview.conflicts.find((c) => c.type === 'possible_duplicate' && (c as Record<string, unknown>).suggestion_id === s.id) as Record<string, unknown> | undefined
+  const conflict = props.preview.conflicts.find(
+    (c) => c.type === 'possible_duplicate' && (c as Record<string, unknown>).suggestion_id === s.id,
+  ) as Record<string, unknown> | undefined
   return conflict?.reason ? String(conflict.reason) : null
 }
 
@@ -55,7 +64,9 @@ function possibleSimilarity(s: CvSuggestion<'project'>): number | null {
   const cv = s.current_value as Record<string, unknown> | null
   if (typeof cv?.similarity === 'number') return cv.similarity as number
   if (!props.preview) return null
-  const conflict = props.preview.conflicts.find((c) => c.type === 'possible_duplicate' && (c as Record<string, unknown>).suggestion_id === s.id) as Record<string, unknown> | undefined
+  const conflict = props.preview.conflicts.find(
+    (c) => c.type === 'possible_duplicate' && (c as Record<string, unknown>).suggestion_id === s.id,
+  ) as Record<string, unknown> | undefined
   return typeof conflict?.similarity === 'number' ? (conflict.similarity as number) : null
 }
 
@@ -192,28 +203,42 @@ const decisionBadgeClasses = (s: CvSuggestion): string => {
         >
           <p class="text-xs font-semibold text-amber-700">Existing profile entry:</p>
           <p class="mt-0.5 text-sm text-amber-800">
-            {{ ((s.current_value as Record<string, unknown>).title as string) ?? (s.current_value as unknown as ProjectValue)?.name }}
+            {{ fieldOf(s.current_value, ['title', 'name']) }}
           </p>
         </div>
 
         <!-- Possible duplicate notice -->
-        <div v-if="isPossibleDuplicate(s) && !isReviewed(s)" class="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4">
+        <div
+          v-if="isPossibleDuplicate(s) && !isReviewed(s)"
+          class="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4"
+        >
           <p class="text-xs font-semibold text-blue-700">Possible duplicate found</p>
           <p class="mt-1 text-xs text-blue-600">
             This looks similar to an existing entry. Please choose how to handle it.
             <span v-if="possibleReason(s)" class="font-medium"> — {{ possibleReason(s) }}</span>
-            <span v-if="possibleSimilarity(s)" class="ml-1">({{ Math.round((possibleSimilarity(s) as number) * 100) }}% similar)</span>
+            <span v-if="possibleSimilarity(s)" class="ml-1"
+              >({{ Math.round((possibleSimilarity(s) as number) * 100) }}% similar)</span
+            >
           </p>
           <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div class="rounded-lg border border-slate-200 bg-white p-3">
               <p class="text-xs font-medium text-slate-500">Existing profile</p>
-              <p class="mt-1 text-sm font-semibold text-slate-900 truncate">{{ (possibleCurrent(s) as Record<string, unknown>)?.title as string ?? (possibleCurrent(s) as unknown as ProjectValue)?.name }}</p>
-              <p v-if="(possibleCurrent(s) as Record<string, unknown>)?.organization" class="text-xs text-slate-500 mt-1">{{ (possibleCurrent(s) as Record<string, unknown>)?.organization as string }}</p>
+              <p class="mt-1 text-sm font-semibold text-slate-900 truncate">
+                {{ fieldOf(possibleCurrent(s), ['title', 'name']) }}
+              </p>
+              <p
+                v-if="fieldOf(possibleCurrent(s), ['organization'])"
+                class="text-xs text-slate-500 mt-1"
+              >
+                {{ fieldOf(possibleCurrent(s), ['organization']) }}
+              </p>
             </div>
             <div class="rounded-lg border border-blue-200 bg-white p-3">
               <p class="text-xs font-medium text-blue-600">From this CV</p>
               <p class="mt-1 text-sm font-semibold text-slate-900 truncate">{{ val(s).name }}</p>
-              <p v-if="val(s).role" class="text-xs text-slate-500 mt-1 flex items-center gap-1"><User class="h-3 w-3" aria-hidden="true" /> {{ val(s).role }}</p>
+              <p v-if="val(s).role" class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                <User class="h-3 w-3" aria-hidden="true" /> {{ val(s).role }}
+              </p>
             </div>
           </div>
         </div>
@@ -225,13 +250,27 @@ const decisionBadgeClasses = (s: CvSuggestion): string => {
         class="border-t border-slate-200/50 bg-slate-50/80 rounded-b-2xl px-6 py-4"
       >
         <div v-if="isPossibleDuplicate(s)" class="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" class="shadow-sm border-slate-300" @click="emit('decision', s.id, { decision: 'keep_existing' })">
+          <Button
+            size="sm"
+            variant="outline"
+            class="shadow-sm border-slate-300"
+            @click="emit('decision', s.id, { decision: 'keep_existing' })"
+          >
             <FileText class="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Keep existing
           </Button>
-          <Button size="sm" variant="outline" class="shadow-sm border-amber-300 text-amber-700 hover:bg-amber-50" @click="emit('decision', s.id, { decision: 'update_existing' })">
+          <Button
+            size="sm"
+            variant="outline"
+            class="shadow-sm border-amber-300 text-amber-700 hover:bg-amber-50"
+            @click="emit('decision', s.id, { decision: 'update_existing' })"
+          >
             <Check class="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Update existing
           </Button>
-          <Button size="sm" class="shadow-md" @click="emit('decision', s.id, { decision: 'create_new' })">
+          <Button
+            size="sm"
+            class="shadow-md"
+            @click="emit('decision', s.id, { decision: 'create_new' })"
+          >
             <Check class="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Create separately
           </Button>
         </div>

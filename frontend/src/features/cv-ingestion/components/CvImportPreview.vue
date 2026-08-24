@@ -134,9 +134,11 @@ const totalBarPercent = computed(() => {
           class="rounded-lg border border-blue-200 bg-blue-50 p-3"
         >
           <p class="text-sm font-medium text-blue-800">{{ conflict.message }}</p>
-          <p v-if="(conflict as Record<string, unknown>).reason" class="text-xs text-blue-600 mt-1">
-            Reason: {{ (conflict as Record<string, unknown>).reason as string }}
-            <span v-if="(conflict as Record<string, unknown>).similarity"> — {{ Math.round(((conflict as Record<string, unknown>).similarity as number) * 100) }}% similar</span>
+          <p v-if="conflict.reason" class="text-xs text-blue-600 mt-1">
+            Reason: {{ conflict.reason }}
+            <span v-if="conflict.similarity">
+              — {{ Math.round((conflict.similarity ?? 0) * 100) }}% similar
+            </span>
           </p>
         </div>
       </div>

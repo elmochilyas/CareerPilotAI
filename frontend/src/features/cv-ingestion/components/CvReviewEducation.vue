@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Check, X, FileText, MapPin, Calendar, GraduationCap, BookOpen } from '@lucide/vue'
 import type { CvSuggestion, EducationValue, ReviewDecision, ImportPreview } from '../types'
+import { fieldOf } from '../utils/suggestionFields'
 import Button from '@/components/ui/Button.vue'
 
 const props = defineProps<{
@@ -22,7 +23,9 @@ function isReviewed(s: CvSuggestion): boolean {
 }
 
 function hasCurrent(s: CvSuggestion<'education'>): boolean {
-  return s.current_value !== null && Object.keys(s.current_value).length > 0 && !isPossibleDuplicate(s)
+  return (
+    s.current_value !== null && Object.keys(s.current_value).length > 0 && !isPossibleDuplicate(s)
+  )
 }
 
 function isPossibleDuplicate(s: CvSuggestion<'education'>): boolean {
@@ -194,8 +197,8 @@ const decisionBadgeClasses = (s: CvSuggestion): string => {
         >
           <p class="text-xs font-semibold text-amber-700">Existing profile entry:</p>
           <p class="mt-0.5 text-sm text-amber-800">
-            {{ ((s.current_value as Record<string, unknown>).title as string) ?? (s.current_value as unknown as EducationValue)?.degree }} at
-            {{ ((s.current_value as Record<string, unknown>).organization as string) ?? (s.current_value as unknown as EducationValue)?.institution }}
+            {{ fieldOf(s.current_value, ['title', 'degree']) }} at
+            {{ fieldOf(s.current_value, ['organization', 'institution']) }}
           </p>
         </div>
 
@@ -208,19 +211,29 @@ const decisionBadgeClasses = (s: CvSuggestion): string => {
           <p class="mt-1 text-xs text-blue-600">
             This looks similar to an existing entry. Please choose how to handle it.
             <span v-if="possibleReason(s)" class="font-medium"> — {{ possibleReason(s) }}</span>
-            <span v-if="possibleSimilarity(s)" class="ml-1">({{ Math.round((possibleSimilarity(s) as number) * 100) }}% similar)</span>
+            <span v-if="possibleSimilarity(s)" class="ml-1"
+              >({{ Math.round((possibleSimilarity(s) as number) * 100) }}% similar)</span
+            >
           </p>
           <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div class="rounded-lg border border-slate-200 bg-white p-3">
               <p class="text-xs font-medium text-slate-500">Existing profile</p>
-              <p class="mt-1 text-sm font-semibold text-slate-900 truncate">{{ (possibleCurrent(s) as Record<string, unknown>)?.title as string ?? (possibleCurrent(s) as Record<string, unknown>)?.degree as string }}</p>
-              <p class="text-xs text-slate-600 flex items-center gap-1 mt-0.5">
-                <BookOpen class="h-3 w-3" aria-hidden="true" /> {{ (possibleCurrent(s) as Record<string, unknown>)?.organization as string ?? (possibleCurrent(s) as Record<string, unknown>)?.institution as string }}
+              <p class="mt-1 text-sm font-semibold text-slate-900 truncate">
+                {{ fieldOf(possibleCurrent(s), ['title', 'degree']) }}
               </p>
-              <p v-if="(possibleCurrent(s) as Record<string, unknown>)?.start_date" class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+              <p class="text-xs text-slate-600 flex items-center gap-1 mt-0.5">
+                <BookOpen class="h-3 w-3" aria-hidden="true" />
+                {{ fieldOf(possibleCurrent(s), ['organization', 'institution']) }}
+              </p>
+              <p
+                v-if="fieldOf(possibleCurrent(s), ['start_date'])"
+                class="text-xs text-slate-500 mt-1 flex items-center gap-1"
+              >
                 <Calendar class="h-3 w-3" aria-hidden="true" />
-                {{ (possibleCurrent(s) as Record<string, unknown>)?.start_date as string }}
-                <template v-if="(possibleCurrent(s) as Record<string, unknown>)?.end_date"> – {{ (possibleCurrent(s) as Record<string, unknown>)?.end_date as string }}</template>
+                {{ fieldOf(possibleCurrent(s), ['start_date']) }}
+                <template v-if="fieldOf(possibleCurrent(s), ['end_date'])">
+                  – {{ fieldOf(possibleCurrent(s), ['end_date']) }}</template
+                >
                 <template v-else> – Present</template>
               </p>
             </div>
@@ -230,7 +243,10 @@ const decisionBadgeClasses = (s: CvSuggestion): string => {
               <p class="text-xs text-slate-600 flex items-center gap-1 mt-0.5">
                 <BookOpen class="h-3 w-3" aria-hidden="true" /> {{ val(s).institution }}
               </p>
-              <p v-if="val(s).start_date" class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+              <p
+                v-if="val(s).start_date"
+                class="text-xs text-slate-500 mt-1 flex items-center gap-1"
+              >
                 <Calendar class="h-3 w-3" aria-hidden="true" />
                 {{ val(s).start_date }}
                 <template v-if="val(s).is_current"> – Present</template>
@@ -247,13 +263,27 @@ const decisionBadgeClasses = (s: CvSuggestion): string => {
         class="border-t border-slate-200/50 bg-slate-50/80 rounded-b-2xl px-6 py-4"
       >
         <div v-if="isPossibleDuplicate(s)" class="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" class="shadow-sm border-slate-300" @click="emit('decision', s.id, { decision: 'keep_existing' })">
+          <Button
+            size="sm"
+            variant="outline"
+            class="shadow-sm border-slate-300"
+            @click="emit('decision', s.id, { decision: 'keep_existing' })"
+          >
             <FileText class="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Keep existing
           </Button>
-          <Button size="sm" variant="outline" class="shadow-sm border-amber-300 text-amber-700 hover:bg-amber-50" @click="emit('decision', s.id, { decision: 'update_existing' })">
+          <Button
+            size="sm"
+            variant="outline"
+            class="shadow-sm border-amber-300 text-amber-700 hover:bg-amber-50"
+            @click="emit('decision', s.id, { decision: 'update_existing' })"
+          >
             <Check class="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Update existing
           </Button>
-          <Button size="sm" class="shadow-md" @click="emit('decision', s.id, { decision: 'create_new' })">
+          <Button
+            size="sm"
+            class="shadow-md"
+            @click="emit('decision', s.id, { decision: 'create_new' })"
+          >
             <Check class="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Create separately
           </Button>
         </div>
