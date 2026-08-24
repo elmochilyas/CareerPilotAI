@@ -19,6 +19,12 @@ function isConflictCode(error: unknown): boolean {
 
 function messageFor(error: unknown): string | null {
   const detail = extractProblemDetail(error as Parameters<typeof extractProblemDetail>[0])
+  if (detail?.code === 'profile_item_duplicate') {
+    return 'This entry already exists in your profile.'
+  }
+  if (detail?.code === 'candidate_skill_duplicate') {
+    return 'This skill is already in your profile.'
+  }
   if (detail?.code === 'validation_error' && detail.errors) {
     const first = Object.values(detail.errors as Record<string, string[]>).flat()[0]
     if (first) return first

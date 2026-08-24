@@ -27,7 +27,19 @@ final readonly class CreateResumeAction
         ?string $title = null,
     ): Resume {
         $profile = $user->candidateProfile;
-        $opportunity = JobOpportunity::findOrFail($opportunityId);
+
+        if (! $profile) {
+            throw new NotFoundException('Candidate profile not found', 'profile_not_found');
+        }
+
+        $opportunity = JobOpportunity::query()
+            ->whereKey($opportunityId)
+            ->where('candidate_profile_id', $profile->id)
+            ->first();
+
+        if (! $opportunity) {
+            throw new NotFoundException('Opportunity not found', 'resume_not_found');
+        }
 
         if (! $opportunity->saved_at) { // @phpstan-ignore booleanNot.alwaysFalse
             throw new NotFoundException('Opportunity not found', 'resume_not_found');

@@ -45,6 +45,7 @@ class Resume extends Model
 
     protected $fillable = [
         'candidate_profile_id',
+        'job_opportunity_id',
         'opportunity_id',
         'file_id',
         'title',
@@ -92,7 +93,7 @@ class Resume extends Model
     /** @return BelongsTo<JobOpportunity, $this> */
     public function opportunity(): BelongsTo
     {
-        return $this->belongsTo(JobOpportunity::class);
+        return $this->belongsTo(JobOpportunity::class, 'job_opportunity_id');
     }
 
     /** @return HasMany<TailoringProposal, $this> */

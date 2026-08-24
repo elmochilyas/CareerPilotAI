@@ -28,6 +28,8 @@ export type ReviewStatus =
   | 'edited'
   | 'rejected'
   | 'keep_existing'
+  | 'create_new'
+  | 'update_existing'
   | 'imported'
   | 'import_failed'
 
@@ -206,6 +208,11 @@ export interface ImportPreview {
     current: unknown
     suggested: unknown
     message: string
+    similarity?: number
+    reason?: string
+    existing_id?: number
+    suggestion_id?: number
+    suggested_action?: string
   }>
   profile_updated_at: string | null
 }

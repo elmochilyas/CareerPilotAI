@@ -2,12 +2,15 @@
 
 namespace App\Domain\Resumes\Actions;
 
+use App\Domain\Profile\Services\ProfileIdentityService;
 use App\Domain\Resumes\Data\TailoringResult;
 use App\Domain\Resumes\Services\TailoringAnalyzer;
 use App\Domain\Resumes\Services\TailoringRewriter;
 use App\Domain\Resumes\Services\TailoringSchemaValidator;
 use App\Domain\Skills\Enums\SkillState;
 use App\Models\Resume;
+use App\Models\Skill;
+use App\Models\SkillAlias;
 use App\Models\TailoringProposal;
 use Illuminate\Support\Facades\DB;
 
@@ -132,10 +135,25 @@ final readonly class TailorResumeAction
             $relevantKey = $type === 'project' ? 'projects' : ($type === 'certification' ? 'certifications' : $type);
             $scores = array_column($relevantItems[$relevantKey], 'score', 'profile_item_id');
 
-            $items = $profile->items
+            // Defense in depth: deduplicate exact-normalized duplicates even if old duplicates exist.
+            $deduplicatedItems = $profile->items
                 ->filter(fn ($item): bool => $item->type->value === $type)
                 ->sortByDesc(fn ($item): float => (float) ($scores[$item->id] ?? 0))
-                ->values()
+                ->values();
+
+            // Keep highest-scored per normalized identity.
+            $seen = [];
+            $deduplicatedItems = $deduplicatedItems->filter(function ($item) use (&$seen): bool {
+                $key = ProfileIdentityService::normalize($item->type->value).'|'.ProfileIdentityService::normalize($item->title).'|'.ProfileIdentityService::normalize($item->organization ?? '');
+                if (isset($seen[$key])) {
+                    return false;
+                }
+                $seen[$key] = true;
+
+                return true;
+            })->values();
+
+            $items = $deduplicatedItems
                 ->map(fn ($item, int $index): array => [
                     'source_id' => $item->id,
                     'source_type' => 'profile_item',
@@ -161,10 +179,30 @@ final readonly class TailorResumeAction
         }
 
         $skillScores = array_column($relevantItems['skills'], 'score', 'profile_item_id');
-        $skills = $profile->candidateSkills
+        $filteredSkills = $profile->candidateSkills
             ->filter(fn ($candidateSkill): bool => in_array($candidateSkill->state, [SkillState::Verified, SkillState::Claimed], true))
             ->sortByDesc(fn ($candidateSkill): float => (float) ($skillScores[$candidateSkill->id] ?? 0))
-            ->values()
+            ->values();
+
+        // Defense in depth: deduplicate skills by normalized identity (alias-aware) — keep highest scored.
+        $skillMaps = ProfileIdentityService::buildSkillLookupMaps(Skill::all(), SkillAlias::all());
+        $seenSkills = [];
+        $deduplicatedSkills = $filteredSkills->filter(function ($cs) use (&$seenSkills, $skillMaps): bool {
+            $skillName = $cs->skill !== null ? $cs->skill->name : ($cs->custom_skill_name ?? '');
+            $resolved = ProfileIdentityService::resolveSkill($skillName, $skillMaps['skills'], $skillMaps['aliases']);
+            $key = $resolved['normalized'];
+            if ($key === '') {
+                return true;
+            }
+            if (isset($seenSkills[$key])) {
+                return false;
+            }
+            $seenSkills[$key] = true;
+
+            return true;
+        })->values();
+
+        $skills = $deduplicatedSkills
             ->map(fn ($candidateSkill, int $index): array => [
                 'source_id' => $candidateSkill->id,
                 'source_type' => 'candidate_skill',
@@ -186,7 +224,10 @@ final readonly class TailorResumeAction
             ];
         }
 
-        $languages = collect($profile->languages ?? [])
+        // Defense in depth: deduplicate languages by normalized language (keep first).
+        $deduplicatedLanguages = ProfileIdentityService::deduplicateLanguages($profile->languages ?? []);
+
+        $languages = collect($deduplicatedLanguages)
             ->map(fn (array $language, int $index): array => [
                 'source_id' => $profile->id,
                 'source_type' => 'candidate_profile_language',

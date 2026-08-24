@@ -19,6 +19,14 @@ const hasConflicts = computed(() => {
   return (props.preview?.conflicts.length ?? 0) > 0
 })
 
+const duplicateConflicts = computed(() => {
+  return (props.preview?.conflicts ?? []).filter((c) => c.type !== 'possible_duplicate')
+})
+
+const possibleDuplicates = computed(() => {
+  return (props.preview?.conflicts ?? []).filter((c) => c.type === 'possible_duplicate')
+})
+
 const totalBarPercent = computed(() => {
   if (!props.preview) return { accepted: 0, keepExisting: 0, rejected: 0 }
   const t = props.preview.summary.total
@@ -100,17 +108,36 @@ const totalBarPercent = computed(() => {
       </div>
 
       <!-- Conflicts -->
-      <div v-if="hasConflicts" class="space-y-2">
+      <div v-if="duplicateConflicts.length > 0" class="space-y-2">
         <div class="flex items-center gap-2 text-amber-700">
           <AlertCircle class="h-4 w-4" aria-hidden="true" />
           <span class="text-sm font-medium">Conflicts detected</span>
         </div>
         <div
-          v-for="(conflict, i) in preview.conflicts"
-          :key="i"
+          v-for="(conflict, i) in duplicateConflicts"
+          :key="'dup-' + i"
           class="rounded-lg border border-amber-200 bg-amber-50 p-3"
         >
           <p class="text-sm font-medium text-amber-800">{{ conflict.message }}</p>
+        </div>
+      </div>
+
+      <!-- Possible duplicates -->
+      <div v-if="possibleDuplicates.length > 0" class="space-y-2">
+        <div class="flex items-center gap-2 text-blue-700">
+          <AlertCircle class="h-4 w-4" aria-hidden="true" />
+          <span class="text-sm font-medium">Possible duplicates — review required</span>
+        </div>
+        <div
+          v-for="(conflict, i) in possibleDuplicates"
+          :key="'pos-' + i"
+          class="rounded-lg border border-blue-200 bg-blue-50 p-3"
+        >
+          <p class="text-sm font-medium text-blue-800">{{ conflict.message }}</p>
+          <p v-if="(conflict as Record<string, unknown>).reason" class="text-xs text-blue-600 mt-1">
+            Reason: {{ (conflict as Record<string, unknown>).reason as string }}
+            <span v-if="(conflict as Record<string, unknown>).similarity"> — {{ Math.round(((conflict as Record<string, unknown>).similarity as number) * 100) }}% similar</span>
+          </p>
         </div>
       </div>
 

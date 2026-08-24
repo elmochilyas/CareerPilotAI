@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\JobOpportunityIngestionController;
 use App\Http\Controllers\Api\V1\JobOpportunitySuggestionController;
 use App\Http\Controllers\Api\V1\MatchAnalysisController;
 use App\Http\Controllers\Api\V1\ProfileController;
+use App\Http\Controllers\Api\V1\ProfileDuplicateController;
 use App\Http\Controllers\Api\V1\ResumeController;
 use App\Http\Controllers\Api\V1\SkillController;
 use Illuminate\Support\Facades\Route;
@@ -44,6 +45,10 @@ Route::prefix('v1')->group(function (): void {
         Route::patch('/profile/items/reorder', [ProfileController::class, 'reorderItems']);
         Route::patch('/profile/items/{profileItem}', [ProfileController::class, 'updateItem']);
         Route::delete('/profile/items/{profileItem}', [ProfileController::class, 'destroyItem']);
+        Route::get('/profile/duplicates', [ProfileDuplicateController::class, 'index']);
+        Route::post('/profile/cleanup/items', [ProfileDuplicateController::class, 'cleanupItems']);
+        Route::post('/profile/cleanup/skills', [ProfileDuplicateController::class, 'cleanupSkills']);
+        Route::post('/profile/cleanup/languages', [ProfileDuplicateController::class, 'cleanupLanguages']);
 
         Route::get('/skills', [SkillController::class, 'index']);
         Route::get('/skills/{skill}', [SkillController::class, 'show']);

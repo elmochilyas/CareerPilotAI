@@ -7,10 +7,14 @@ use App\Domain\CvIngestion\Enums\CvProcessingRunStatus;
 use App\Domain\CvIngestion\Enums\CvSuggestionReviewStatus;
 use App\Domain\CvIngestion\Services\Contracts\CvAnalyzer;
 use App\Domain\CvIngestion\Services\CvAnalysisSchemaValidator;
+use App\Domain\Profile\Services\ProfileIdentityService;
 use App\Models\CandidateProfile;
 use App\Models\CvDocument;
 use App\Models\CvProcessingRun;
 use App\Models\CvSuggestion;
+use App\Models\Skill;
+use App\Models\SkillAlias;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
 class AnalyzeCvTextAction
@@ -19,6 +23,9 @@ class AnalyzeCvTextAction
      * @var array<string, true> Pre-fetched dedup keys for the current document.
      */
     private array $existingDedupKeys = [];
+
+    /** @var array{skills: Collection, aliases: Collection}|null */
+    private ?array $cachedSkillMaps = null;
 
     public function __construct(
         private CvAnalyzer $analyzer,
@@ -303,13 +310,10 @@ class AnalyzeCvTextAction
     private function getDedupKey(string $type, array $entity): ?string
     {
         return match ($type) {
-            'social_link' => $entity['type'] ?? null,
-            'experience' => ($entity['title'] ?? '').'|'.($entity['organization'] ?? ''),
-            'project' => $entity['name'] ?? null,
-            'education' => ($entity['degree'] ?? '').'|'.($entity['institution'] ?? ''),
-            'certification' => $entity['name'] ?? null,
-            'language' => $entity['language'] ?? null,
-            'skill' => $entity['name'] ?? null,
+            'social_link' => isset($entity['type']) ? ProfileIdentityService::normalize((string) $entity['type']) : null,
+            'experience', 'education', 'project', 'certification' => ProfileIdentityService::profileItemKey($type, $entity),
+            'language' => ProfileIdentityService::languageKey((string) ($entity['language'] ?? '')),
+            'skill' => ProfileIdentityService::normalize((string) ($entity['name'] ?? '')),
             default => null,
         };
     }
@@ -375,16 +379,10 @@ class AnalyzeCvTextAction
      */
     private function getCurrentLanguage(CandidateProfile $profile, array $entity): ?array
     {
-        $languages = $profile->languages ?? [];
-        $targetLang = mb_strtolower(trim((string) ($entity['language'] ?? '')));
-
-        foreach ($languages as $lang) {
-            if (mb_strtolower(trim((string) $lang['language'])) === $targetLang) {
-                return $lang;
-            }
-        }
-
-        return null;
+        return ProfileIdentityService::findExistingLanguage(
+            $profile->languages ?? [],
+            (string) ($entity['language'] ?? ''),
+        );
     }
 
     /**
@@ -393,27 +391,40 @@ class AnalyzeCvTextAction
      */
     private function getCurrentProfileItem(CandidateProfile $profile, array $entity, string $type): ?array
     {
-        $title = $entity['title'] ?? $entity['name'] ?? $entity['degree'] ?? '';
-        $organization = $entity['organization'] ?? $entity['institution'] ?? '';
+        $existing = ProfileIdentityService::findExistingProfileItem($profile->items, $type, $entity);
 
-        $existing = $profile->items->first(fn ($item) => $item->type->value === $type
-            && $item->title === $title
-            && $item->organization === $organization
-        );
-
-        if (! $existing) {
-            return null;
+        if ($existing) {
+            return [
+                'id' => $existing->id,
+                'title' => $existing->title,
+                'organization' => $existing->organization,
+                'location' => $existing->location,
+                'start_date' => $existing->start_date?->toIso8601String(),
+                'end_date' => $existing->end_date?->toIso8601String(),
+                'description' => $existing->description,
+            ];
         }
 
-        return [
-            'id' => $existing->id,
-            'title' => $existing->title,
-            'organization' => $existing->organization,
-            'location' => $existing->location,
-            'start_date' => $existing->start_date?->toIso8601String(),
-            'end_date' => $existing->end_date?->toIso8601String(),
-            'description' => $existing->description,
-        ];
+        $possible = ProfileIdentityService::findPossibleDuplicateProfileItem($profile->items, $type, $entity);
+
+        if ($possible !== null) {
+            $existingPossible = $possible['existing'];
+
+            return [
+                'id' => $existingPossible->id,
+                'title' => $existingPossible->title,
+                'organization' => $existingPossible->organization,
+                'location' => $existingPossible->location,
+                'start_date' => $existingPossible->start_date?->toIso8601String(),
+                'end_date' => $existingPossible->end_date?->toIso8601String(),
+                'description' => $existingPossible->description,
+                'is_possible_duplicate' => true,
+                'similarity' => round($possible['similarity'], 2),
+                'reason' => $possible['reason'],
+            ];
+        }
+
+        return null;
     }
 
     /**
@@ -427,19 +438,16 @@ class AnalyzeCvTextAction
             return null;
         }
 
-        $normalizedName = mb_strtolower(trim($skillName));
+        if ($this->cachedSkillMaps === null) {
+            $this->cachedSkillMaps = ProfileIdentityService::buildSkillLookupMaps(Skill::all(), SkillAlias::all());
+        }
 
-        $existing = $profile->candidateSkills->first(function ($candidateSkill) use ($normalizedName, $skillName) {
-            if ($candidateSkill->skill && $candidateSkill->skill->normalized_name === $normalizedName) {
-                return true;
-            }
-
-            if ($candidateSkill->custom_skill_name === $skillName) {
-                return true;
-            }
-
-            return false;
-        });
+        $existing = ProfileIdentityService::findExistingCandidateSkill(
+            $profile->candidateSkills,
+            $skillName,
+            $this->cachedSkillMaps['skills'],
+            $this->cachedSkillMaps['aliases'],
+        );
 
         if (! $existing) {
             return null;

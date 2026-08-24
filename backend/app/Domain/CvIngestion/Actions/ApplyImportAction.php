@@ -6,6 +6,7 @@ use App\Domain\CvIngestion\Enums\CvDocumentStatus;
 use App\Domain\CvIngestion\Enums\CvImportBatchStatus;
 use App\Domain\CvIngestion\Enums\CvSuggestionReviewStatus;
 use App\Domain\CvIngestion\Enums\CvSuggestionType;
+use App\Domain\Profile\Services\ProfileIdentityService;
 use App\Exceptions\Api\ConflictException;
 use App\Jobs\RecalculateProfileCompletionJob;
 use App\Models\CandidateProfile;
@@ -15,6 +16,7 @@ use App\Models\CvImportBatch;
 use App\Models\CvSuggestion;
 use App\Models\ProfileItem;
 use App\Models\Skill;
+use App\Models\SkillAlias;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -132,8 +134,10 @@ class ApplyImportAction
                 );
 
                 $profileItems = ProfileItem::where('candidate_profile_id', $profile->id)->get();
-                $allSkills = Skill::all()->keyBy(fn (Skill $s) => $s->normalized_name);
-                $candidateSkills = CandidateSkill::where('candidate_profile_id', $profile->id)->get();
+                $skillMaps = ProfileIdentityService::buildSkillLookupMaps(Skill::all(), SkillAlias::all());
+                $allSkills = $skillMaps['skills'];
+                $allAliases = $skillMaps['aliases'];
+                $candidateSkills = CandidateSkill::where('candidate_profile_id', $profile->id)->with('skill')->get();
                 $maxDisplayOrder = $profileItems->max('display_order') ?? 0;
 
                 $fieldsUpdated = 0;
@@ -165,7 +169,7 @@ class ApplyImportAction
                             CvSuggestionType::Project->value,
                             CvSuggestionType::Certification->value,
                         ], true) => $this->applyProfileItem($profile, $value, $suggestion, $type, $profileItems, $maxDisplayOrder),
-                        default => $this->applySkill($profile, $value, $suggestion, $allSkills, $candidateSkills),
+                        default => $this->applySkill($profile, $value, $suggestion, $allSkills, $allAliases, $candidateSkills),
                     };
 
                     if ($result !== null) {
@@ -314,29 +318,29 @@ class ApplyImportAction
 
     /**
      * @param  array<string, mixed>  $value
-     * @return array{type: string, id: mixed}
+     * @return array{type: string, id: mixed}|null
      */
-    private function applyLanguage(CandidateProfile $profile, array $value, CvSuggestion $suggestion): array
+    private function applyLanguage(CandidateProfile $profile, array $value, CvSuggestion $suggestion): ?array
     {
         $languages = $profile->languages ?? [];
+        $incomingName = (string) ($value['language'] ?? 'unknown');
+        $trimmedName = trim($incomingName) === '' ? 'unknown' : trim($incomingName);
+
+        $existing = ProfileIdentityService::findExistingLanguage($languages, $trimmedName);
+
+        if ($existing !== null) {
+            $suggestion->update(['import_status' => 'skipped', 'applied_profile_id' => $profile->id]);
+
+            return null;
+        }
 
         $newLang = [
-            'language' => mb_substr((string) ($value['language'] ?? 'unknown'), 0, 50),
+            'language' => mb_substr($trimmedName, 0, 50),
             'proficiency' => mb_substr((string) ($value['proficiency'] ?? 'intermediate'), 0, 30),
         ];
 
-        $exists = false;
-        foreach ($languages as $existing) {
-            if ($existing['language'] === $newLang['language']) {
-                $exists = true;
-                break;
-            }
-        }
-
-        if (! $exists) {
-            $languages[] = $newLang;
-            $profile->update(['languages' => $languages]);
-        }
+        $languages[] = $newLang;
+        $profile->update(['languages' => $languages]);
 
         $suggestion->update(['import_status' => 'included', 'applied_profile_id' => $profile->id]);
 
@@ -355,50 +359,102 @@ class ApplyImportAction
         Collection $profileItems,
         int &$maxDisplayOrder,
     ): ?array {
-        $title = (string) ($value['title'] ?? $value['name'] ?? $value['degree'] ?? 'Untitled');
-        $organization = (string) ($value['organization'] ?? $value['institution'] ?? '');
+        $title = ProfileIdentityService::extractTitle($type, $value);
+        if (trim($title) === '') {
+            $title = 'Untitled';
+        }
+        $organization = ProfileIdentityService::extractOrganization($type, $value);
 
-        $existing = $profileItems->first(
-            fn (ProfileItem $p) => $p->type->value === $type && $p->title === $title && $p->organization === $organization
-        );
+        $exact = ProfileIdentityService::findExistingProfileItem($profileItems, $type, $value);
 
-        if ($existing && $suggestion->review_status->value === CvSuggestionReviewStatus::UpdateExisting->value) {
-            $existing->update([
-                'description' => $value['description'] ?? $existing->description,
-                'start_date' => $this->normalizeDate($value['start_date'] ?? null) ?? $existing->start_date,
-                'end_date' => ! empty($value['is_current'])
-                    ? null
-                    : ($this->normalizeDate($value['end_date'] ?? null) ?? $existing->end_date),
-                'location' => $value['location'] ?? $existing->location,
-            ]);
-            $suggestion->update(['import_status' => 'included', 'applied_profile_id' => $existing->id]);
+        if ($exact) {
+            if ($suggestion->review_status->value === CvSuggestionReviewStatus::UpdateExisting->value) {
+                $exact->update([
+                    'description' => $value['description'] ?? $exact->description,
+                    'start_date' => $this->normalizeDate($value['start_date'] ?? null) ?? $exact->start_date,
+                    'end_date' => ! empty($value['is_current'])
+                        ? null
+                        : ($this->normalizeDate($value['end_date'] ?? null) ?? $exact->end_date),
+                    'location' => $value['location'] ?? $exact->location,
+                ]);
+                $suggestion->update(['import_status' => 'included', 'applied_profile_id' => $exact->id]);
 
-            return ['type' => 'item_updated', 'id' => $existing->id];
+                return ['type' => 'item_updated', 'id' => $exact->id];
+            }
+
+            $suggestion->update(['import_status' => 'skipped']);
+
+            return null;
         }
 
-        if (! $existing) {
-            $maxDisplayOrder++;
-            $item = ProfileItem::create([
-                'candidate_profile_id' => $profile->id,
-                'type' => $type,
-                'title' => mb_substr($title, 0, 255),
-                'organization' => $organization !== '' ? mb_substr($organization, 0, 255) : null,
-                'location' => isset($value['location']) ? mb_substr((string) $value['location'], 0, 255) : null,
-                'start_date' => $this->normalizeDate($value['start_date'] ?? null),
-                'end_date' => ! empty($value['is_current']) ? null : $this->normalizeDate($value['end_date'] ?? null),
-                'description' => isset($value['description']) ? mb_substr((string) $value['description'], 0, 5000) : null,
-                'display_order' => $maxDisplayOrder,
-            ]);
-            $profileItems->push($item);
+        $possible = ProfileIdentityService::findPossibleDuplicateProfileItem($profileItems, $type, $value);
 
-            $suggestion->update(['import_status' => 'included', 'applied_profile_id' => $item->id]);
+        if ($possible !== null) {
+            $decision = $suggestion->review_status->value;
+            $existingPossible = $possible['existing'];
 
-            return ['type' => 'item_created', 'id' => $item->id];
+            if ($decision === CvSuggestionReviewStatus::KeepExisting->value) {
+                $suggestion->update(['import_status' => 'skipped', 'applied_profile_id' => $existingPossible->id]);
+
+                return null;
+            }
+
+            if ($decision === CvSuggestionReviewStatus::UpdateExisting->value) {
+                $existingPossible->update([
+                    'description' => $value['description'] ?? $existingPossible->description,
+                    'start_date' => $this->normalizeDate($value['start_date'] ?? null) ?? $existingPossible->start_date,
+                    'end_date' => ! empty($value['is_current'])
+                        ? null
+                        : ($this->normalizeDate($value['end_date'] ?? null) ?? $existingPossible->end_date),
+                    'location' => $value['location'] ?? $existingPossible->location,
+                ]);
+                $suggestion->update(['import_status' => 'included', 'applied_profile_id' => $existingPossible->id]);
+
+                return ['type' => 'item_updated', 'id' => $existingPossible->id];
+            }
+
+            if (in_array($decision, [CvSuggestionReviewStatus::CreateNew->value, CvSuggestionReviewStatus::Accepted->value, CvSuggestionReviewStatus::Edited->value], true)) {
+                $maxDisplayOrder++;
+                $item = ProfileItem::create([
+                    'candidate_profile_id' => $profile->id,
+                    'type' => $type,
+                    'title' => mb_substr($title, 0, 255),
+                    'organization' => $organization !== '' ? mb_substr($organization, 0, 255) : null,
+                    'location' => isset($value['location']) ? mb_substr((string) $value['location'], 0, 255) : null,
+                    'start_date' => $this->normalizeDate($value['start_date'] ?? null),
+                    'end_date' => ! empty($value['is_current']) ? null : $this->normalizeDate($value['end_date'] ?? null),
+                    'description' => isset($value['description']) ? mb_substr((string) $value['description'], 0, 5000) : null,
+                    'display_order' => $maxDisplayOrder,
+                ]);
+                $profileItems->push($item);
+                $suggestion->update(['import_status' => 'included', 'applied_profile_id' => $item->id]);
+
+                return ['type' => 'item_created', 'id' => $item->id];
+            }
+
+            // For any other decision on possible duplicate, default to keep existing (require explicit)
+            $suggestion->update(['import_status' => 'skipped', 'applied_profile_id' => $existingPossible->id]);
+
+            return null;
         }
 
-        $suggestion->update(['import_status' => 'skipped']);
+        $maxDisplayOrder++;
+        $item = ProfileItem::create([
+            'candidate_profile_id' => $profile->id,
+            'type' => $type,
+            'title' => mb_substr($title, 0, 255),
+            'organization' => $organization !== '' ? mb_substr($organization, 0, 255) : null,
+            'location' => isset($value['location']) ? mb_substr((string) $value['location'], 0, 255) : null,
+            'start_date' => $this->normalizeDate($value['start_date'] ?? null),
+            'end_date' => ! empty($value['is_current']) ? null : $this->normalizeDate($value['end_date'] ?? null),
+            'description' => isset($value['description']) ? mb_substr((string) $value['description'], 0, 5000) : null,
+            'display_order' => $maxDisplayOrder,
+        ]);
+        $profileItems->push($item);
 
-        return null;
+        $suggestion->update(['import_status' => 'included', 'applied_profile_id' => $item->id]);
+
+        return ['type' => 'item_created', 'id' => $item->id];
     }
 
     /**
@@ -410,15 +466,19 @@ class ApplyImportAction
         array $value,
         CvSuggestion $suggestion,
         Collection $allSkills,
+        Collection $allAliases,
         Collection $candidateSkills,
     ): ?array {
         $skillName = (string) ($value['name'] ?? $value['value'] ?? 'Unknown Skill');
-        $normalizedName = mb_strtolower(trim($skillName));
 
-        $skill = $allSkills->get($normalizedName);
+        $resolved = ProfileIdentityService::resolveSkill($skillName, $allSkills, $allAliases);
+        $skill = $resolved['skill'];
 
-        $existingSkill = $candidateSkills->first(
-            fn (CandidateSkill $cs) => $skill ? $cs->skill_id === $skill->id : $cs->custom_skill_name === $skillName
+        $existingSkill = ProfileIdentityService::findExistingCandidateSkill(
+            $candidateSkills,
+            $skillName,
+            $allSkills,
+            $allAliases,
         );
 
         if ($existingSkill) {
@@ -430,7 +490,7 @@ class ApplyImportAction
         $candidateSkill = CandidateSkill::create([
             'candidate_profile_id' => $profile->id,
             'skill_id' => $skill?->id,
-            'custom_skill_name' => $skill ? null : mb_substr($skillName, 0, 150),
+            'custom_skill_name' => $skill ? null : mb_substr(trim($skillName), 0, 150),
             'state' => 'claimed',
             'proficiency_level' => 'intermediate',
             'years_experience' => null,
@@ -438,6 +498,10 @@ class ApplyImportAction
                 ['type' => 'cv_import', 'cv_document_id' => $suggestion->cv_document_id, 'source_text' => $suggestion->source_text],
             ],
         ]);
+
+        // Keep in-memory collection in sync to prevent duplicate within same import
+        $candidateSkill->loadMissing('skill');
+        $candidateSkills->push($candidateSkill);
 
         $suggestion->update([
             'import_status' => 'included',

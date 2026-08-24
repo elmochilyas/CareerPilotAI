@@ -13,6 +13,7 @@ import EducationSection from '../components/EducationSection.vue'
 import ProjectsSection from '../components/ProjectsSection.vue'
 import CertificationsSection from '../components/CertificationsSection.vue'
 import SkillsSection from '@/features/skills/components/SkillsSection.vue'
+import ProfileCleanupSection from '../components/ProfileCleanupSection.vue'
 import Tabs from '@/components/ui/Tabs.vue'
 import Button from '@/components/ui/Button.vue'
 import Skeleton from '@/components/ui/Skeleton.vue'
@@ -155,6 +156,8 @@ const completedAreas = computed(() => {
         @save="saveProfile"
         @dirty="state.markDirty('header', $event)"
       />
+
+      <ProfileCleanupSection />
 
       <Tabs v-model="activeTab" :tabs="tabs">
         <template #default="{ activeTab: currentTab }">

@@ -3,6 +3,9 @@
 namespace App\Domain\Resumes\Services;
 
 use App\Domain\Matching\Services\StalenessService;
+use App\Domain\Matching\Services\TextNormalizer;
+use App\Domain\Profile\Enums\ProfileItemType;
+use App\Domain\Profile\Services\ProfileIdentityService;
 use App\Domain\Resumes\Enums\TailoringRelevance;
 use App\Models\CandidateProfile;
 use App\Models\JobOpportunity;
@@ -49,7 +52,7 @@ final readonly class TailoringAnalyzer
             ->first();
 
         if ($analysis === null) {
-            return $this->emptyResult();
+            return $this->deterministicFallback($profile, $opportunity);
         }
 
         $findings = MatchFinding::query()
@@ -58,6 +61,7 @@ final readonly class TailoringAnalyzer
             ->get();
 
         $grouped = $this->emptyResult();
+        $hasRelevant = false;
 
         foreach ($findings as $finding) {
             $relevance = TailoringRelevance::tryFrom((string) $finding->tailoring_relevance);
@@ -78,6 +82,7 @@ final readonly class TailoringAnalyzer
                 continue;
             }
 
+            $hasRelevant = true;
             $grouped[$sectionKey][] = [
                 'profile_item_id' => $profileItemId,
                 'relevance' => $relevance->value,
@@ -86,6 +91,190 @@ final readonly class TailoringAnalyzer
                 'source_type' => $finding->source_type->value,
                 'source_id' => $finding->source_id,
             ];
+        }
+
+        if (! $hasRelevant) {
+            return $this->deterministicFallback($profile, $opportunity);
+        }
+
+        return $grouped;
+    }
+
+    /**
+     * Deterministic fallback when tailoring_relevance is absent.
+     * Uses JobOpportunity skills/requirements and TextNormalizer similarity, no AI invention.
+     *
+     * @return array<string, array<int, array{profile_item_id: int, relevance: string, score: float, justification: string|null, source_type: string, source_id: int}>>
+     */
+    private function deterministicFallback(CandidateProfile $profile, JobOpportunity $opportunity): array
+    {
+        $profile->loadMissing(['items', 'candidateSkills.skill']);
+        $opportunity->loadMissing(['requirements', 'skills.skill']);
+
+        $grouped = $this->emptyResult();
+
+        $opportunityText = trim(collect([
+            $opportunity->title,
+            $opportunity->summary,
+            $opportunity->requirements->pluck('content')->implode(' '),
+            $opportunity->skills->map(fn ($s) => $s->skill !== null ? $s->skill->name : '')->implode(' '),
+        ])->filter()->implode(' '));
+
+        if ($opportunityText === '') {
+            $opportunityText = $opportunity->title ?? 'general';
+        }
+
+        $requiredSkills = $opportunity->skills->where('classification', 'required')->map(fn ($s) => ProfileIdentityService::normalize($s->skill !== null ? $s->skill->name : ''))->filter()->values()->all();
+        $preferredSkills = $opportunity->skills->where('classification', 'preferred')->map(fn ($s) => ProfileIdentityService::normalize($s->skill !== null ? $s->skill->name : ''))->filter()->values()->all();
+
+        // Score profile items
+        foreach ($profile->items as $item) {
+            $itemText = trim(collect([$item->title, $item->organization, $item->description])->filter()->implode(' '));
+            $score = 0.0;
+
+            // Skill-based boost if item description contains required skill names
+            $itemNorm = ProfileIdentityService::normalize($itemText);
+            foreach ($requiredSkills as $req) {
+                if (str_contains($itemNorm, $req)) {
+                    $score += 0.35;
+                }
+            }
+            foreach ($preferredSkills as $pref) {
+                if (str_contains($itemNorm, $pref)) {
+                    $score += 0.20;
+                }
+            }
+
+            // Text similarity to opportunity
+            $sim = TextNormalizer::similarity($opportunityText, $itemText);
+            // Also use ProfileIdentityService textSimilarity for better typo tolerance
+            $sim2 = ProfileIdentityService::textSimilarity($opportunityText, $itemText);
+            $score += max($sim, $sim2) * 0.5;
+
+            // Cap at 1.0
+            $score = min(1.0, $score);
+
+            $relevance = $score >= 0.60 ? 'high' : ($score >= 0.35 ? 'medium' : 'low');
+            $isRelevant = $relevance === 'high' || $relevance === 'medium';
+
+            // Ensure minimum floor: if no high/medium found, we will later include low
+            $sectionKey = match ($item->type) {
+                ProfileItemType::Experience => 'experience',
+                ProfileItemType::Education => 'education',
+                ProfileItemType::Project => 'projects',
+                ProfileItemType::Certification => 'certifications',
+            };
+
+            // Only add if relevant, or keep low for fallback floor
+            $grouped[$sectionKey][] = [
+                'profile_item_id' => $item->id,
+                'relevance' => $relevance,
+                'score' => $score,
+                'justification' => $isRelevant ? 'deterministic: matched opportunity keywords' : 'deterministic: low relevance',
+                'source_type' => 'profile_item',
+                'source_id' => $item->id,
+            ];
+        }
+
+        // Filter to only relevant, but if less than 2 items total, include top low as well for floor
+        $totalRelevant = collect($grouped)->flatten(1)->filter(fn ($r) => $r['relevance'] !== 'low')->count();
+        if ($totalRelevant < 2) {
+            // Keep low as well (already added), just ensure they have medium-ish score for ordering
+            foreach ($grouped as $key => $items) {
+                foreach ($items as &$it) {
+                    if ($it['relevance'] === 'low' && $it['score'] < 0.30) {
+                        $it['score'] = 0.30;
+                        $it['relevance'] = 'medium';
+                    }
+                }
+                $grouped[$key] = $items;
+            }
+        } else {
+            // Remove low relevance if we have enough
+            foreach ($grouped as $key => $items) {
+                $grouped[$key] = array_values(array_filter($items, fn ($r) => $r['relevance'] !== 'low'));
+            }
+        }
+
+        // Score skills
+        foreach ($profile->candidateSkills as $cs) {
+            $skillName = $cs->skill !== null ? $cs->skill->name : ($cs->custom_skill_name ?? '');
+            $normSkill = ProfileIdentityService::normalize($skillName);
+            $score = 0.0;
+            $relevance = 'low';
+
+            if (in_array($normSkill, $requiredSkills, true)) {
+                $score = 0.95;
+                $relevance = 'high';
+            } elseif (in_array($normSkill, $preferredSkills, true)) {
+                $score = 0.75;
+                $relevance = 'medium';
+            } else {
+                // Check if skill appears in opportunity text
+                if ($normSkill !== '' && str_contains(ProfileIdentityService::normalize($opportunityText), $normSkill)) {
+                    $score = 0.60;
+                    $relevance = 'medium';
+                } else {
+                    // Use similarity as fallback
+                    $sim = TextNormalizer::similarity($opportunityText, $skillName);
+                    if ($sim >= 0.5) {
+                        $score = 0.55;
+                        $relevance = 'medium';
+                    } else {
+                        $score = 0.20;
+                        $relevance = 'low';
+                    }
+                }
+            }
+
+            if ($relevance === 'high' || $relevance === 'medium') {
+                $grouped['skills'][] = [
+                    'profile_item_id' => $cs->id,
+                    'relevance' => $relevance,
+                    'score' => $score,
+                    'justification' => 'deterministic: skill match',
+                    'source_type' => 'candidate_skill',
+                    'source_id' => $cs->id,
+                ];
+            }
+        }
+
+        // Languages: if opportunity has language requirements, score, else medium
+        $opportunityLangText = $opportunity->requirements->pluck('content')->filter(fn ($c) => str_contains(strtolower((string) $c), 'language') || str_contains(strtolower((string) $c), 'english') || str_contains(strtolower((string) $c), 'french'))->implode(' ');
+        foreach (($profile->languages ?? []) as $idx => $lang) {
+            $langName = (string) $lang['language'];
+            $score = 0.50;
+            $relevance = 'medium';
+            if ($opportunityLangText !== '' && str_contains(ProfileIdentityService::normalize($opportunityLangText), ProfileIdentityService::normalize($langName))) {
+                $score = 0.80;
+                $relevance = 'high';
+            }
+            $grouped['languages'][] = [
+                'profile_item_id' => $profile->id, // languages use profile id as source
+                'relevance' => $relevance,
+                'score' => $score,
+                'justification' => 'deterministic: language',
+                'source_type' => 'candidate_profile',
+                'source_id' => $profile->id,
+            ];
+            // Only need one entry for languages relevance (not per language)
+            break;
+        }
+
+        // Ensure at least skills/languages have something if profile has them
+        if (empty($grouped['skills']) && $profile->candidateSkills->isNotEmpty()) {
+            // Fallback: include top 3 skills by state
+            $topSkills = $profile->candidateSkills->filter(fn ($cs) => in_array($cs->state->value, ['verified', 'claimed'], true))->take(3);
+            foreach ($topSkills as $cs) {
+                $grouped['skills'][] = [
+                    'profile_item_id' => $cs->id,
+                    'relevance' => 'medium',
+                    'score' => 0.50,
+                    'justification' => 'deterministic: fallback top skills',
+                    'source_type' => 'candidate_skill',
+                    'source_id' => $cs->id,
+                ];
+            }
         }
 
         return $grouped;

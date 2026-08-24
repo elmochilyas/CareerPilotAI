@@ -106,7 +106,7 @@ it('renders the imported source template for the authenticated document preview'
         ->assertSee('data-resume-template="source-cv-classic"', false)
         ->assertSee('Source Candidate')
         ->assertSee('Laravel Developer')
-        ->assertSee('class="skills"', false)
+        ->assertSee('class="skills-grid"', false)
         ->assertDontSee('rounded-lg');
 });
 

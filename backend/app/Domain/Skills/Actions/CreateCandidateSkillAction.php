@@ -2,53 +2,70 @@
 
 namespace App\Domain\Skills\Actions;
 
+use App\Domain\Profile\Services\ProfileIdentityService;
 use App\Domain\Skills\Data\CandidateSkillData;
 use App\Exceptions\Api\ConflictException;
 use App\Models\CandidateProfile;
 use App\Models\CandidateSkill;
+use App\Models\Skill;
+use App\Models\SkillAlias;
+use Illuminate\Support\Facades\DB;
 
 class CreateCandidateSkillAction
 {
     public function execute(CandidateProfile $profile, CandidateSkillData $data): CandidateSkill
     {
-        if ($data->skillId !== null) {
-            $existing = CandidateSkill::where('candidate_profile_id', $profile->id)
-                ->where('skill_id', $data->skillId)
-                ->exists();
+        return DB::transaction(function () use ($profile, $data): CandidateSkill {
+            // Lock profile to prevent concurrent duplicate skill creation
+            $lockedProfile = CandidateProfile::where('id', $profile->id)->lockForUpdate()->firstOrFail();
+            $lockedProfile->load('candidateSkills.skill');
 
-            if ($existing) {
-                throw new ConflictException(
-                    'This skill is already in your profile.',
-                    'candidate_skill_duplicate'
-                );
+            $skillName = '';
+            if ($data->skillId !== null) {
+                $skill = Skill::find($data->skillId);
+                $skillName = $skill !== null ? $skill->name : '';
+            } else {
+                $skillName = $data->customSkillName ?? '';
             }
-        } elseif ($data->customSkillName !== null) {
-            $existing = CandidateSkill::where('candidate_profile_id', $profile->id)
-                ->whereNull('skill_id')
-                ->where('custom_skill_name', $data->customSkillName)
-                ->exists();
 
-            if ($existing) {
-                throw new ConflictException(
-                    'This custom skill is already in your profile.',
-                    'candidate_skill_duplicate'
-                );
+            if ($skillName === '' && $data->skillId !== null) {
+                $skill = Skill::find($data->skillId);
+                $skillName = $skill !== null ? $skill->name : '';
+            } elseif ($skillName === '' && $data->customSkillName !== null) {
+                $skillName = $data->customSkillName;
             }
-        }
 
-        $candidateSkill = CandidateSkill::create([
-            'candidate_profile_id' => $profile->id,
-            'skill_id' => $data->skillId,
-            'custom_skill_name' => $data->customSkillName,
-            'state' => $data->state,
-            'proficiency_level' => $data->proficiencyLevel,
-            'years_experience' => $data->yearsExperience,
-            'last_used_at' => $data->lastUsedAt,
-            'evidence' => $data->evidence,
-        ]);
+            if ($skillName !== '') {
+                $maps = ProfileIdentityService::buildSkillLookupMaps(Skill::all(), SkillAlias::all());
+                $existing = ProfileIdentityService::findExistingCandidateSkill(
+                    $lockedProfile->candidateSkills,
+                    $skillName,
+                    $maps['skills'],
+                    $maps['aliases']
+                );
 
-        $profile->touch();
+                if ($existing) {
+                    throw new ConflictException(
+                        'This skill already exists in your profile.',
+                        'candidate_skill_duplicate'
+                    );
+                }
+            }
 
-        return $candidateSkill->load('skill.aliases');
+            $candidateSkill = CandidateSkill::create([
+                'candidate_profile_id' => $lockedProfile->id,
+                'skill_id' => $data->skillId,
+                'custom_skill_name' => $data->customSkillName,
+                'state' => $data->state,
+                'proficiency_level' => $data->proficiencyLevel,
+                'years_experience' => $data->yearsExperience,
+                'last_used_at' => $data->lastUsedAt,
+                'evidence' => $data->evidence,
+            ]);
+
+            $lockedProfile->touch();
+
+            return $candidateSkill->load('skill.aliases');
+        });
     }
 }

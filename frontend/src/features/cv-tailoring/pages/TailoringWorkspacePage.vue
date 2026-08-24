@@ -96,7 +96,7 @@ async function resolveGeneratedWording(status: TailoringProposalStatus): Promise
     </section>
 
     <template v-else>
-      <StalenessBanner v-if="resume.stale" :reason="resume.stale_reason" />
+      <StalenessBanner v-if="resume.stale" :reason="resume.stale_reason" @retailor="tailorMutation.mutate(resume.id)" />
 
       <header class="mb-8">
         <h1 class="text-2xl font-semibold">{{ resume.title }}</h1>
