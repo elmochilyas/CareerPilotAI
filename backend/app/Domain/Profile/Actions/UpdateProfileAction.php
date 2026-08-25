@@ -4,6 +4,7 @@ namespace App\Domain\Profile\Actions;
 
 use App\Domain\Profile\Data\ProfileData;
 use App\Domain\Profile\Services\ProfileCompletionService;
+use App\Domain\Profile\Services\ProfileIdentityService;
 use App\Models\CandidateProfile;
 use App\Models\User;
 use App\Support\ProblemDetails\ProblemDetailsException;
@@ -22,7 +23,17 @@ class UpdateProfileAction
             }
             $profile ??= new CandidateProfile;
             $profile->user_id = $user->id;
-            $profile->fill($data->attributes)->save();
+
+            $attributes = $data->attributes;
+
+            // Deduplicate languages via normalized identity, keep best proficiency
+            if (array_key_exists('languages', $attributes) && is_array($attributes['languages'])) {
+                $attributes['languages'] = ProfileIdentityService::deduplicateLanguages($attributes['languages']);
+                // Re-index to ensure JSON array
+                $attributes['languages'] = array_values($attributes['languages']);
+            }
+
+            $profile->fill($attributes)->save();
             $profile->load('items');
             $this->completion->persist($profile);
 

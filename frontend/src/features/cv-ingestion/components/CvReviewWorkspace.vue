@@ -505,6 +505,7 @@ function acceptAllPending(): void {
           <CvReviewExperience
             v-else-if="currentStep?.key === 'experience'"
             :suggestions="normalSuggestions"
+            :preview="preview"
             :readonly="readonly"
             @decision="(id, d) => emit('decision', id, d)"
           />
@@ -513,6 +514,7 @@ function acceptAllPending(): void {
           <CvReviewEducation
             v-else-if="currentStep?.key === 'education'"
             :suggestions="normalSuggestions"
+            :preview="preview"
             :readonly="readonly"
             @decision="(id, d) => emit('decision', id, d)"
           />
@@ -521,6 +523,7 @@ function acceptAllPending(): void {
           <CvReviewProjects
             v-else-if="currentStep?.key === 'projects'"
             :suggestions="normalSuggestions"
+            :preview="preview"
             :readonly="readonly"
             @decision="(id, d) => emit('decision', id, d)"
           />
@@ -529,6 +532,7 @@ function acceptAllPending(): void {
           <CvReviewCertifications
             v-else-if="currentStep?.key === 'certifications'"
             :suggestions="normalSuggestions"
+            :preview="preview"
             :readonly="readonly"
             @decision="(id, d) => emit('decision', id, d)"
           />

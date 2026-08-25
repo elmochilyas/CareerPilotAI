@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { Check, X, FileText, ExternalLink, Award, Building2, Calendar } from '@lucide/vue'
-import type { CvSuggestion, CertificationValue, ReviewDecision } from '../types'
+import type { CvSuggestion, CertificationValue, ReviewDecision, ImportPreview } from '../types'
+import { fieldOf } from '../utils/suggestionFields'
 import Button from '@/components/ui/Button.vue'
 
-defineProps<{
+const props = defineProps<{
   suggestions: CvSuggestion[]
   readonly?: boolean
+  preview?: ImportPreview | null
 }>()
 
 const emit = defineEmits<{
@@ -20,12 +22,56 @@ function isReviewed(s: CvSuggestion): boolean {
   return s.review_status !== 'pending'
 }
 
+function isPossibleDuplicate(s: CvSuggestion<'certification'>): boolean {
+  if ((s.current_value as Record<string, unknown> | null)?.is_possible_duplicate) return true
+  if (!props.preview) return false
+  return props.preview.conflicts.some(
+    (c) => c.type === 'possible_duplicate' && (c as Record<string, unknown>).suggestion_id === s.id,
+  )
+}
+
+function possibleCurrent(s: CvSuggestion<'certification'>): Record<string, unknown> | null {
+  if (s.current_value && (s.current_value as Record<string, unknown>).is_possible_duplicate)
+    return s.current_value as Record<string, unknown>
+  if (!props.preview) return null
+  const conflict = props.preview.conflicts.find(
+    (c) => c.type === 'possible_duplicate' && (c as Record<string, unknown>).suggestion_id === s.id,
+  ) as Record<string, unknown> | undefined
+  return (conflict?.current as Record<string, unknown>) ?? null
+}
+
+function possibleReason(s: CvSuggestion<'certification'>): string | null {
+  const pc = possibleCurrent(s)
+  if (pc?.reason) return String(pc.reason)
+  const cv = s.current_value as Record<string, unknown> | null
+  if (cv?.reason) return String(cv.reason)
+  if (!props.preview) return null
+  const conflict = props.preview.conflicts.find(
+    (c) => c.type === 'possible_duplicate' && (c as Record<string, unknown>).suggestion_id === s.id,
+  ) as Record<string, unknown> | undefined
+  return conflict?.reason ? String(conflict.reason) : null
+}
+
+function possibleSimilarity(s: CvSuggestion<'certification'>): number | null {
+  const pc = possibleCurrent(s)
+  if (typeof pc?.similarity === 'number') return pc.similarity as number
+  const cv = s.current_value as Record<string, unknown> | null
+  if (typeof cv?.similarity === 'number') return cv.similarity as number
+  if (!props.preview) return null
+  const conflict = props.preview.conflicts.find(
+    (c) => c.type === 'possible_duplicate' && (c as Record<string, unknown>).suggestion_id === s.id,
+  ) as Record<string, unknown> | undefined
+  return typeof conflict?.similarity === 'number' ? (conflict.similarity as number) : null
+}
+
 function decisionLabel(s: CvSuggestion): string {
   const map: Record<string, string> = {
     accepted: 'Accepted',
     edited: 'Edited',
     rejected: 'Skipped',
     keep_existing: 'Kept existing',
+    create_new: 'Created separately',
+    update_existing: 'Updated existing',
   }
   return map[s.review_status] ?? s.review_status
 }
@@ -36,6 +82,8 @@ const decisionBadgeClasses = (s: CvSuggestion): string => {
     edited: 'bg-blue-100 text-blue-700 border-blue-200',
     rejected: 'bg-red-100 text-red-600 border-red-200',
     keep_existing: 'bg-slate-100 text-slate-600 border-slate-200',
+    create_new: 'bg-indigo-100 text-indigo-700 border-indigo-200',
+    update_existing: 'bg-amber-100 text-amber-700 border-amber-200',
   }
   return map[s.review_status] ?? 'bg-slate-100 text-slate-600 border-slate-200'
 }
@@ -124,6 +172,43 @@ const decisionBadgeClasses = (s: CvSuggestion): string => {
           Source: &ldquo;{{ s.source_text.substring(0, 100)
           }}{{ s.source_text.length > 100 ? '...' : '' }}&rdquo;
         </p>
+
+        <!-- Possible duplicate notice -->
+        <div
+          v-if="isPossibleDuplicate(s) && !isReviewed(s)"
+          class="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4"
+        >
+          <p class="text-xs font-semibold text-blue-700">Possible duplicate found</p>
+          <p class="mt-1 text-xs text-blue-600">
+            This looks similar to an existing entry. Please choose how to handle it.
+            <span v-if="possibleReason(s)" class="font-medium"> — {{ possibleReason(s) }}</span>
+            <span v-if="possibleSimilarity(s)" class="ml-1"
+              >({{ Math.round((possibleSimilarity(s) as number) * 100) }}% similar)</span
+            >
+          </p>
+          <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div class="rounded-lg border border-slate-200 bg-white p-3">
+              <p class="text-xs font-medium text-slate-500">Existing profile</p>
+              <p class="mt-1 text-sm font-semibold text-slate-900 truncate">
+                {{ fieldOf(possibleCurrent(s), ['title', 'name']) }}
+              </p>
+              <p
+                v-if="fieldOf(possibleCurrent(s), ['organization'])"
+                class="text-xs text-slate-600 flex items-center gap-1 mt-0.5"
+              >
+                <Building2 class="h-3 w-3" aria-hidden="true" />
+                {{ fieldOf(possibleCurrent(s), ['organization']) }}
+              </p>
+            </div>
+            <div class="rounded-lg border border-blue-200 bg-white p-3">
+              <p class="text-xs font-medium text-blue-600">From this CV</p>
+              <p class="mt-1 text-sm font-semibold text-slate-900 truncate">{{ val(s).name }}</p>
+              <p v-if="val(s).issuer" class="text-xs text-slate-600 flex items-center gap-1 mt-0.5">
+                <Building2 class="h-3 w-3" aria-hidden="true" /> {{ val(s).issuer }}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Action panel -->
@@ -131,7 +216,32 @@ const decisionBadgeClasses = (s: CvSuggestion): string => {
         v-if="!readonly && !isReviewed(s)"
         class="border-t border-slate-200/50 bg-slate-50/80 rounded-b-2xl px-6 py-4"
       >
-        <div class="flex flex-wrap gap-2">
+        <div v-if="isPossibleDuplicate(s)" class="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            class="shadow-sm border-slate-300"
+            @click="emit('decision', s.id, { decision: 'keep_existing' })"
+          >
+            <FileText class="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Keep existing
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            class="shadow-sm border-amber-300 text-amber-700 hover:bg-amber-50"
+            @click="emit('decision', s.id, { decision: 'update_existing' })"
+          >
+            <Check class="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Update existing
+          </Button>
+          <Button
+            size="sm"
+            class="shadow-md"
+            @click="emit('decision', s.id, { decision: 'create_new' })"
+          >
+            <Check class="mr-1.5 h-3.5 w-3.5" aria-hidden="true" /> Create separately
+          </Button>
+        </div>
+        <div v-else class="flex flex-wrap gap-2">
           <Button
             size="sm"
             class="shadow-md"

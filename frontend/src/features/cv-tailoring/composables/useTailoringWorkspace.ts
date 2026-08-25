@@ -79,7 +79,19 @@ export function useTailoringWorkspace(
   })
 
   const updateMutation = useMutation({
-    mutationFn: async ({ resumeId, content, proposal_decisions }: { resumeId: number; content: ResumeContent; proposal_decisions?: Array<{ id: number; status: 'proposed' | 'accepted' | 'rejected'; edited_text?: string | null }> }) => {
+    mutationFn: async ({
+      resumeId,
+      content,
+      proposal_decisions,
+    }: {
+      resumeId: number
+      content: ResumeContent
+      proposal_decisions?: Array<{
+        id: number
+        status: 'proposed' | 'accepted' | 'rejected'
+        edited_text?: string | null
+      }>
+    }) => {
       return updateResume(resumeId, { content, proposal_decisions })
     },
     onSuccess: (updated) => {
@@ -176,11 +188,20 @@ export function useTailoringWorkspace(
   }
 
   let initialized = false
-  watch(resume, (value) => {
-    if (!value || initialized) return
-    initialized = true
-    currentStep.value = value.status === 'approved' ? 'export' : value.content.sections.length > 0 ? 'review' : 'generate'
-  }, { immediate: true })
+  watch(
+    resume,
+    (value) => {
+      if (!value || initialized) return
+      initialized = true
+      currentStep.value =
+        value.status === 'approved'
+          ? 'export'
+          : value.content.sections.length > 0
+            ? 'review'
+            : 'generate'
+    },
+    { immediate: true },
+  )
 
   return {
     resume,

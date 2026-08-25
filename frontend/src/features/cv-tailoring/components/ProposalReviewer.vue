@@ -144,15 +144,32 @@ function statusColor(status: TailoringProposalStatus): string {
                 <span class="ml-1">{{ proposal.edited_text }}</span>
               </p>
               <div v-if="editingId === proposal.id" class="space-y-2">
-                <label :for="`proposal-edit-${proposal.id}`" class="text-xs font-medium">Your wording</label>
-                <textarea :id="`proposal-edit-${proposal.id}`" v-model="editedText" rows="3" class="w-full rounded-lg border border-[var(--color-neutral-200)] p-2 text-sm" />
-                <button class="rounded-lg bg-[var(--color-primary-600)] px-3 py-1.5 text-xs font-medium text-white" @click="saveEdit(proposal.id)">Save and accept</button>
+                <label :for="`proposal-edit-${proposal.id}`" class="text-xs font-medium"
+                  >Your wording</label
+                >
+                <textarea
+                  :id="`proposal-edit-${proposal.id}`"
+                  v-model="editedText"
+                  rows="3"
+                  class="w-full rounded-lg border border-[var(--color-neutral-200)] p-2 text-sm"
+                />
+                <button
+                  class="rounded-lg bg-[var(--color-primary-600)] px-3 py-1.5 text-xs font-medium text-white"
+                  @click="saveEdit(proposal.id)"
+                >
+                  Save and accept
+                </button>
               </div>
             </div>
           </div>
 
           <div class="flex shrink-0 gap-1.5">
-            <button class="rounded-lg border border-[var(--color-neutral-200)] bg-white px-2.5 py-1.5 text-xs font-medium" @click="startEditing(proposal)">Edit</button>
+            <button
+              class="rounded-lg border border-[var(--color-neutral-200)] bg-white px-2.5 py-1.5 text-xs font-medium"
+              @click="startEditing(proposal)"
+            >
+              Edit
+            </button>
             <button
               :class="[
                 'rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all',
@@ -177,7 +194,13 @@ function statusColor(status: TailoringProposalStatus): string {
             >
               Reject
             </button>
-            <button v-if="proposal.status !== 'proposed'" class="rounded-lg border border-[var(--color-neutral-200)] bg-white px-2.5 py-1.5 text-xs font-medium" @click="emit('update:status', proposal.id, 'proposed')">Revert</button>
+            <button
+              v-if="proposal.status !== 'proposed'"
+              class="rounded-lg border border-[var(--color-neutral-200)] bg-white px-2.5 py-1.5 text-xs font-medium"
+              @click="emit('update:status', proposal.id, 'proposed')"
+            >
+              Revert
+            </button>
           </div>
         </div>
       </li>

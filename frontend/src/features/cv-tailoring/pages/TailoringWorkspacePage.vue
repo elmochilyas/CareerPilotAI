@@ -30,8 +30,8 @@ const proposals = computed(() => resume.value?.content.proposals ?? [])
 const unresolvedCount = computed(
   () => proposals.value.filter((proposal) => proposal.status === 'proposed').length,
 )
-const hasGeneratedVersion = computed(
-  () => (resume.value?.content.sections ?? []).some((section) => section.items.length > 0),
+const hasGeneratedVersion = computed(() =>
+  (resume.value?.content.sections ?? []).some((section) => section.items.length > 0),
 )
 const enabledThrough = computed(() => {
   if (resume.value?.status === 'approved') return 2
@@ -59,7 +59,6 @@ async function resolveGeneratedWording(status: TailoringProposalStatus): Promise
       .map((proposal) => ({ id: proposal.id, status, edited_text: null })),
   })
 }
-
 </script>
 
 <template>
@@ -90,13 +89,22 @@ async function resolveGeneratedWording(status: TailoringProposalStatus): Promise
       >
         Generate Tailored CV
       </Button>
-      <p v-if="createMutation.isPending.value" class="mt-3 text-sm" role="status" aria-live="polite">
+      <p
+        v-if="createMutation.isPending.value"
+        class="mt-3 text-sm"
+        role="status"
+        aria-live="polite"
+      >
         Selecting and tailoring your trusted CV content…
       </p>
     </section>
 
     <template v-else>
-      <StalenessBanner v-if="resume.stale" :reason="resume.stale_reason" />
+      <StalenessBanner
+        v-if="resume.stale"
+        :reason="resume.stale_reason"
+        @retailor="tailorMutation.mutate(resume.id)"
+      />
 
       <header class="mb-8">
         <h1 class="text-2xl font-semibold">{{ resume.title }}</h1>
@@ -128,7 +136,8 @@ async function resolveGeneratedWording(status: TailoringProposalStatus): Promise
           <div>
             <h2 class="text-lg font-semibold">Generate Tailored CV</h2>
             <p class="text-sm text-[var(--text-muted)]">
-              Generate a persisted version selected and ordered for this opportunity from trusted profile data.
+              Generate a persisted version selected and ordered for this opportunity from trusted
+              profile data.
             </p>
           </div>
           <Button
@@ -156,7 +165,8 @@ async function resolveGeneratedWording(status: TailoringProposalStatus): Promise
             class="rounded-lg border border-[var(--color-neutral-200)] p-4"
           >
             <p class="text-sm">
-              {{ unresolvedCount }} validated wording suggestion(s) are ready. Choose whether to use the tailored wording or preserve your original wording.
+              {{ unresolvedCount }} validated wording suggestion(s) are ready. Choose whether to use
+              the tailored wording or preserve your original wording.
             </p>
             <div class="mt-3 flex flex-wrap gap-3">
               <Button
@@ -198,7 +208,8 @@ async function resolveGeneratedWording(status: TailoringProposalStatus): Promise
             <a
               :href="`/api/v1/resumes/${resume.id}/download/pdf`"
               class="inline-flex items-center rounded-xl bg-[var(--color-primary-600)] px-4 py-2 text-sm font-medium text-white shadow-[var(--shadow-neo-button)] hover:bg-[var(--color-primary-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)]"
-            >Download PDF</a>
+              >Download PDF</a
+            >
             <Button variant="outline" @click="workspace.goToStep('review')">View CV</Button>
           </div>
           <div class="cv-print-area">
@@ -207,7 +218,8 @@ async function resolveGeneratedWording(status: TailoringProposalStatus): Promise
           <RouterLink
             :to="`/opportunities/${opportunityId}`"
             class="cv-print-actions inline-flex text-sm font-medium text-[var(--color-primary-700)]"
-          >Return to Opportunity</RouterLink>
+            >Return to Opportunity</RouterLink
+          >
         </div>
       </section>
     </template>

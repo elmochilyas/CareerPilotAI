@@ -165,17 +165,27 @@ it('returns empty sections when no match_findings exist', function () {
 
     $result = $this->analyzer->analyzeRelevance($this->profile, $this->opportunity);
 
-    foreach ($result as $section) {
-        expect($section)->toHaveCount(0);
-    }
+    // Deterministic fallback now provides languages (and possibly other) even without findings
+    expect($result)->toHaveKeys(['skills', 'experience', 'education', 'projects', 'certifications', 'languages']);
+    expect($result['experience'])->toHaveCount(0);
+    expect($result['education'])->toHaveCount(0);
+    expect($result['projects'])->toHaveCount(0);
+    expect($result['certifications'])->toHaveCount(0);
+    expect($result['skills'])->toHaveCount(0);
+    // Languages fallback keeps at least one if profile has languages
+    expect($result['languages'])->toHaveCount(1);
 });
 
 it('returns empty sections when no completed analysis exists', function () {
     $result = $this->analyzer->analyzeRelevance($this->profile, $this->opportunity);
 
-    foreach ($result as $section) {
-        expect($section)->toHaveCount(0);
-    }
+    expect($result)->toHaveKeys(['skills', 'experience', 'education', 'projects', 'certifications', 'languages']);
+    expect($result['experience'])->toHaveCount(0);
+    expect($result['education'])->toHaveCount(0);
+    expect($result['projects'])->toHaveCount(0);
+    expect($result['certifications'])->toHaveCount(0);
+    expect($result['skills'])->toHaveCount(0);
+    expect($result['languages'])->toHaveCount(1);
 });
 
 it('computes staleness as fresh when fingerprints match', function () {

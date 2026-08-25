@@ -22,7 +22,7 @@ final readonly class ListResumesAction
         }
 
         if ($opportunityId !== null) {
-            $query->where('opportunity_id', $opportunityId);
+            $query->where('job_opportunity_id', $opportunityId);
         }
 
         return $query
