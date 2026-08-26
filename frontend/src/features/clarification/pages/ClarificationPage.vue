@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft } from '@lucide/vue'
 import { useQuery } from '@tanstack/vue-query'
 import { extractProblemDetail } from '@/api/client'
 import { fetchOpportunity, opportunityKeys } from '@/features/opportunities/api'
@@ -79,7 +78,11 @@ function retryLoad(): void {
 function goBackToOpportunity(): void {
   const id = opportunityId.value
   if (id === null) return
-  void router.push({ name: 'opportunities-detail', params: { id } })
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    void router.replace({ name: 'opportunities-detail', params: { id } })
+  }
 }
 </script>
 
@@ -88,6 +91,7 @@ function goBackToOpportunity(): void {
     <MatchBriefHeader
       :opportunity="opportunity ?? null"
       :classifier-unavailable="classifierUnavailable"
+      :on-back="goBackToOpportunity"
     />
 
     <div class="sr-only" aria-live="polite">{{ announcement }}</div>
@@ -135,15 +139,6 @@ function goBackToOpportunity(): void {
     />
 
     <template v-else-if="completedAnalysis">
-      <button
-        type="button"
-        class="mb-4 inline-flex items-center gap-1.5 rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium text-[var(--color-primary-700)] shadow-[var(--shadow-neo-raised-sm)] hover:text-[var(--color-primary-800)] hover:shadow-[var(--shadow-neo-button)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] focus-visible:outline-none"
-        @click="goBackToOpportunity"
-      >
-        <ArrowLeft class="size-4" aria-hidden="true" />
-        Back to opportunity
-      </button>
-
       <ClarificationFlow
         class="mt-2"
         :analysis-id="completedAnalysis.id"

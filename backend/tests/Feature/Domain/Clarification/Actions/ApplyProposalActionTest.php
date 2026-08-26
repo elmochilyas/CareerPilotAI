@@ -291,7 +291,7 @@ it('dispatches the staleness observation job and writes the audit event after co
 
     Queue::assertPushed(ObserveClarificationStalenessJob::class, fn ($job) => $job->analysisId === $this->analysis->id);
 
-    $audit = ClarificationAuditEvent::where('proposal_id', $proposal->id)->first();
+    $audit = ClarificationAuditEvent::where('proposal_id', $proposal->id)->where('event', 'proposal_accepted')->first();
     expect($audit)->not->toBeNull()
         ->and($audit->answer_id)->toBe($answer->id)
         ->and($audit->user_id)->toBe($this->user->id)

@@ -8,11 +8,13 @@ use App\Domain\Clarification\Data\QuestionTemplate;
 use App\Domain\Clarification\Enums\ClarificationQuestionStatus;
 use App\Domain\Clarification\Exceptions\ClarificationAssistantException;
 use App\Domain\Clarification\Services\ClarificationAssistantSchemaValidator;
+use App\Domain\Clarification\Services\ClarificationAuditWriter;
 use App\Domain\Clarification\Services\Contracts\ClarificationAssistant;
 use App\Domain\Clarification\Services\QuestionTemplateRegistry;
 use App\Domain\Matching\Enums\MatchImportance;
 use App\Domain\Matching\Enums\MatchState;
 use App\Domain\Skills\Enums\SkillState;
+use App\Models\CandidateProfile;
 use App\Models\ClarificationQuestion;
 use App\Models\MatchAnalysis;
 use App\Models\MatchFinding;
@@ -57,7 +59,7 @@ final class BuildQuestionSessionAction
         foreach ($outcome['planned'] as $entry) {
             $template = $entry['template'];
 
-            $created[] = ClarificationQuestion::create([
+            $created[] = $question = ClarificationQuestion::create([
                 'match_analysis_id' => $analysis->id,
                 'match_finding_id' => $entry['finding']->id,
                 'question_no' => $nextQuestionNo,
@@ -70,6 +72,21 @@ final class BuildQuestionSessionAction
                 'status' => ClarificationQuestionStatus::Pending,
                 'ai_metadata' => $outcome['metadata'],
             ]);
+
+            // Append-only audit for question creation (best-effort)
+            try {
+                $userId = CandidateProfile::whereKey($analysis->candidate_profile_id)->value('user_id');
+                if ($userId !== null) {
+                    app(ClarificationAuditWriter::class)->write('question_created', [
+                        'user_id' => $userId,
+                        'match_analysis_id' => $analysis->id,
+                        'target_id' => $question->id,
+                        'field' => $question->template_key,
+                        'metadata' => ['template_key' => $question->template_key],
+                    ]);
+                }
+            } catch (\Throwable $ignored) {
+            }
 
             $nextQuestionNo++;
         }

@@ -3,8 +3,12 @@
 namespace App\Domain\Clarification\Actions;
 
 use App\Domain\Clarification\Enums\ClarificationQuestionStatus;
+use App\Domain\Clarification\Services\ClarificationAuditWriter;
 use App\Exceptions\Api\ConflictException;
+use App\Models\CandidateProfile;
 use App\Models\ClarificationQuestion;
+use App\Models\MatchAnalysis;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -37,6 +41,26 @@ final class SkipQuestionAction
             $lockedQuestion->update([
                 'status' => ClarificationQuestionStatus::Skipped,
             ]);
+
+            // Append-only audit for skip (best-effort)
+            try {
+                $userId = Auth::id();
+                if ($userId === null) {
+                    $candidateProfileId = MatchAnalysis::whereKey($lockedQuestion->match_analysis_id)->value('candidate_profile_id');
+                    if ($candidateProfileId !== null) {
+                        $userId = CandidateProfile::whereKey($candidateProfileId)->value('user_id');
+                    }
+                }
+                if ($userId !== null) {
+                    app(ClarificationAuditWriter::class)->write('question_skipped', [
+                        'user_id' => $userId,
+                        'match_analysis_id' => $lockedQuestion->match_analysis_id,
+                        'target_id' => $lockedQuestion->id,
+                        'metadata' => ['question_id' => $lockedQuestion->id],
+                    ]);
+                }
+            } catch (\Throwable $ignored) {
+            }
         }, attempts: 3);
     }
 

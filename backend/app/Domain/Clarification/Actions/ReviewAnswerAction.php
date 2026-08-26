@@ -4,6 +4,7 @@ namespace App\Domain\Clarification\Actions;
 
 use App\Domain\Clarification\Enums\ClarificationAnswerStatus;
 use App\Domain\Clarification\Enums\ClarificationProposalStatus;
+use App\Domain\Clarification\Services\ClarificationAuditWriter;
 use App\Exceptions\Api\ConflictException;
 use App\Exceptions\Api\NotFoundException;
 use App\Exceptions\Api\UnprocessableEntityException;
@@ -172,6 +173,18 @@ final class ReviewAnswerAction
                 'status' => $answerStatus,
                 'proposal_id' => $locked->id,
             ]);
+
+            // Append-only audit for rejection/skip (best-effort)
+            try {
+                $event = $proposalStatus === ClarificationProposalStatus::Rejected ? 'proposal_rejected' : 'question_skipped';
+                app(ClarificationAuditWriter::class)->write($event, [
+                    'answer_id' => $answer->id,
+                    'proposal_id' => $locked->id,
+                    'user_id' => $answer->user_id,
+                    'match_analysis_id' => $answer->question->match_analysis_id,
+                ]);
+            } catch (\Throwable $ignored) {
+            }
 
             return $locked->load('answer');
         }, attempts: 3);

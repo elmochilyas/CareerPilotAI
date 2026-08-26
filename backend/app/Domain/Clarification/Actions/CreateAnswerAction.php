@@ -5,6 +5,7 @@ namespace App\Domain\Clarification\Actions;
 use App\Domain\Clarification\Enums\ClarificationAnswerStatus;
 use App\Domain\Clarification\Enums\ClarificationAnswerType;
 use App\Domain\Clarification\Enums\ClarificationQuestionStatus;
+use App\Domain\Clarification\Services\ClarificationAuditWriter;
 use App\Exceptions\Api\ConflictException;
 use App\Exceptions\Api\UnprocessableEntityException;
 use App\Models\ClarificationAnswer;
@@ -30,7 +31,7 @@ final class CreateAnswerAction
         string $value,
         bool $acknowledgedNoEvidence = false,
     ): ClarificationAnswer {
-        return DB::transaction(function () use ($user, $question, $answerType, $value, $acknowledgedNoEvidence): ClarificationAnswer {
+        $answer = DB::transaction(function () use ($user, $question, $answerType, $value, $acknowledgedNoEvidence): ClarificationAnswer {
             $lockedQuestion = ClarificationQuestion::query()
                 ->whereKey($question->getKey())
                 ->lockForUpdate()
@@ -90,7 +91,22 @@ final class CreateAnswerAction
                 'status' => ClarificationQuestionStatus::Answered,
             ]);
 
-            return $answer->load('question');
+            return $answer;
         }, attempts: 3);
+
+        // Append-only audit for answer submission (best-effort, outside transaction)
+        try {
+            $answer->loadMissing('question');
+            app(ClarificationAuditWriter::class)->write('answer_submitted', [
+                'answer_id' => $answer->id,
+                'user_id' => $user->id,
+                'match_analysis_id' => $answer->question->match_analysis_id,
+                'target_id' => $answer->question_id,
+                'metadata' => ['question_id' => $answer->question_id],
+            ]);
+        } catch (\Throwable $ignored) {
+        }
+
+        return $answer->load('question');
     }
 }
