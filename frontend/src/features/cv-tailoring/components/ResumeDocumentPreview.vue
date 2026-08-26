@@ -45,7 +45,7 @@ function handleError(): void {
   overflow: hidden;
   border: 1px solid var(--color-neutral-200);
   border-radius: 0.75rem;
-  background: #e8edf5;
+  background: var(--surface-secondary);
 }
 
 .document-status,

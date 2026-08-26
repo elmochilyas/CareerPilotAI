@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouterLink } from 'vue-router'
 import { ChevronDown } from '@lucide/vue'
+import BackButton from '@/components/ui/BackButton.vue'
 import type { JobOpportunity } from '@/features/opportunities/types'
 
 const props = defineProps<{
   opportunity: JobOpportunity | null
   classifierUnavailable?: boolean
+  onBack?: () => void
 }>()
 
 const location = computed(() =>
@@ -24,13 +25,18 @@ const contextParts = computed(() =>
 
 <template>
   <header class="space-y-4">
-    <RouterLink
-      v-if="opportunity"
-      :to="{ name: 'opportunities-detail', params: { id: opportunity.id } }"
-      class="inline-flex items-center gap-1 rounded-[var(--radius-md)] px-3 py-1.5 text-sm font-medium text-[var(--color-primary-700)] shadow-[var(--shadow-neo-raised-sm)] transition-all hover:text-[var(--color-primary-800)] hover:shadow-[var(--shadow-neo-button)] focus-visible:ring-2 focus-visible:ring-[var(--color-primary-500)] focus-visible:outline-none"
-    >
-      &larr; Back to opportunity
-    </RouterLink>
+    <BackButton
+      v-if="opportunity || onBack"
+      :to="
+        onBack
+          ? undefined
+          : opportunity
+            ? { name: 'opportunities-detail', params: { id: opportunity.id } }
+            : { name: 'opportunities' }
+      "
+      :label="opportunity ? 'Back to opportunity' : 'Back to opportunities'"
+      @click="onBack"
+    />
 
     <div>
       <h1 class="text-2xl font-semibold tracking-tight text-slate-900">

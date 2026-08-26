@@ -7,9 +7,12 @@ use App\Domain\Matching\Services\ProfileSnapshot;
 use App\Domain\Matching\Services\StalenessService;
 use App\Domain\Resumes\Services\TailoringAnalyzer;
 use App\Models\CandidateProfile;
+use App\Models\CandidateSkill;
 use App\Models\JobOpportunity;
 use App\Models\MatchAnalysis;
 use App\Models\MatchFinding;
+use App\Models\ProfileItem;
+use App\Models\Skill;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -211,4 +214,72 @@ it('computes staleness as unknown when no analysis exists', function () {
     $result = $this->analyzer->computeStaleness($this->profile, $this->opportunity);
 
     expect($result)->toBe('unknown');
+});
+
+it('fallback is deterministic: same inputs yield identical scores and ordering', function () {
+    ProfileItem::factory()->experience()->create([
+        'candidate_profile_id' => $this->profile->id,
+        'title' => 'Backend Developer',
+        'organization' => 'Acme',
+    ]);
+    $skill = Skill::factory()->create(['name' => 'PHP', 'normalized_name' => 'php']);
+    CandidateSkill::factory()->create([
+        'candidate_profile_id' => $this->profile->id,
+        'skill_id' => $skill->id,
+        'state' => 'verified',
+    ]);
+
+    $first = $this->analyzer->analyzeRelevance($this->profile->fresh(), $this->opportunity->fresh());
+    $second = $this->analyzer->analyzeRelevance($this->profile->fresh(), $this->opportunity->fresh());
+
+    expect($first)->toEqual($second);
+});
+
+it('fallback never invents source ids and preserves traceability', function () {
+    $item = ProfileItem::factory()->education()->create([
+        'candidate_profile_id' => $this->profile->id,
+        'title' => 'Bachelor Computer Science',
+        'organization' => 'University',
+    ]);
+    $skill = Skill::factory()->create(['name' => 'Laravel', 'normalized_name' => 'laravel']);
+    $cs = CandidateSkill::factory()->create([
+        'candidate_profile_id' => $this->profile->id,
+        'skill_id' => $skill->id,
+        'state' => 'verified',
+    ]);
+
+    $result = $this->analyzer->analyzeRelevance($this->profile->fresh(), $this->opportunity->fresh());
+
+    $allIds = collect($result)->flatten(1)->pluck('profile_item_id');
+    $validIds = ProfileItem::where('candidate_profile_id', $this->profile->id)->pluck('id')
+        ->merge(CandidateSkill::where('candidate_profile_id', $this->profile->id)->pluck('id'))
+        ->merge([$this->profile->id])
+        ->all();
+    foreach ($allIds as $id) {
+        expect($validIds)->toContain($id);
+    }
+
+    // Traceability fields exist on every relevant item
+    foreach (collect($result)->flatten(1) as $item) {
+        expect($item)->toHaveKeys(['source_type', 'source_id', 'profile_item_id', 'relevance', 'score', 'justification']);
+    }
+});
+
+it('fallback keeps a minimum content floor when relevance data is sparse', function () {
+    // Profile with items but an opportunity with almost no text -> fallback should still produce content
+    $sparseOpportunity = JobOpportunity::factory()->create([
+        'candidate_profile_id' => $this->profile->id,
+        'title' => 'X',
+        'summary' => null,
+    ]);
+    ProfileItem::factory()->experience()->create([
+        'candidate_profile_id' => $this->profile->id,
+        'title' => 'Backend Developer',
+        'organization' => 'Acme',
+    ]);
+
+    $result = $this->analyzer->analyzeRelevance($this->profile->fresh(), $sparseOpportunity);
+
+    $totalSections = collect($result)->filter(fn ($items) => count($items) > 0)->count();
+    expect($totalSections)->toBeGreaterThan(0);
 });

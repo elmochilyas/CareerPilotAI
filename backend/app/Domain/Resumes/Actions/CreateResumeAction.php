@@ -73,6 +73,13 @@ final readonly class CreateResumeAction
                 );
             }
 
+            // Defense-in-depth: app lock + DB unique (resumes_profile_opportunity_version_unique) guards concurrent max+1 races.
+            $nextVersion = (int) (Resume::query()
+                ->where('candidate_profile_id', $profile->id)
+                ->where('job_opportunity_id', $opportunity->id)
+                ->lockForUpdate()
+                ->max('version_no') ?? 0) + 1;
+
             $profileFingerprint = $this->fingerprintService->profile(
                 ProfileSnapshot::fromCandidateProfile($profile),
             );
@@ -91,7 +98,7 @@ final readonly class CreateResumeAction
                 'template_key' => RenderResumeDocumentAction::TEMPLATE_KEY,
                 'status' => ResumeStatus::Draft,
                 'generated_by' => 'manual',
-                'version_no' => 1,
+                'version_no' => $nextVersion,
                 'content' => [],
                 'profile_snapshot' => [
                     'fingerprint' => $profileFingerprint,

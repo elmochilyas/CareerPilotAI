@@ -2,6 +2,9 @@
 
 namespace App\Domain\Resumes\Actions;
 
+use App\Domain\Matching\Services\FingerprintService;
+use App\Domain\Matching\Services\OpportunitySnapshot;
+use App\Domain\Matching\Services\ProfileSnapshot;
 use App\Domain\Resumes\Data\ResumeContentData;
 use App\Domain\Resumes\Enums\ResumeStatus;
 use App\Exceptions\Api\ConflictException;
@@ -9,6 +12,10 @@ use App\Models\Resume;
 
 final readonly class UpdateResumeAction
 {
+    public function __construct(
+        private readonly FingerprintService $fingerprints,
+    ) {}
+
     public function execute(Resume $resume, ResumeContentData $content): Resume
     {
         if ($resume->status !== ResumeStatus::Draft) {
@@ -18,9 +25,34 @@ final readonly class UpdateResumeAction
             );
         }
 
+        $resume->loadMissing(['candidateProfile', 'opportunity']);
+        $profile = $resume->candidateProfile;
+        $opportunity = $resume->opportunity;
+
+        $profile->loadMissing('items', 'candidateSkills.skill');
+        $opportunity?->loadMissing('requirements', 'skills.skill');
+
+        $freshProfileSnapshot = [
+            'fingerprint' => $this->fingerprints->profile(ProfileSnapshot::fromCandidateProfile($profile)),
+            'data' => ProfileSnapshot::fromCandidateProfile($profile)->toCanonicalArray(),
+            'snapshot_at' => now()->toIso8601String(),
+        ];
+
+        $freshOpportunitySnapshot = $resume->opportunity_snapshot;
+
+        if ($opportunity !== null) {
+            $freshOpportunitySnapshot = [
+                'fingerprint' => $this->fingerprints->opportunity(OpportunitySnapshot::fromJobOpportunity($opportunity)),
+                'data' => OpportunitySnapshot::fromJobOpportunity($opportunity)->toCanonicalArray(),
+                'snapshot_at' => now()->toIso8601String(),
+            ];
+        }
+
         $resume->update([
             'content' => $this->serializeContent($content),
             'version_no' => $resume->version_no + 1,
+            'profile_snapshot' => $freshProfileSnapshot,
+            'opportunity_snapshot' => $freshOpportunitySnapshot,
         ]);
 
         return $resume->fresh();

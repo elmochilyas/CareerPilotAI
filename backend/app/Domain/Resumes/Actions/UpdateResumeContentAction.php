@@ -2,6 +2,9 @@
 
 namespace App\Domain\Resumes\Actions;
 
+use App\Domain\Matching\Services\FingerprintService;
+use App\Domain\Matching\Services\OpportunitySnapshot;
+use App\Domain\Matching\Services\ProfileSnapshot;
 use App\Domain\Resumes\Data\ResumeContentData;
 use App\Domain\Resumes\Data\ResumeItemData;
 use App\Domain\Resumes\Data\ResumeSectionData;
@@ -13,6 +16,10 @@ use Illuminate\Validation\ValidationException;
 
 final readonly class UpdateResumeContentAction
 {
+    public function __construct(
+        private readonly FingerprintService $fingerprints,
+    ) {}
+
     public function execute(Resume $resume, array $content, array $proposalDecisions = []): Resume
     {
         if ($resume->status !== ResumeStatus::Draft) {
@@ -57,7 +64,31 @@ final readonly class UpdateResumeContentAction
                 ]);
             }
 
-            $resume->update(['content' => $stored, 'version_no' => $resume->version_no + 1]);
+            $resume->loadMissing(['candidateProfile', 'opportunity']);
+            $profile = $resume->candidateProfile;
+            $opportunity = $resume->opportunity;
+
+            $profile->loadMissing('items', 'candidateSkills.skill');
+            $opportunity?->loadMissing('requirements', 'skills.skill');
+
+            $freshProfileSnapshot = [
+                'fingerprint' => $this->fingerprints->profile(ProfileSnapshot::fromCandidateProfile($profile)),
+                'data' => ProfileSnapshot::fromCandidateProfile($profile)->toCanonicalArray(),
+                'snapshot_at' => now()->toIso8601String(),
+            ];
+
+            $freshOpportunitySnapshot = $opportunity !== null ? [
+                'fingerprint' => $this->fingerprints->opportunity(OpportunitySnapshot::fromJobOpportunity($opportunity)),
+                'data' => OpportunitySnapshot::fromJobOpportunity($opportunity)->toCanonicalArray(),
+                'snapshot_at' => now()->toIso8601String(),
+            ] : $resume->opportunity_snapshot;
+
+            $resume->update([
+                'content' => $stored,
+                'version_no' => $resume->version_no + 1,
+                'profile_snapshot' => $freshProfileSnapshot,
+                'opportunity_snapshot' => $freshOpportunitySnapshot,
+            ]);
 
             return $resume->fresh()->load('proposals');
         });

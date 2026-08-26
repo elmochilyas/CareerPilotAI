@@ -15,7 +15,7 @@ final readonly class ListResumesAction
     ): LengthAwarePaginator {
         $query = Resume::query()
             ->where('candidate_profile_id', $profile->id)
-            ->with(['opportunity']);
+            ->with(['opportunity', 'candidateProfile']);
 
         if ($status !== null) {
             $query->where('status', $status);
@@ -26,6 +26,7 @@ final readonly class ListResumesAction
         }
 
         return $query
+            ->orderByDesc('version_no')
             ->orderByDesc('updated_at')
             ->paginate(15);
     }
