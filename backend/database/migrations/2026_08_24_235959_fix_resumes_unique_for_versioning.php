@@ -33,7 +33,22 @@ return new class extends Migration
                 $table->index(['candidate_profile_id', 'job_opportunity_id'], 'resumes_candidate_opportunity_index');
             });
         } else {
-            // For sqlite (testing), just ensure index exists
+            // For sqlite (testing), drop the global unique so versioning can be tested.
+            // SQLite stores the unique as an index; dropping it recreates the table.
+            try {
+                Schema::table('resumes', function (Blueprint $table): void {
+                    $table->dropUnique('resumes_job_opportunity_id_unique');
+                });
+            } catch (Throwable $e) {
+                // Fallback: raw index name may differ on sqlite – try without name
+                try {
+                    Schema::table('resumes', function (Blueprint $table): void {
+                        $table->dropUnique(['job_opportunity_id']);
+                    });
+                } catch (Throwable $e2) {
+                    // Unique may already be absent – ignore
+                }
+            }
             try {
                 Schema::table('resumes', function (Blueprint $table): void {
                     $table->index('job_opportunity_id');
@@ -65,6 +80,21 @@ return new class extends Migration
                 });
             } catch (Throwable $e) {
                 // ignore
+            }
+        } else {
+            try {
+                Schema::table('resumes', function (Blueprint $table): void {
+                    $table->dropIndex('resumes_job_opportunity_id_index');
+                    $table->dropIndex('resumes_candidate_opportunity_index');
+                });
+            } catch (Throwable $e) {
+            }
+            // Best-effort re-add unique on sqlite
+            try {
+                Schema::table('resumes', function (Blueprint $table): void {
+                    $table->unique('job_opportunity_id', 'resumes_job_opportunity_id_unique');
+                });
+            } catch (Throwable $e) {
             }
         }
     }
