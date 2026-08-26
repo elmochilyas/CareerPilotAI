@@ -44,10 +44,20 @@ vi.mock('@/features/opportunities/api', () => ({
   deleteIngestion: vi.fn<() => Promise<void>>(() => Promise.resolve()),
 }))
 
-vi.mock('vue-router', () => ({
-  useRouter: () => ({ push: mockPush, replace: mockReplace }),
-  useRoute: () => ({ params: { id: '42' } }),
-}))
+vi.mock('vue-router', async () => {
+  const { h } = await import('vue')
+  return {
+    useRouter: () => ({ push: mockPush, replace: mockReplace }),
+    useRoute: () => ({ params: { id: '42' } }),
+    RouterLink: {
+      name: 'RouterLink',
+      props: ['to'],
+      setup(_: unknown, { slots }: { slots: Record<string, unknown> }) {
+        return () => h('a', slots.default?.() as never)
+      },
+    },
+  }
+})
 
 describe('ProcessingPage', () => {
   beforeEach(() => {
@@ -189,14 +199,11 @@ describe('ProcessingPage', () => {
     expect(buttonText).not.toContain('Retry')
   })
 
-  it('handles back navigation from a cancelled ingestion', async () => {
+  it('handles back navigation from a cancelled ingestion', () => {
     mockIsPending.value = false
     mockIngestion.value = { status: 'cancelled' }
     const wrapper = mount(ProcessingPage)
-    const backButton = wrapper
-      .findAll('button')
-      .find((button) => button.text() === 'Back to opportunities')
-    await backButton!.trigger('click')
-    expect(mockPush).toHaveBeenCalledWith({ name: 'opportunities' })
+    const backLink = wrapper.findComponent({ name: 'RouterLink' })
+    expect(backLink.props('to')).toEqual({ name: 'opportunities' })
   })
 })

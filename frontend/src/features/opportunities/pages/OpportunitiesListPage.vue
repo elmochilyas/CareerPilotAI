@@ -231,6 +231,7 @@ function opportunityRoute(opportunity: JobOpportunity): RouteLocationRaw {
   return { name: 'opportunities-detail', params: { id: opportunity.id } }
 }
 
+// filter: replace to avoid history pollution, pagination: push to allow Back
 function selectFilter(filter: string): void {
   void router.replace({
     query: {
@@ -342,7 +343,7 @@ function retryQueries(): void {
       <section
         v-for="group in statusGroups"
         :key="group.label"
-        aria-labelledby="`group-${group.label}`"
+        :aria-labelledby="`group-${group.label}`"
       >
         <h2
           :id="`group-${group.label}`"

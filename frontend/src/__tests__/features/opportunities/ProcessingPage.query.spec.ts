@@ -26,16 +26,26 @@ vi.mock('@/features/opportunities/api', () => ({
   deleteIngestion: mocks.deleteIngestion,
 }))
 
-vi.mock('vue-router', () => ({
-  useRouter: () => ({ push: mocks.push, replace: mocks.replace }),
-  useRoute: () => ({
-    params: {
-      get id() {
-        return mocks.routeId
+vi.mock('vue-router', async () => {
+  const { defineComponent, h } = await import('vue')
+  return {
+    RouterLink: defineComponent({
+      name: 'RouterLink',
+      props: ['to'],
+      setup(_, { slots }) {
+        return () => h('a', slots.default?.())
       },
-    },
-  }),
-}))
+    }),
+    useRouter: () => ({ push: mocks.push, replace: mocks.replace }),
+    useRoute: () => ({
+      params: {
+        get id() {
+          return mocks.routeId
+        },
+      },
+    }),
+  }
+})
 
 vi.mock('@/api/client', () => ({
   extractProblemDetail: vi.fn<() => null>(() => null),
@@ -150,7 +160,7 @@ describe('ProcessingPage with Vue Query', () => {
 
     await mountPage()
 
-    expect(mocks.push).toHaveBeenCalledWith({
+    expect(mocks.replace).toHaveBeenCalledWith({
       name: 'opportunities-review',
       params: { id: 42 },
     })

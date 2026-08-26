@@ -40,7 +40,12 @@ class JobAnalysisAgent implements Agent, HasStructuredOutput
             .'   qualifications or requirements section directly supports that classification. '
             .'6. Preserve required versus preferred classifications exactly as stated. '
             .'7. Do not duplicate the same source statement across several unrelated categories. '
-            .'8. Every extracted item must include concise, meaningful source evidence. '
+            .'8. Source evidence (the `source` field on every array item that has one): MUST contain an exact, verbatim excerpt copied character-for-character from the job description text inside <job_description> tags that directly supports that specific item. '
+            .'The excerpt must be a real sentence or fragment from the description — copy it exactly, do not paraphrase, summarize, or invent it. Use the same language as the source text and keep it 300 characters or fewer. '
+            .'The excerpt must be specific to THIS item; do NOT reuse the same heading for every item in a list. '
+            ."NEVER use a generic section heading or category name as the source. Forbidden examples (always rejected): 'Main Tasks', 'Missions principales', 'Missions', 'Responsibilities', 'Requirements', 'Profil recherché', 'Bonus', 'Avantages', 'Expérience', or similar labels. "
+            .'If no direct supporting quote exists for an item, return null — do not invent a quote. '
+            ."Good example: item { text: 'Développer des APIs avec Symfony' } → source: 'Développement et maintenance d’APIs performantes avec Symfony 6...'. Bad example (forbidden): source = 'Missions principales' (generic heading). "
             .'9. Contract type: return null unless the text explicitly states one of: '
             .'full-time, part-time, contract, internship, freelance. '
             ."--- END CRITICAL RULES ---\n"
@@ -74,47 +79,47 @@ class JobAnalysisAgent implements Agent, HasStructuredOutput
                 'relocation_required' => $job->boolean()->nullable()->required(),
                 'responsibilities' => $job->array()->items($job->object(fn (JsonSchema $item) => [
                     'text' => $item->string()->required(),
-                    'source' => $item->string()->required(),
+                    'source' => $item->string()->nullable()->required(),
                 ]))->required(),
                 'required_experience' => $job->array()->items($job->object(fn (JsonSchema $item) => [
                     'summary' => $item->string()->required(),
                     'years' => $item->integer()->nullable()->required(),
-                    'source' => $item->string()->required(),
+                    'source' => $item->string()->nullable()->required(),
                 ]))->required(),
                 'preferred_experience' => $job->array()->items($job->object(fn (JsonSchema $item) => [
                     'summary' => $item->string()->required(),
                     'years' => $item->integer()->nullable()->required(),
-                    'source' => $item->string()->required(),
+                    'source' => $item->string()->nullable()->required(),
                 ]))->required(),
                 'education_requirements' => $job->array()->items($job->object(fn (JsonSchema $item) => [
                     'degree' => $item->string()->required(),
                     'field' => $item->string()->nullable()->required(),
                     'required' => $item->boolean()->required(),
                     'equivalent_experience' => $item->string()->nullable()->required(),
-                    'source' => $item->string()->required(),
+                    'source' => $item->string()->nullable()->required(),
                 ]))->required(),
                 'required_skills' => $job->array()->items($job->object(fn (JsonSchema $item) => [
                     'label' => $item->string()->required(),
                     'proficiency' => $item->string()->nullable()->required(),
                     'years_experience' => $item->integer()->nullable()->required(),
-                    'source' => $item->string()->required(),
+                    'source' => $item->string()->nullable()->required(),
                 ]))->required(),
                 'preferred_skills' => $job->array()->items($job->object(fn (JsonSchema $item) => [
                     'label' => $item->string()->required(),
                     'proficiency' => $item->string()->nullable()->required(),
                     'years_experience' => $item->integer()->nullable()->required(),
-                    'source' => $item->string()->required(),
+                    'source' => $item->string()->nullable()->required(),
                 ]))->required(),
                 'languages' => $job->array()->items($job->object(fn (JsonSchema $item) => [
                     'language' => $item->string()->required(),
                     'required' => $item->boolean()->required(),
                     'proficiency' => $item->string()->nullable()->required(),
-                    'source' => $item->string()->required(),
+                    'source' => $item->string()->nullable()->required(),
                 ]))->required(),
                 'certifications' => $job->array()->items($job->object(fn (JsonSchema $item) => [
                     'name' => $item->string()->required(),
                     'required' => $item->boolean()->required(),
-                    'source' => $item->string()->required(),
+                    'source' => $item->string()->nullable()->required(),
                 ]))->required(),
                 'compensation' => $job->object(fn (JsonSchema $compensation) => [
                     'salary_min' => $compensation->number()->nullable()->required(),

@@ -35,23 +35,24 @@ class JobAnalysisSchemaValidator
         }
 
         $suggestions = [];
+        $warnings = $result->warnings;
         $schemaVersion = Config::string('job-ingestion.analysis_schema_version', '1.0.0');
 
         $suggestions = array_merge($suggestions, $this->mapOverviewSuggestions($job, $schemaVersion));
         $suggestions = array_merge($suggestions, $this->mapWorkDetailsSuggestions($job, $schemaVersion));
-        $suggestions = array_merge($suggestions, $this->mapResponsibilitiesSuggestions($job, $schemaVersion));
-        $suggestions = array_merge($suggestions, $this->mapExperienceSuggestions($job, $schemaVersion));
-        $suggestions = array_merge($suggestions, $this->mapEducationSuggestions($job, $schemaVersion));
-        $suggestions = array_merge($suggestions, $this->mapSkillSuggestions($job, 'required_skills', 'required_skills', SuggestionType::RequiredSkill, $schemaVersion));
-        $suggestions = array_merge($suggestions, $this->mapSkillSuggestions($job, 'preferred_skills', 'preferred_skills', SuggestionType::PreferredSkill, $schemaVersion));
-        $suggestions = array_merge($suggestions, $this->mapLanguageSuggestions($job, $schemaVersion));
-        $suggestions = array_merge($suggestions, $this->mapCertificationSuggestions($job, $schemaVersion));
+        $suggestions = array_merge($suggestions, $this->mapResponsibilitiesSuggestions($job, $schemaVersion, $warnings));
+        $suggestions = array_merge($suggestions, $this->mapExperienceSuggestions($job, $schemaVersion, $warnings));
+        $suggestions = array_merge($suggestions, $this->mapEducationSuggestions($job, $schemaVersion, $warnings));
+        $suggestions = array_merge($suggestions, $this->mapSkillSuggestions($job, 'required_skills', 'required_skills', SuggestionType::RequiredSkill, $schemaVersion, $warnings));
+        $suggestions = array_merge($suggestions, $this->mapSkillSuggestions($job, 'preferred_skills', 'preferred_skills', SuggestionType::PreferredSkill, $schemaVersion, $warnings));
+        $suggestions = array_merge($suggestions, $this->mapLanguageSuggestions($job, $schemaVersion, $warnings));
+        $suggestions = array_merge($suggestions, $this->mapCertificationSuggestions($job, $schemaVersion, $warnings));
         $suggestions = array_merge($suggestions, $this->mapCompensationSuggestions($job, $schemaVersion));
         $suggestions = array_merge($suggestions, $this->mapDateSuggestions($job, $schemaVersion));
 
         return [
             'suggestions' => $suggestions,
-            'warnings' => $result->warnings,
+            'warnings' => $warnings,
         ];
     }
 
@@ -132,6 +133,72 @@ class JobAnalysisSchemaValidator
         ];
     }
 
+    /**
+     * Normalize a raw source evidence string coming from the LLM.
+     * Returns null for empty, overly long, or degenerate values.
+     */
+    private function normalizeEvidence(mixed $value): ?string
+    {
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $trimmed = trim($value);
+
+        if ($trimmed === '') {
+            return null;
+        }
+
+        // Strip trailing colons / dashes / bullets that commonly appear with headings
+        $trimmed = rtrim($trimmed, " :\t-–—•");
+        $trimmed = trim($trimmed);
+
+        if ($trimmed === '') {
+            return null;
+        }
+
+        // Hard cap — prevents storing an entire job description as evidence.
+        if (mb_strlen($trimmed) > 500) {
+            return null;
+        }
+
+        return $trimmed;
+    }
+
+    /**
+     * Detect whether a group of evidences is degenerate (all identical short headings).
+     * E.g. every responsibility has "Missions principales" — should be discarded.
+     */
+    private function isDegenerateEvidenceGroup(array $evidences): bool
+    {
+        $nonNull = array_values(array_filter($evidences, fn (?string $v) => $v !== null && trim($v) !== ''));
+
+        if (count($nonNull) < 2) {
+            return false;
+        }
+
+        $first = mb_strtolower(trim($nonNull[0]));
+
+        foreach ($nonNull as $ev) {
+            if (mb_strtolower(trim((string) $ev)) !== $first) {
+                return false;
+            }
+        }
+
+        $sample = trim($nonNull[0]);
+
+        // Headings are short (< 40 chars) and contain no sentence-ending punctuation.
+        if (mb_strlen($sample) >= 40) {
+            return false;
+        }
+
+        if (preg_match('/[.!?]/u', $sample)) {
+            return false;
+        }
+
+        return true;
+    }
+
     private function mapOverviewSuggestions(array $job, string $schemaVersion): array
     {
         $suggestions = [];
@@ -151,7 +218,7 @@ class JobAnalysisSchemaValidator
                     groupKey: $group,
                     field: $field,
                     extractedValue: ['value' => $job[$key]],
-                    sourceEvidence: $job['source'] ?? null,
+                    sourceEvidence: $this->normalizeEvidence($job['source'] ?? null),
                     schemaVersion: $schemaVersion,
                 );
             }
@@ -178,7 +245,7 @@ class JobAnalysisSchemaValidator
                         groupKey: 'work_details',
                         field: $key,
                         extractedValue: ['value' => $location[$key]],
-                        sourceEvidence: $location['source'] ?? null,
+                        sourceEvidence: $this->normalizeEvidence($location['source'] ?? null),
                         schemaVersion: $schemaVersion,
                     );
                 }
@@ -199,7 +266,7 @@ class JobAnalysisSchemaValidator
                     groupKey: 'work_details',
                     field: $key,
                     extractedValue: ['value' => $job[$key]],
-                    sourceEvidence: $job['source'] ?? null,
+                    sourceEvidence: $this->normalizeEvidence($job['source'] ?? null),
                     schemaVersion: $schemaVersion,
                 );
             }
@@ -222,30 +289,48 @@ class JobAnalysisSchemaValidator
         return $suggestions;
     }
 
-    private function mapResponsibilitiesSuggestions(array $job, string $schemaVersion): array
+    private function mapResponsibilitiesSuggestions(array $job, string $schemaVersion, array &$warnings): array
     {
-        $suggestions = [];
-        $responsibilities = $job['responsibilities'] ?? [];
+        $raw = $job['responsibilities'] ?? [];
 
-        if (is_array($responsibilities)) {
-            foreach ($responsibilities as $item) {
-                if (is_array($item) && JobValueMeaningfulness::isMeaningfulResponsibility($item)) {
-                    $suggestions[] = new SuggestionData(
-                        type: SuggestionType::Responsibility->value,
-                        groupKey: 'responsibilities',
-                        field: null,
-                        extractedValue: ['text' => $item['text']],
-                        sourceEvidence: $item['source'] ?? null,
-                        schemaVersion: $schemaVersion,
-                    );
-                }
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $filtered = [];
+        foreach ($raw as $item) {
+            if (is_array($item) && JobValueMeaningfulness::isMeaningfulResponsibility($item)) {
+                $filtered[] = $item;
             }
+        }
+
+        if ($filtered === []) {
+            return [];
+        }
+
+        $evidences = array_map(fn (array $item) => $this->normalizeEvidence($item['source'] ?? null), $filtered);
+
+        if ($this->isDegenerateEvidenceGroup($evidences)) {
+            $evidences = array_fill(0, count($evidences), null);
+            $warnings[] = 'responsibilities: source evidence was generic section labels; removed';
+        }
+
+        $suggestions = [];
+        foreach ($filtered as $idx => $item) {
+            $suggestions[] = new SuggestionData(
+                type: SuggestionType::Responsibility->value,
+                groupKey: 'responsibilities',
+                field: null,
+                extractedValue: ['text' => $item['text']],
+                sourceEvidence: $evidences[$idx],
+                schemaVersion: $schemaVersion,
+            );
         }
 
         return $suggestions;
     }
 
-    private function mapExperienceSuggestions(array $job, string $schemaVersion): array
+    private function mapExperienceSuggestions(array $job, string $schemaVersion, array &$warnings): array
     {
         $suggestions = [];
 
@@ -255,113 +340,201 @@ class JobAnalysisSchemaValidator
                 continue;
             }
 
+            $filtered = [];
+            foreach ($items as $item) {
+                if (is_array($item) && JobValueMeaningfulness::isMeaningfulExperience($item)) {
+                    $filtered[] = $item;
+                }
+            }
+
+            if ($filtered === []) {
+                continue;
+            }
+
+            $evidences = array_map(fn (array $item) => $this->normalizeEvidence($item['source'] ?? null), $filtered);
+
+            if ($this->isDegenerateEvidenceGroup($evidences)) {
+                $evidences = array_fill(0, count($evidences), null);
+                $warnings[] = "{$key}: source evidence was generic section labels; removed";
+            }
+
             $type = $key === 'required_experience' ? SuggestionType::RequiredExperience : SuggestionType::PreferredExperience;
             $classification = $key === 'required_experience' ? 'required' : 'preferred';
 
-            foreach ($items as $item) {
-                if (is_array($item) && JobValueMeaningfulness::isMeaningfulExperience($item)) {
-                    $suggestions[] = new SuggestionData(
-                        type: $type->value,
-                        groupKey: 'experience',
-                        field: $classification,
-                        extractedValue: $item,
-                        sourceEvidence: $item['source'] ?? null,
-                        schemaVersion: $schemaVersion,
-                    );
-                }
+            foreach ($filtered as $idx => $item) {
+                $suggestions[] = new SuggestionData(
+                    type: $type->value,
+                    groupKey: 'experience',
+                    field: $classification,
+                    extractedValue: $item,
+                    sourceEvidence: $evidences[$idx],
+                    schemaVersion: $schemaVersion,
+                );
             }
         }
 
         return $suggestions;
     }
 
-    private function mapEducationSuggestions(array $job, string $schemaVersion): array
+    private function mapEducationSuggestions(array $job, string $schemaVersion, array &$warnings): array
     {
-        $suggestions = [];
         $items = $job['education_requirements'] ?? [];
 
-        if (is_array($items)) {
-            foreach ($items as $item) {
-                if (is_array($item) && JobValueMeaningfulness::isMeaningfulEducation($item)) {
-                    $suggestions[] = new SuggestionData(
-                        type: SuggestionType::Education->value,
-                        groupKey: 'education',
-                        field: null,
-                        extractedValue: $item,
-                        sourceEvidence: $item['source'] ?? null,
-                        schemaVersion: $schemaVersion,
-                    );
-                }
+        if (! is_array($items)) {
+            return [];
+        }
+
+        $filtered = [];
+        foreach ($items as $item) {
+            if (is_array($item) && JobValueMeaningfulness::isMeaningfulEducation($item)) {
+                $filtered[] = $item;
             }
+        }
+
+        if ($filtered === []) {
+            return [];
+        }
+
+        $evidences = array_map(fn (array $item) => $this->normalizeEvidence($item['source'] ?? null), $filtered);
+
+        if ($this->isDegenerateEvidenceGroup($evidences)) {
+            $evidences = array_fill(0, count($evidences), null);
+            $warnings[] = 'education_requirements: source evidence was generic section labels; removed';
+        }
+
+        $suggestions = [];
+        foreach ($filtered as $idx => $item) {
+            $suggestions[] = new SuggestionData(
+                type: SuggestionType::Education->value,
+                groupKey: 'education',
+                field: null,
+                extractedValue: $item,
+                sourceEvidence: $evidences[$idx],
+                schemaVersion: $schemaVersion,
+            );
         }
 
         return $suggestions;
     }
 
-    private function mapSkillSuggestions(array $job, string $jobKey, string $groupKey, SuggestionType $type, string $schemaVersion): array
+    private function mapSkillSuggestions(array $job, string $jobKey, string $groupKey, SuggestionType $type, string $schemaVersion, array &$warnings): array
     {
-        $suggestions = [];
         $items = $job[$jobKey] ?? [];
 
-        if (is_array($items)) {
-            foreach ($items as $item) {
-                if (is_array($item) && JobValueMeaningfulness::isMeaningfulSkill($item)) {
-                    $suggestions[] = new SuggestionData(
-                        type: $type->value,
-                        groupKey: $groupKey,
-                        field: null,
-                        extractedValue: $item,
-                        sourceEvidence: $item['source'] ?? null,
-                        schemaVersion: $schemaVersion,
-                    );
-                }
+        if (! is_array($items)) {
+            return [];
+        }
+
+        $filtered = [];
+        foreach ($items as $item) {
+            if (is_array($item) && JobValueMeaningfulness::isMeaningfulSkill($item)) {
+                $filtered[] = $item;
             }
+        }
+
+        if ($filtered === []) {
+            return [];
+        }
+
+        $evidences = array_map(fn (array $item) => $this->normalizeEvidence($item['source'] ?? null), $filtered);
+
+        if ($this->isDegenerateEvidenceGroup($evidences)) {
+            $evidences = array_fill(0, count($evidences), null);
+            $warnings[] = "{$jobKey}: source evidence was generic section labels; removed";
+        }
+
+        $suggestions = [];
+        foreach ($filtered as $idx => $item) {
+            $suggestions[] = new SuggestionData(
+                type: $type->value,
+                groupKey: $groupKey,
+                field: null,
+                extractedValue: $item,
+                sourceEvidence: $evidences[$idx],
+                schemaVersion: $schemaVersion,
+            );
         }
 
         return $suggestions;
     }
 
-    private function mapLanguageSuggestions(array $job, string $schemaVersion): array
+    private function mapLanguageSuggestions(array $job, string $schemaVersion, array &$warnings): array
     {
-        $suggestions = [];
         $items = $job['languages'] ?? [];
 
-        if (is_array($items)) {
-            foreach ($items as $item) {
-                if (is_array($item) && JobValueMeaningfulness::isMeaningfulLanguage($item)) {
-                    $suggestions[] = new SuggestionData(
-                        type: SuggestionType::Language->value,
-                        groupKey: 'languages_certifications',
-                        field: null,
-                        extractedValue: $item,
-                        sourceEvidence: $item['source'] ?? null,
-                        schemaVersion: $schemaVersion,
-                    );
-                }
+        if (! is_array($items)) {
+            return [];
+        }
+
+        $filtered = [];
+        foreach ($items as $item) {
+            if (is_array($item) && JobValueMeaningfulness::isMeaningfulLanguage($item)) {
+                $filtered[] = $item;
             }
+        }
+
+        if ($filtered === []) {
+            return [];
+        }
+
+        $evidences = array_map(fn (array $item) => $this->normalizeEvidence($item['source'] ?? null), $filtered);
+
+        if ($this->isDegenerateEvidenceGroup($evidences)) {
+            $evidences = array_fill(0, count($evidences), null);
+            $warnings[] = 'languages: source evidence was generic section labels; removed';
+        }
+
+        $suggestions = [];
+        foreach ($filtered as $idx => $item) {
+            $suggestions[] = new SuggestionData(
+                type: SuggestionType::Language->value,
+                groupKey: 'languages_certifications',
+                field: null,
+                extractedValue: $item,
+                sourceEvidence: $evidences[$idx],
+                schemaVersion: $schemaVersion,
+            );
         }
 
         return $suggestions;
     }
 
-    private function mapCertificationSuggestions(array $job, string $schemaVersion): array
+    private function mapCertificationSuggestions(array $job, string $schemaVersion, array &$warnings): array
     {
-        $suggestions = [];
         $items = $job['certifications'] ?? [];
 
-        if (is_array($items)) {
-            foreach ($items as $item) {
-                if (is_array($item) && JobValueMeaningfulness::isMeaningfulCertification($item)) {
-                    $suggestions[] = new SuggestionData(
-                        type: SuggestionType::Certification->value,
-                        groupKey: 'languages_certifications',
-                        field: null,
-                        extractedValue: $item,
-                        sourceEvidence: $item['source'] ?? null,
-                        schemaVersion: $schemaVersion,
-                    );
-                }
+        if (! is_array($items)) {
+            return [];
+        }
+
+        $filtered = [];
+        foreach ($items as $item) {
+            if (is_array($item) && JobValueMeaningfulness::isMeaningfulCertification($item)) {
+                $filtered[] = $item;
             }
+        }
+
+        if ($filtered === []) {
+            return [];
+        }
+
+        $evidences = array_map(fn (array $item) => $this->normalizeEvidence($item['source'] ?? null), $filtered);
+
+        if ($this->isDegenerateEvidenceGroup($evidences)) {
+            $evidences = array_fill(0, count($evidences), null);
+            $warnings[] = 'certifications: source evidence was generic section labels; removed';
+        }
+
+        $suggestions = [];
+        foreach ($filtered as $idx => $item) {
+            $suggestions[] = new SuggestionData(
+                type: SuggestionType::Certification->value,
+                groupKey: 'languages_certifications',
+                field: null,
+                extractedValue: $item,
+                sourceEvidence: $evidences[$idx],
+                schemaVersion: $schemaVersion,
+            );
         }
 
         return $suggestions;

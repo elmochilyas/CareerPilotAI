@@ -2,6 +2,7 @@
 import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { extractProblemDetail } from '@/api/client'
+import BackButton from '@/components/ui/BackButton.vue'
 import Button from '@/components/ui/Button.vue'
 import Input from '@/components/ui/Input.vue'
 import Textarea from '@/components/ui/Textarea.vue'
@@ -78,7 +79,7 @@ async function submit(): Promise<void> {
       personal_label: personalLabel.value.trim() || undefined,
     })
 
-    router.push(`/opportunities/ingestions/${result.id}`)
+    router.push({ name: 'opportunities-processing', params: { id: result.id } })
   } catch (err) {
     const detail = extractProblemDetail(err as never)
 
@@ -105,12 +106,18 @@ function navigateToExisting(): void {
   if (!duplicateInfo.value) return
 
   if (duplicateInfo.value.opportunityId) {
-    router.push(`/opportunities/${duplicateInfo.value.opportunityId}`)
+    router.push({ name: 'opportunities-detail', params: { id: duplicateInfo.value.opportunityId } })
     return
   }
 
-  const suffix = duplicateInfo.value.status === 'review_ready' ? '/review' : ''
-  router.push(`/opportunities/ingestions/${duplicateInfo.value.ingestionId}${suffix}`)
+  if (duplicateInfo.value.status === 'review_ready') {
+    router.push({ name: 'opportunities-review', params: { id: duplicateInfo.value.ingestionId } })
+  } else {
+    router.push({
+      name: 'opportunities-processing',
+      params: { id: duplicateInfo.value.ingestionId },
+    })
+  }
 }
 
 async function startDifferentImport(): Promise<void> {
@@ -127,6 +134,8 @@ async function startDifferentImport(): Promise<void> {
 
 <template>
   <div class="mx-auto max-w-2xl space-y-6">
+    <BackButton :to="{ name: 'opportunities' }" label="Back to opportunities" class="mb-4" />
+
     <PageHeader title="Import job description" />
 
     <Alert variant="info">
@@ -210,9 +219,6 @@ async function startDifferentImport(): Promise<void> {
       <div class="flex gap-3">
         <Button type="submit" :disabled="!canSubmit" :loading="isSubmitting">
           {{ isSubmitting ? 'Submitting…' : 'Start analysis' }}
-        </Button>
-        <Button variant="outline" @click="router.push({ name: 'opportunities' })">
-          Back to opportunities
         </Button>
       </div>
     </form>

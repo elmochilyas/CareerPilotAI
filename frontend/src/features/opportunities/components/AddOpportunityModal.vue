@@ -99,7 +99,7 @@ async function submit(): Promise<void> {
     emit('created')
     emit('close')
     await nextTick()
-    router.push(`/opportunities/ingestions/${result.id}`)
+    router.push({ name: 'opportunities-processing', params: { id: result.id } })
   } catch (err) {
     const detail = extractProblemDetail(err as never)
 
@@ -128,12 +128,18 @@ function navigateToExisting(): void {
   emit('close')
 
   if (duplicateInfo.value.opportunityId) {
-    router.push(`/opportunities/${duplicateInfo.value.opportunityId}`)
+    router.push({ name: 'opportunities-detail', params: { id: duplicateInfo.value.opportunityId } })
     return
   }
 
-  const suffix = duplicateInfo.value.status === 'review_ready' ? '/review' : ''
-  router.push(`/opportunities/ingestions/${duplicateInfo.value.ingestionId}${suffix}`)
+  if (duplicateInfo.value.status === 'review_ready') {
+    router.push({ name: 'opportunities-review', params: { id: duplicateInfo.value.ingestionId } })
+  } else {
+    router.push({
+      name: 'opportunities-processing',
+      params: { id: duplicateInfo.value.ingestionId },
+    })
+  }
 }
 
 async function startDifferentImport(): Promise<void> {

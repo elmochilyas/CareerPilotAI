@@ -220,46 +220,50 @@ describe('OpportunityDetailPage', () => {
       'Health insurance',
       'Permanent',
       'Occasional on-call rotation.',
-      'Open source',
+      'Original posting',
+      'Apply on company site',
     ]) {
       expect(wrapper.text()).toContain(text)
     }
   })
 
-  it('renders the quick-facts rail blocks', async () => {
+  it('renders unified logistics without duplicated Quick Facts rail', async () => {
     const wrapper = await mountPage()
 
+    // At-a-glance band and JD footer cover all logistics in a single home
     for (const text of [
-      'Work details',
-      'Location',
-      'Work mode',
-      'Contract type',
+      'Salary',
       'Seniority',
       'Working hours',
-      'Relocation required',
-      'Compensation',
-      'Salary',
-      'Compensation note',
+      'Employment duration',
       'Benefits',
-      'Dates',
       'Published',
       'Application deadline',
       'Expected start',
-      'Employment duration',
-      'Source',
+      'Travel required',
+      'Relocation required',
       'Saved',
       'Original posting',
     ]) {
       expect(wrapper.text()).toContain(text)
     }
+    // Rail headings are removed — content is unified, not in a sidebar
+    expect(wrapper.text()).not.toContain('Quick facts')
+    expect(wrapper.text()).not.toContain('Work details')
+    expect(wrapper.text()).not.toContain('Compensation')
+    expect(wrapper.find('[aria-label="Quick facts"]').exists()).toBe(false)
+    // Identity duplication removed: location/work mode/contract appear only as header chips
+    const headerChips = wrapper.text()
+    // Header chips contain these once — not duplicated with rail labels
+    expect(headerChips).toContain('Île-de-France, France')
   })
 
-  it('renders the design-pass header and rail eyebrows', async () => {
+  it('renders the design-pass header eyebrows', async () => {
     const wrapper = await mountPage()
 
     expect(wrapper.text()).toContain('Saved opportunity')
-    expect(wrapper.text()).toContain('Quick facts')
     expect(wrapper.text()).toContain('Top choice')
+    expect(wrapper.text()).not.toContain('Quick facts')
   })
 
   it('links the match-brief CTA to the opportunities-match route', async () => {
@@ -306,21 +310,22 @@ describe('OpportunityDetailPage', () => {
     expect(wrapper.text()).not.toContain('Delete')
   })
 
-  it('shows the match brief section before job details', async () => {
+  it('shows job description before match brief', async () => {
     const wrapper = await mountPage()
 
     const text = wrapper.text()
+    const roleIndex = text.indexOf('About the role')
     const matchBriefIndex = text.indexOf('Match Brief')
-    const overviewIndex = text.indexOf('Overview')
+    expect(roleIndex).toBeGreaterThanOrEqual(0)
     expect(matchBriefIndex).toBeGreaterThanOrEqual(0)
-    expect(overviewIndex).toBeGreaterThanOrEqual(0)
-    expect(matchBriefIndex).toBeLessThan(overviewIndex)
+    expect(roleIndex).toBeLessThan(matchBriefIndex)
   })
 
-  it('does not show a "View match brief" CTA in the Quick Facts sidebar', async () => {
+  it('does not render a Quick Facts sidebar', async () => {
     const wrapper = await mountPage()
 
-    const sidebar = wrapper.find('[aria-label="Quick facts"]')
-    expect(sidebar.text()).not.toContain('View match brief')
+    expect(wrapper.find('[aria-label="Quick facts"]').exists()).toBe(false)
+    // No duplicated logistics labels from the old rail
+    expect(wrapper.text()).not.toContain('Work details')
   })
 })
