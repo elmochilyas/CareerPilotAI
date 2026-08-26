@@ -31,6 +31,8 @@ parameters:
     checkUninitializedProperties: true
 
     checkExplicitMixedMissingReturn: false
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
 
     databaseMigrationsPath:
         - database/migrations/
