@@ -418,7 +418,7 @@ it('accepts a verified proposal through the review endpoint', function () {
         ->and($skill->evidence[0]['value'])->toBe('https://example.com/cert');
 
     Queue::assertPushed(ObserveClarificationStalenessJob::class, fn ($job) => $job->analysisId === $this->analysis->id);
-    expect(ClarificationAuditEvent::count())->toBe(1);
+    expect(ClarificationAuditEvent::where('event', 'proposal_accepted')->count())->toBe(1);
 });
 
 it('edits the years of experience through the review endpoint', function () {

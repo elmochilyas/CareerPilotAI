@@ -30,7 +30,9 @@ class ResumeController extends Controller
         $profile = $request->user()->candidateProfile;
 
         $query = Resume::where('candidate_profile_id', $profile->id)
-            ->orderBy('created_at', 'desc');
+            ->with(['opportunity', 'candidateProfile'])
+            ->orderByDesc('version_no')
+            ->orderByDesc('updated_at');
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));

@@ -2,11 +2,12 @@
 
 namespace App\Http\Resources\Api\V1;
 
+use App\Domain\Matching\Services\StalenessService;
 use App\Domain\Resumes\Services\ResumeWorkspacePresenter;
-use App\Domain\Resumes\Services\TailoringAnalyzer;
 use App\Models\Resume;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Log;
 
 /** @mixin Resume */
 class ResumeResource extends JsonResource
@@ -20,15 +21,18 @@ class ResumeResource extends JsonResource
             $this->loadMissing(['candidateProfile', 'opportunity']);
             $opportunity = $this->opportunity;
             if ($opportunity !== null) {
-                $analyzer = app(TailoringAnalyzer::class);
-                $reason = $analyzer->computeStaleness($this->candidateProfile, $opportunity);
-                if ($reason !== 'fresh' && $reason !== 'unknown') {
+                $staleness = app(StalenessService::class);
+                $reason = $staleness->resumeStaleness($this->resource, $this->candidateProfile, $opportunity);
+                if ($reason !== 'fresh') {
                     $stale = true;
                     $staleReason = $reason;
                 }
             }
-        } catch (\Throwable) {
-            // Never break resource on staleness failure
+        } catch (\Throwable $e) {
+            Log::warning('Resume staleness computation failed', [
+                'resume_id' => $this->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
             $stale = false;
             $staleReason = null;
         }

@@ -8,7 +8,7 @@
 - Éviter le versionnage tant que les exigences produit ne demandent pas explicitement des versions historiques immuables.
 - Utiliser JSON pour les structures générées par l'IA qui sont lues et écrites comme une seule unité.
 - Normaliser le JSON uniquement lorsqu'un filtrage SQL complexe ou un cycle de vie indépendant devient nécessaire.
-- Utiliser une table `files` partagée pour tous les types de fichiers.
+- Utiliser des entités de stockage dédiées par usage (Option B) au lieu d'une table `files` générique — `cv_documents` pour les imports CV, métadonnées d'artefact sur l'agrégat propriétaire pour les exports CV/candidature (voir `docs/database/README.md` D10). La table `files` générique est dépréciée.
 - Utiliser une analyse de correspondance par profil et opportunité, avec snapshots versionnés immuables et une seule analyse active à la fois.
 - Utiliser un CV ciblé courant par opportunité.
 - Utiliser `application_activities` comme fil d'Ariane de la candidature.
@@ -32,7 +32,7 @@
 - `profile_items`
 - `skills`
 - `candidate_skills`
-- `files` pour les importations CV
+- `cv_documents` pour les importations CV (remplace `files` générique — voir D10)
 - Extraction CV dans `extracted_data`
 - Révision par le candidat avant mise à jour du profil
 
@@ -59,8 +59,8 @@
 ---
 
 ### Phase 3 — CV personnalisés et candidatures
-- `resumes`
-- Fichier CV généré via `files`
+- `resumes` (version_no + fingerprints, unique composite par (profil, opportunité, version) depuis `2026_08_26_...`)
+- Fichier CV généré via artefacts dédiés sur l'agrégat propriétaire (pas `files` générique — `resumes.file_id` sera supprimé en phase Documents)
 - `applications`
 - `application_activities`
 - Une candidature par candidat et opportunité
@@ -74,7 +74,7 @@
 - `learning_roadmaps`
 - `roadmap_items`
 - Rappels via `remind_at` et `reminder_sent_at`
-- Entretiens représentés par `task.type` et `metadata`
+- Entretiens: Option C recommandée (tâche/rappel + table `interviews` dédiée — voir `docs/database/README.md` D11), pas `task.type` générique seul
 
 **Changements OpenSpec associés :** `learning-roadmap`, `tasks-reminders-interviews`
 
@@ -91,7 +91,7 @@
 
 1. `users`
 2. `candidate_profiles`
-3. `files`
+3. `cv_documents` (remplace `files` — `files` dépréciée, voir D10)
 4. `profile_items`
 5. `skills`
 6. `candidate_skills`

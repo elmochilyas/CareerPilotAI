@@ -71,6 +71,58 @@ it('rejects login for suspended account', function () {
     $this->assertGuest();
 });
 
+it('rejects login for disabled account with account_disabled code', function () {
+    User::factory()->disabled()->create([
+        'email' => 'disabled@example.com',
+        'password' => bcrypt('secret123'),
+    ]);
+
+    $response = $this->postJson('/api/v1/auth/login', [
+        'email' => 'disabled@example.com',
+        'password' => 'secret123',
+    ]);
+
+    $response->assertStatus(403);
+    $response->assertJsonPath('code', 'account_disabled');
+    $response->assertJsonPath('status', 403);
+
+    $this->assertGuest();
+});
+
+it('returns generic invalid credentials for wrong password of a disabled account', function () {
+    User::factory()->disabled()->create([
+        'email' => 'disabled@example.com',
+        'password' => bcrypt('secret123'),
+    ]);
+
+    $response = $this->postJson('/api/v1/auth/login', [
+        'email' => 'disabled@example.com',
+        'password' => 'wrong-password',
+    ]);
+
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors('email');
+
+    $this->assertGuest();
+});
+
+it('allows login for active account unchanged', function () {
+    $user = User::factory()->create([
+        'email' => 'active@example.com',
+        'password' => bcrypt('secret123'),
+    ]);
+
+    $response = $this->postJson('/api/v1/auth/login', [
+        'email' => 'active@example.com',
+        'password' => 'secret123',
+    ]);
+
+    $response->assertStatus(200);
+    expect($response->json('data.account_status'))->toBe('active');
+
+    $this->assertAuthenticated();
+});
+
 it('allows login for unverified email and includes email_verified_at as null', function () {
     $user = User::factory()->unverified()->create([
         'email' => 'unverified@example.com',

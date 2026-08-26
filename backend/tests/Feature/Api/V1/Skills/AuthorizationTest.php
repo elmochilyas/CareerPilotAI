@@ -71,3 +71,39 @@ it('returns 404 for cross-user evidence', function () {
 
     $response->assertStatus(404);
 });
+
+it('returns 404 for cross-user evidence update', function () {
+    $response = $this->withToken($this->token)
+        ->patchJson("/api/v1/candidate/skills/{$this->otherSkill->id}/evidence/some-key", [
+            'value' => 'https://example.com/updated',
+        ]);
+
+    $response->assertStatus(404);
+});
+
+it('returns 404 for cross-user evidence removal', function () {
+    $response = $this->withToken($this->token)
+        ->deleteJson("/api/v1/candidate/skills/{$this->otherSkill->id}/evidence/some-key");
+
+    $response->assertStatus(404);
+});
+
+it('allows the owner to update and remove evidence on their own skill', function () {
+    $ownSkill = CandidateSkill::factory()->create([
+        'candidate_profile_id' => $this->profile->id,
+        'skill_id' => $this->skill->id,
+        'evidence' => [['key' => 'e-key-1', 'type' => 'url', 'value' => 'https://example.com/orig', 'label' => 'Repo']],
+    ]);
+
+    $updated = $this->withToken($this->token)
+        ->patchJson("/api/v1/candidate/skills/{$ownSkill->id}/evidence/e-key-1", [
+            'value' => 'https://example.com/updated',
+        ]);
+
+    $updated->assertStatus(200);
+
+    $removed = $this->withToken($this->token)
+        ->deleteJson("/api/v1/candidate/skills/{$ownSkill->id}/evidence/e-key-1");
+
+    $removed->assertStatus(200);
+});

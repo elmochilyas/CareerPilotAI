@@ -17,10 +17,16 @@ class Company extends Model
         'size_band',
         'research',
         'researched_at',
+        'research_status',
+        'research_version',
+        'research_failure_code',
+        'name_normalized',
+        'website_canonical',
     ];
 
     protected $casts = [
         'research' => 'array',
         'researched_at' => 'datetime',
+        'research_version' => 'integer',
     ];
 }

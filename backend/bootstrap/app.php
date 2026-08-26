@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AddRequestId;
 use App\Http\Middleware\ConditionalThrottleRequests;
+use App\Http\Middleware\EnsureActiveAccount;
 use App\Http\Middleware\SecurityHeaders;
 use App\Support\ProblemDetails\ProblemDetailsException;
 use App\Support\ProblemDetails\ProblemDetailsRenderer;
@@ -31,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi();
         $middleware->alias([
             'throttle' => ConditionalThrottleRequests::class,
+            'active.account' => EnsureActiveAccount::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

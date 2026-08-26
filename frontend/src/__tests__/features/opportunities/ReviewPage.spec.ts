@@ -49,10 +49,20 @@ vi.mock('@/features/opportunities/api', () => ({
   confirmIngestion: vi.fn<() => Promise<void>>(() => Promise.resolve({ id: 1 })),
 }))
 
-vi.mock('vue-router', () => ({
-  useRouter: () => ({ push: vi.fn<() => void>(), back: vi.fn<() => void>() }),
-  useRoute: () => ({ params: { id: '1' } }),
-}))
+vi.mock('vue-router', async () => {
+  const { defineComponent, h } = await import('vue')
+  return {
+    RouterLink: defineComponent({
+      name: 'RouterLink',
+      props: ['to'],
+      setup(_, { slots }) {
+        return () => h('a', slots.default?.())
+      },
+    }),
+    useRouter: () => ({ push: vi.fn<() => void>(), back: vi.fn<() => void>() }),
+    useRoute: () => ({ params: { id: '1' } }),
+  }
+})
 
 vi.mock('@/api/client', () => ({
   extractProblemDetail: vi.fn<() => null>(() => null),

@@ -206,3 +206,45 @@ export interface ApiMeta {
   per_page: number
   total: number
 }
+
+export type ResearchStatus = 'not_researched' | 'processing' | 'completed' | 'limited' | 'failed'
+
+export interface ResearchClaim {
+  text: string
+  kind: 'fact' | 'inference' | 'unknown'
+  confidence: 'low' | 'medium' | 'high' | null
+  source_ids: number[]
+}
+
+export interface ResearchSource {
+  id: number
+  url: string
+  title: string | null
+  retrieved_at: string | null
+  source_type: string
+}
+
+export interface CompanyResearchBrief {
+  status: ResearchStatus
+  researched_at: string | null
+  stale: boolean
+  stale_reason: string | null
+  version: number
+  fallback_reason: string | null
+  brief: Record<string, unknown> | null
+  overview: {
+    name: string | null
+    website: string | null
+    industry: string | null
+    headquarters: string | null
+    description: string | null
+  } | null
+  products: ResearchClaim[]
+  technology_context: ResearchClaim[]
+  role_context: ResearchClaim[]
+  recent_information: ResearchClaim[]
+  candidate_preparation: ResearchClaim[]
+  sources: ResearchSource[]
+  generated_at: string | null
+  ai_meta: Record<string, unknown> | null
+}

@@ -2,17 +2,9 @@
 import { computed, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
-import {
-  AlertCircle,
-  ArrowLeft,
-  Check,
-  CheckCircle2,
-  Loader2,
-  RefreshCw,
-  X,
-  XCircle,
-} from '@lucide/vue'
+import { AlertCircle, Check, CheckCircle2, Loader2, RefreshCw, X, XCircle } from '@lucide/vue'
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue'
+import BackButton from '@/components/ui/BackButton.vue'
 import Button from '@/components/ui/Button.vue'
 import { extractProblemDetail } from '@/api/client'
 import {
@@ -194,7 +186,7 @@ watch(
   [() => ingestion.value?.status, ingestionId],
   ([status, id]) => {
     if (status !== 'review_ready' || id === null) return
-    void router.push({ name: 'opportunities-review', params: { id } })
+    void router.replace({ name: 'opportunities-review', params: { id } })
   },
   { immediate: true },
 )
@@ -245,6 +237,8 @@ async function viewConfirmedOpportunity(): Promise<void> {
 
 <template>
   <div class="mx-auto max-w-xl space-y-6">
+    <BackButton :to="{ name: 'opportunities' }" label="Back to opportunities" class="mb-4" />
+
     <div class="flex items-start justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
@@ -263,15 +257,6 @@ async function viewConfirmedOpportunity(): Promise<void> {
       role="alert"
     >
       <p>Invalid ingestion identifier.</p>
-      <Button
-        variant="outline"
-        class="mt-2"
-        size="sm"
-        @click="router.push({ name: 'opportunities' })"
-      >
-        <ArrowLeft class="size-3.5" aria-hidden="true" />
-        Back to opportunities
-      </Button>
     </div>
 
     <!-- Loading -->
@@ -457,9 +442,6 @@ async function viewConfirmedOpportunity(): Promise<void> {
           >
             <RefreshCw class="size-3.5" aria-hidden="true" />
             {{ reanalyzeMutation.isPending.value ? 'Starting analysis...' : 'Reanalyze job' }}
-          </Button>
-          <Button variant="outline" size="sm" @click="router.push({ name: 'opportunities' })">
-            Back to opportunities
           </Button>
         </div>
         <p

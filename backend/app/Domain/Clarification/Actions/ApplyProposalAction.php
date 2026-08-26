@@ -6,6 +6,7 @@ use App\Domain\Clarification\Enums\ClarificationAnswerStatus;
 use App\Domain\Clarification\Enums\ClarificationProposalStatus;
 use App\Domain\Clarification\Enums\ClarificationTargetType;
 use App\Domain\Clarification\Events\ProposalAccepted;
+use App\Domain\Clarification\Services\ClarificationAuditWriter;
 use App\Domain\Skills\Actions\AddEvidenceAction;
 use App\Domain\Skills\Actions\CreateCandidateSkillAction;
 use App\Domain\Skills\Actions\UpdateCandidateSkillAction;
@@ -42,41 +43,44 @@ final class ApplyProposalAction
 
     public function execute(ClarificationProposal $proposal): ClarificationProposal
     {
-        return DB::transaction(function () use ($proposal): ClarificationProposal {
-            $locked = ClarificationProposal::query()
-                ->whereKey($proposal->id)
-                ->lockForUpdate()
-                ->firstOrFail();
+        $proposalId = $proposal->id;
 
-            $answer = $locked->answer()->lockForUpdate()->firstOrFail();
+        try {
+            return DB::transaction(function () use ($proposal): ClarificationProposal {
+                $locked = ClarificationProposal::query()
+                    ->whereKey($proposal->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
-            if ($locked->status === ClarificationProposalStatus::Accepted) {
-                return $locked->load('answer');
-            }
+                $answer = $locked->answer()->lockForUpdate()->firstOrFail();
 
-            if ($locked->status !== ClarificationProposalStatus::Proposed) {
-                throw new ConflictException(
-                    'This proposal can no longer be reviewed.',
-                    'proposal_not_reviewable'
-                );
-            }
+                if ($locked->status === ClarificationProposalStatus::Accepted) {
+                    return $locked->load('answer');
+                }
 
-            if (! $answer->status->isOpen()) {
-                throw new ConflictException(
-                    'This answer is no longer reviewable.',
-                    'answer_not_reviewable'
-                );
-            }
+                if ($locked->status !== ClarificationProposalStatus::Proposed) {
+                    throw new ConflictException(
+                        'This proposal can no longer be reviewed.',
+                        'proposal_not_reviewable'
+                    );
+                }
 
-            $this->apply($answer, $locked);
+                if (! $answer->status->isOpen()) {
+                    throw new ConflictException(
+                        'This answer is no longer reviewable.',
+                        'answer_not_reviewable'
+                    );
+                }
 
-            $locked->update(['status' => ClarificationProposalStatus::Accepted]);
-            $answer->update([
-                'status' => ClarificationAnswerStatus::Accepted,
-                'proposal_id' => $locked->id,
-            ]);
+                $this->apply($answer, $locked);
 
-            DB::afterCommit(function () use ($locked, $answer): void {
+                $locked->update(['status' => ClarificationProposalStatus::Accepted]);
+                $answer->update([
+                    'status' => ClarificationAnswerStatus::Accepted,
+                    'proposal_id' => $locked->id,
+                ]);
+
+                // Append-only audit via ProposalAccepted event (dispatched immediately so tests see it; job remains afterCommit)
                 event(new ProposalAccepted(
                     proposal: $locked,
                     answer: $answer,
@@ -92,10 +96,31 @@ final class ApplyProposalAction
                     $answer->question->match_analysis_id,
                     RequestIdContext::get(),
                 )->afterCommit();
-            });
 
-            return $locked->load('answer');
-        }, attempts: 3);
+                return $locked->load('answer');
+            }, attempts: 3);
+        } catch (\Throwable $e) {
+            // Record apply failure outside the rolled-back transaction (best-effort, never masks original exception)
+            try {
+                $freshProposal = ClarificationProposal::with('answer.question')->find($proposalId) ?? $proposal;
+                $answer = $freshProposal->answer ?? $proposal->answer ?? null;
+                if ($answer instanceof ClarificationAnswer) {
+                    $answer->loadMissing('question');
+                    app(ClarificationAuditWriter::class)->write('proposal_apply_failed', [
+                        'answer_id' => $answer->id,
+                        'proposal_id' => $freshProposal->id ?? $proposalId,
+                        'user_id' => $answer->user_id,
+                        'match_analysis_id' => $answer->question->match_analysis_id ?? null,
+                        'target_type' => $freshProposal->target_type ?? $proposal->target_type,
+                        'target_id' => $freshProposal->target_id ?? $proposal->target_id,
+                        'field' => $freshProposal->field ?? $proposal->field,
+                        'metadata' => ['error' => $e->getMessage(), 'code' => method_exists($e, 'getErrorCode') ? $e->getErrorCode() : class_basename($e)],
+                    ]);
+                }
+            } catch (\Throwable $ignored) {
+            }
+            throw $e;
+        }
     }
 
     private function apply(ClarificationAnswer $answer, ClarificationProposal $proposal): void

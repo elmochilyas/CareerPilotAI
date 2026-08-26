@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useQuery, useQueryClient } from '@tanstack/vue-query'
+import BackButton from '@/components/ui/BackButton.vue'
 import OpportunityPageHeader from '../components/OpportunityPageHeader.vue'
 import OpportunityIdentitySummary from '../components/OpportunityIdentitySummary.vue'
 import ResponsibilityReviewItem from '../components/ResponsibilityReviewItem.vue'
@@ -592,7 +593,7 @@ function handlePrimaryAction(): void {
 
 onMounted(() => {
   if (!hasValidIngestionId.value) {
-    void router.replace('/opportunities')
+    void router.replace({ name: 'opportunities' })
     return
   }
 
@@ -635,6 +636,7 @@ const isPrimaryDisabled = computed(() => {
 
 <template>
   <div class="review-page">
+    <BackButton :to="{ name: 'opportunities' }" label="Back to opportunities" class="mb-4" />
     <OpportunityPageHeader
       title="Review job information"
       description="Review each extracted detail before saving this job opportunity."
@@ -687,10 +689,15 @@ const isPrimaryDisabled = computed(() => {
       </p>
       <p class="confirmed-requirements">{{ confirmedRequirementsLabel }}</p>
       <div class="confirmed-actions">
-        <RouterLink class="confirmed-btn-primary" :to="`/opportunities/${confirmedOpportunity.id}`">
+        <RouterLink
+          class="confirmed-btn-primary"
+          :to="{ name: 'opportunities-detail', params: { id: confirmedOpportunity.id } }"
+        >
           View opportunity
         </RouterLink>
-        <RouterLink class="confirmed-btn-secondary" to="/opportunities"> Back to list </RouterLink>
+        <RouterLink class="confirmed-btn-secondary" :to="{ name: 'opportunities' }">
+          Back to list
+        </RouterLink>
       </div>
     </div>
 

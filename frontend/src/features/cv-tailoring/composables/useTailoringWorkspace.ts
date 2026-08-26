@@ -121,6 +121,8 @@ export function useTailoringWorkspace(
     onSuccess: (generatedResume) => {
       queryClient.setQueryData(resumeKeys.opportunity(resolvedOppId.value), generatedResume)
       queryClient.setQueryData(resumeKeys.detail(generatedResume.id), generatedResume)
+      queryClient.setQueryData(resumeKeys.list(), generatedResume)
+      queryClient.invalidateQueries({ queryKey: resumeKeys.all })
       queryClient.invalidateQueries({ queryKey: resumeKeys.preview(generatedResume.id) })
       currentStep.value = 'review'
     },

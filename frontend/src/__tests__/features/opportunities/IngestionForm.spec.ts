@@ -8,10 +8,20 @@ const mocks = vi.hoisted(() => ({
   extractProblemDetail: vi.fn<(...args: unknown[]) => unknown>(),
 }))
 
-vi.mock('vue-router', () => ({
-  useRouter: () => ({ push: mocks.push }),
-  useRoute: () => ({ params: {} }),
-}))
+vi.mock('vue-router', async () => {
+  const { defineComponent, h } = await import('vue')
+  return {
+    RouterLink: defineComponent({
+      name: 'RouterLink',
+      props: ['to'],
+      setup(_, { slots }) {
+        return () => h('a', slots.default?.())
+      },
+    }),
+    useRouter: () => ({ push: mocks.push }),
+    useRoute: () => ({ params: {} }),
+  }
+})
 
 vi.mock('@/api/client', () => ({
   extractProblemDetail: mocks.extractProblemDetail,
@@ -30,16 +40,14 @@ describe('ImportJobPage', () => {
     mocks.extractProblemDetail.mockReturnValue(null)
   })
 
-  it('returns to opportunities without depending on browser history', async () => {
+  it('returns to opportunities without depending on browser history', () => {
     const wrapper = mount(ImportJobPage)
-    const backButton = wrapper
-      .findAll('button')
-      .find((button) => button.text() === 'Back to opportunities')
 
-    expect(backButton).toBeDefined()
-    await backButton!.trigger('click')
+    const link = wrapper.findAll('a').find((a) => a.text() === 'Back to opportunities')
+    expect(link).toBeDefined()
 
-    expect(mocks.push).toHaveBeenCalledWith({ name: 'opportunities' })
+    const routerLink = wrapper.findComponent({ name: 'RouterLink' })
+    expect(routerLink.props('to')).toEqual({ name: 'opportunities' })
   })
 
   it('renders the form title', () => {
@@ -104,7 +112,10 @@ describe('ImportJobPage', () => {
       .find((button) => button.text() === 'View existing analysis')
     await viewButton!.trigger('click')
 
-    expect(mocks.push).toHaveBeenCalledWith('/opportunities/ingestions/42')
+    expect(mocks.push).toHaveBeenCalledWith({
+      name: 'opportunities-processing',
+      params: { id: 42 },
+    })
   })
 
   it('never renders internal details for an unexpected server error', async () => {

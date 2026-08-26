@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CandidateSkillController;
 use App\Http\Controllers\Api\V1\ClarificationController;
+use App\Http\Controllers\Api\V1\CompanyResearchController;
 use App\Http\Controllers\Api\V1\CvIngestion\CvDocumentController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\JobOpportunityConfirmedController;
@@ -34,7 +35,7 @@ Route::prefix('v1')->group(function (): void {
         ->middleware('signed')
         ->name('verification.verify');
 
-    Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function (): void {
+    Route::middleware(['auth:sanctum', 'active.account', 'throttle:120,1'])->group(function (): void {
         Route::delete('/auth/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
         Route::post('/email/verification-notification', [AuthController::class, 'resendVerification'])
@@ -116,6 +117,16 @@ Route::prefix('v1')->group(function (): void {
 
             Route::get('/{opportunity}/resumes', [ResumeController::class, 'index']);
             Route::post('/{opportunity}/resumes', [ResumeController::class, 'store']);
+
+            Route::get('/{opportunity}/company-research', [CompanyResearchController::class, 'show'])
+                ->middleware('throttle:company-research-read')
+                ->name('company-research.show');
+            Route::post('/{opportunity}/company-research', [CompanyResearchController::class, 'store'])
+                ->middleware('throttle:company-research-create')
+                ->name('company-research.store');
+            Route::post('/{opportunity}/company-research/refresh', [CompanyResearchController::class, 'refresh'])
+                ->middleware('throttle:company-research-refresh')
+                ->name('company-research.refresh');
         });
 
         Route::get('/matches/{matchAnalysis}', [MatchAnalysisController::class, 'show'])

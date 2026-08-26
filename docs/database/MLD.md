@@ -175,6 +175,8 @@ Il définit les tables, colonnes, types SQL, clés, contraintes et règles de su
 **Exemples de values pour `processing_status` :**
 `pending`, `processing`, `completed`, `failed`
 
+> **DEPRECATED as of core-hardening-baseline (2026-08-25):** This `files` table is formally deprecated and SHALL NOT be created (Option B — purpose-specific entities). Implemented storage is `cv_documents`; planned storage is `application_documents` and per-aggregate export metadata. See `docs/database/README.md` Phase A decisions and `MCD.md` § FILE. Any reference to `files.id` (e.g., `resumes.file_id`) is therefore dangling — see § `resumes`.
+
 ---
 
 ## `companies`
@@ -188,6 +190,11 @@ Il définit les tables, colonnes, types SQL, clés, contraintes et règles de su
 | `location` | VARCHAR(255) | YES | |
 | `size_band` | VARCHAR(50) | YES | |
 | `research` | JSON | YES | |
+| `research_status` | VARCHAR(20) | NO | DEFAULT 'not_researched', INDEX |
+| `research_version` | SMALLINT UNSIGNED | NO | DEFAULT 1 |
+| `research_failure_code` | VARCHAR(50) | YES | |
+| `name_normalized` | VARCHAR(255) | YES | INDEX |
+| `website_canonical` | VARCHAR(500) | YES | INDEX |
 | `researched_at` | DATETIME | YES | |
 | `created_at` | TIMESTAMP | NO | |
 | `updated_at` | TIMESTAMP | NO | |
@@ -494,8 +501,8 @@ L'analyse d'offre (`job_analyses`) et les exigences (`job_requirements`, `job_op
 |---|---|---|---:|
 | `id` | BIGINT UNSIGNED | NO | PK |
 | `candidate_profile_id` | BIGINT UNSIGNED | NO | FK |
-| `opportunity_id` | BIGINT UNSIGNED | YES | FK, UNIQUE |
-| `file_id` | BIGINT UNSIGNED | YES | FK |
+| `opportunity_id` | BIGINT UNSIGNED | YES | FK, INDEX |
+| `file_id` | BIGINT UNSIGNED | YES | — *(DEPRECATED — dangling, will be removed in Application Documents phase; see Phase A decisions in README.md)* |
 | `title` | VARCHAR(255) | NO | |
 | `template_key` | VARCHAR(100) | YES | |
 | `content` | JSON | NO | |
@@ -508,13 +515,14 @@ L'analyse d'offre (`job_analyses`) et les exigences (`job_requirements`, `job_op
 **Clés étrangères :**
 - `candidate_profile_id` → `candidate_profiles.id`
 - `opportunity_id` → `opportunities.id`
-- `file_id` → `files.id`
+  *(No FK for `file_id` — deprecated, see above.)*
 
 **Contraintes et index :**
-- UNIQUE(opportunity_id)
+- INDEX(opportunity_id) — *global UNIQUE removed by 2026_08_24_235959_fix_resumes_unique_for_versioning; versioning allows multiple `resumes` per opportunity with per-opportunity `version_no` increment (see Phase A / `cv-tailoring` spec).*
+- INDEX(candidate_profile_id, opportunity_id) — for version lookup
 - INDEX(candidate_profile_id, status)
 
-**Remarque :** Les versions de CV et les exports sont intégrés dans cette table via le champ JSON `content` (pour le contenu structuré) et la référence `file_id` (pour le fichier exporté).
+**Remarque :** Les versions de CV et les exports sont intégrés dans cette table via le champ JSON `content` (pour le contenu structuré). La colonne `file_id` historique est **dépréciée** (référence dangling vers `files` qui ne sera jamais créée) et sera supprimée lors de la prochaine évolution du schéma `resumes`.
 
 ---
 
@@ -603,6 +611,8 @@ L'analyse d'offre (`job_analyses`) et les exigences (`job_requirements`, `job_op
 
 **Exemples de values pour `type` :**
 `task`, `reminder`, `interview`, `follow_up`
+
+> **Phase A recommendation for Phase D:** Modèle recommandé **Option C — `tasks` (reminder) + table dédiée `interviews`** (lien 1:0..1). `interview` comme valeur de `type` sera déprécié au profit de `interviews` (voir `docs/database/README.md` Phase A decisions et `MCD.md` § TASK). Aucune table `interviews` en Phase A.
 
 **Exemples de values pour `status` :**
 `pending`, `in_progress`, `completed`, `cancelled`

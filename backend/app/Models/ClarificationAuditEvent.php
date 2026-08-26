@@ -17,6 +17,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $match_analysis_id
  * @property ClarificationTargetType|null $target_type
  * @property int|null $target_id
+ * @property string|null $event
  * @property string|null $field
  * @property array|null $before_value
  * @property array|null $after_value
@@ -39,6 +40,7 @@ class ClarificationAuditEvent extends Model
     use HasFactory;
 
     protected $fillable = [
+        'event',
         'answer_id',
         'proposal_id',
         'user_id',

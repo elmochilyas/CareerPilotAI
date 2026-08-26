@@ -7,10 +7,6 @@ export const matchKeys = {
   detail: (matchId: number) => [...matchKeys.all, 'detail', matchId] as const,
 }
 
-function nextRequestId(): string {
-  return `req_${crypto.randomUUID()}`
-}
-
 export async function createMatchAnalysis(
   opportunityId: number,
   idempotencyKey: string,
@@ -20,7 +16,6 @@ export async function createMatchAnalysis(
     {},
     {
       headers: {
-        'X-Request-ID': nextRequestId(),
         'Idempotency-Key': idempotencyKey,
       },
     },
@@ -39,15 +34,7 @@ export async function fetchMatchAnalysis(matchId: number): Promise<MatchAnalysis
 }
 
 export async function recalculateMatchAnalysis(matchId: number): Promise<MatchOperation> {
-  const res = await client.post(
-    `/api/v1/matches/${matchId}/recalculate`,
-    {},
-    {
-      headers: {
-        'X-Request-ID': nextRequestId(),
-      },
-    },
-  )
+  const res = await client.post(`/api/v1/matches/${matchId}/recalculate`)
 
   return res.data.data
 }

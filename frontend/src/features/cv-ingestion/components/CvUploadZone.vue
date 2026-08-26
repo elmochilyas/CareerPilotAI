@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Upload, FileText, AlertCircle, CheckCircle2 } from '@lucide/vue'
+import { Upload, FileText, AlertCircle, CheckCircle2, X } from '@lucide/vue'
 import Button from '@/components/ui/Button.vue'
 
 const ALLOWED_TYPES = [
@@ -141,7 +141,7 @@ const fileExtension = (name: string): string => {
         or drag and drop
       </p>
       <p v-else class="text-sm font-medium text-emerald-800">File selected — ready to upload</p>
-      <p class="mt-1 text-xs text-slate-400">PDF or DOCX up to 20 MB</p>
+      <p class="mt-1 text-xs text-slate-500">PDF or DOCX up to 20 MB</p>
 
       <div class="mt-4 flex items-center gap-2">
         <span
@@ -190,11 +190,11 @@ const fileExtension = (name: string): string => {
         </div>
         <button
           type="button"
-          class="shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
           @click="clearSelection"
           aria-label="Remove selected file"
         >
-          <span class="text-lg leading-none">&times;</span>
+          <X class="h-4 w-4" aria-hidden="true" />
         </button>
       </div>
       <div class="mt-4 flex justify-end border-t border-slate-100 pt-4">

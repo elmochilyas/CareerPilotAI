@@ -1,5 +1,6 @@
 import axios from 'axios'
-import type { AxiosError } from 'axios'
+import type { AxiosError, InternalAxiosRequestConfig } from 'axios'
+import { nextRequestId } from './request-id'
 
 const client = axios.create({
   baseURL: '/',
@@ -9,6 +10,18 @@ const client = axios.create({
     Accept: 'application/json',
     'Content-Type': 'application/json',
   },
+})
+
+client.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const headers = config.headers as unknown as Record<string, string> & {
+    set?: (key: string, value: string) => void
+  }
+  if (typeof headers.set === 'function') {
+    headers.set('X-Request-ID', nextRequestId())
+  } else {
+    headers['X-Request-ID'] = nextRequestId()
+  }
+  return config
 })
 
 let isRefreshingCsrf = false

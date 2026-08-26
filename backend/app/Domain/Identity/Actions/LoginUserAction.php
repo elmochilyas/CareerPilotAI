@@ -4,6 +4,7 @@ namespace App\Domain\Identity\Actions;
 
 use App\Domain\Identity\Enums\UserAccountStatus;
 use App\Models\User;
+use App\Support\ProblemDetails\ProblemDetailsException;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -23,6 +24,14 @@ class LoginUserAction
 
         if ($user->account_status === UserAccountStatus::Suspended) {
             throw new AuthorizationException(__('Account is suspended.'));
+        }
+
+        if ($user->account_status === UserAccountStatus::Disabled) {
+            throw new ProblemDetailsException(
+                403,
+                __('Your account has been disabled and cannot sign in.'),
+                'account_disabled',
+            );
         }
 
         Auth::login($user);

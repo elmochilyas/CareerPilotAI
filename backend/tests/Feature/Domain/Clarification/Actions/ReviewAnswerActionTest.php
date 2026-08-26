@@ -108,7 +108,7 @@ it('accepts a verified proposal, dispatches the staleness job, and writes the au
 
     Queue::assertPushed(ObserveClarificationStalenessJob::class, fn ($job) => $job->analysisId === $this->analysis->id);
 
-    $audit = ClarificationAuditEvent::where('proposal_id', $result['proposal']->id)->first();
+    $audit = ClarificationAuditEvent::where('proposal_id', $result['proposal']->id)->where('event', 'proposal_accepted')->first();
     expect($audit)->not->toBeNull()
         ->and($audit->target_type)->toBe(ClarificationTargetType::CandidateSkill)
         ->and($audit->target_id)->toBe($this->candidateSkill->id)

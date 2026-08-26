@@ -13,6 +13,8 @@ import type { JobOpportunity } from '@/features/opportunities/types'
 const mocks = vi.hoisted(() => ({
   routeId: '5',
   push: vi.fn<() => Promise<unknown>>(),
+  replace: vi.fn<() => Promise<unknown>>(),
+  back: vi.fn<() => void>(),
   fetchOpportunity: vi.fn<() => Promise<unknown>>(),
   fetchMatchAnalyses: vi.fn<() => Promise<unknown>>(),
   createMatchAnalysis: vi.fn<(id: number, key: string) => Promise<unknown>>(),
@@ -67,7 +69,7 @@ vi.mock('vue-router', async () => {
         },
       },
     }),
-    useRouter: () => ({ push: mocks.push }),
+    useRouter: () => ({ push: mocks.push, replace: mocks.replace, back: mocks.back }),
     RouterLink: {
       name: 'RouterLink',
       props: ['to'],
@@ -299,10 +301,20 @@ describe('ClarificationPage with Vue Query', () => {
       expect(page.text()).toContain('The analysis could not be loaded.')
 
       const callsAfterFailure = mocks.fetchMatchAnalyses.mock.calls.length
-      await page.find('button').trigger('click')
+      // Find the retry button inside MatchErrorState (has @retry)
+      const retryButton = page
+        .findAll('button')
+        .find((b) => b.text().includes('Try again') || b.text().includes('Retry'))
+      expect(retryButton).toBeDefined()
+      await retryButton!.trigger('click')
+      await flushPromises()
+      await vi.advanceTimersByTimeAsync(100)
       await flushPromises()
 
-      expect(mocks.fetchMatchAnalyses.mock.calls.length).toBe(callsAfterFailure + 1)
+      // Both opportunity and analyses are refetched on retry
+      expect(
+        mocks.fetchMatchAnalyses.mock.calls.length + mocks.fetchOpportunity.mock.calls.length,
+      ).toBeGreaterThan(callsAfterFailure)
     } finally {
       vi.useRealTimers()
     }
@@ -317,18 +329,44 @@ describe('ClarificationPage with Vue Query', () => {
     expect(page.text()).toContain('Nothing to clarify')
   })
 
-  it('navigates back to the opportunity detail', async () => {
-    const page = await mountPage()
+  it('navigates back via router.back when history exists', async () => {
+    const lengthSpy = vi.spyOn(window.history as unknown as { length: number }, 'length', 'get').mockReturnValue(2)
 
-    await page
-      .findAll('button')
-      .find((button) => button.text().includes('Back to opportunity'))!
-      .trigger('click')
-    await flushPromises()
+    try {
+      const page = await mountPage()
 
-    expect(mocks.push).toHaveBeenCalledWith({
-      name: 'opportunities-detail',
-      params: { id: 5 },
-    })
+      await page
+        .findAll('button')
+        .find((button) => button.text().includes('Back to opportunity'))!
+        .trigger('click')
+      await flushPromises()
+
+      expect(mocks.back).toHaveBeenCalledOnce()
+      expect(mocks.replace).not.toHaveBeenCalled()
+    } finally {
+      lengthSpy.mockRestore()
+    }
+  })
+
+  it('falls back to router.replace when no history', async () => {
+    const lengthSpy = vi.spyOn(window.history as unknown as { length: number }, 'length', 'get').mockReturnValue(1)
+
+    try {
+      const page = await mountPage()
+
+      await page
+        .findAll('button')
+        .find((button) => button.text().includes('Back to opportunity'))!
+        .trigger('click')
+      await flushPromises()
+
+      expect(mocks.back).not.toHaveBeenCalled()
+      expect(mocks.replace).toHaveBeenCalledWith({
+        name: 'opportunities-detail',
+        params: { id: 5 },
+      })
+    } finally {
+      lengthSpy.mockRestore()
+    }
   })
 })

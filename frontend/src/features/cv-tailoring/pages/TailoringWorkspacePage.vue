@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
+import BackButton from '@/components/ui/BackButton.vue'
 import Button from '@/components/ui/Button.vue'
 import { extractProblemDetail } from '@/api/client'
 import ResumeDocumentPreview from '../components/ResumeDocumentPreview.vue'
@@ -63,6 +64,12 @@ async function resolveGeneratedWording(status: TailoringProposalStatus): Promise
 
 <template>
   <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <BackButton
+      v-if="opportunityId"
+      :to="{ name: 'opportunities-detail', params: { id: opportunityId } }"
+      label="Back to opportunity"
+      class="mb-4"
+    />
     <div v-if="isCreating" class="py-16 text-center" role="status" aria-live="polite">
       Preparing your tailored CV…
     </div>
@@ -216,7 +223,7 @@ async function resolveGeneratedWording(status: TailoringProposalStatus): Promise
             <ResumeDocumentPreview :resume-id="resume.id" />
           </div>
           <RouterLink
-            :to="`/opportunities/${opportunityId}`"
+            :to="{ name: 'opportunities-detail', params: { id: opportunityId } }"
             class="cv-print-actions inline-flex text-sm font-medium text-[var(--color-primary-700)]"
             >Return to Opportunity</RouterLink
           >

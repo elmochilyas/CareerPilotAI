@@ -2,6 +2,9 @@
 
 namespace App\Domain\Resumes\Actions;
 
+use App\Domain\Matching\Services\FingerprintService;
+use App\Domain\Matching\Services\OpportunitySnapshot;
+use App\Domain\Matching\Services\ProfileSnapshot;
 use App\Domain\Profile\Services\ProfileIdentityService;
 use App\Domain\Resumes\Data\TailoringResult;
 use App\Domain\Resumes\Services\TailoringAnalyzer;
@@ -20,6 +23,7 @@ final readonly class TailorResumeAction
         private TailoringAnalyzer $analyzer,
         private TailoringRewriter $rewriter,
         private TailoringSchemaValidator $validator,
+        private readonly FingerprintService $fingerprints,
     ) {}
 
     public function execute(Resume $resume, bool $useAi = true): TailoringResult
@@ -36,6 +40,16 @@ final readonly class TailorResumeAction
         $resume->update([
             'content' => $content,
             'generated_by' => $useAi ? 'ai' : 'manual',
+            'profile_snapshot' => [
+                'fingerprint' => $this->fingerprints->profile(ProfileSnapshot::fromCandidateProfile($profile)),
+                'data' => ProfileSnapshot::fromCandidateProfile($profile)->toCanonicalArray(),
+                'snapshot_at' => now()->toIso8601String(),
+            ],
+            'opportunity_snapshot' => [
+                'fingerprint' => $this->fingerprints->opportunity(OpportunitySnapshot::fromJobOpportunity($opportunity)),
+                'data' => OpportunitySnapshot::fromJobOpportunity($opportunity)->toCanonicalArray(),
+                'snapshot_at' => now()->toIso8601String(),
+            ],
         ]);
 
         $allRelevant = [];

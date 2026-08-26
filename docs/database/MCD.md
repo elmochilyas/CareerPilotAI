@@ -132,6 +132,8 @@ erDiagram
 
 **Règles :** `purpose` identifie l'usage métier (ex. `cv_import`, `resume_generated`). Les données extraites sont temporaires ; seules les données validées par le candidat entrent dans le profil de confiance.
 
+> **DEPRECATED as of core-hardening-baseline (2026-08-25):** The generic `FILE` entity is formally deprecated (Option B — purpose-specific entities). No `FILE` table will be created. Purpose-specific tables (`cv_documents`, `application_documents` planned, `resume_exports` via JSON + private storage) replace it. `resumes.file_id` is a dangling column and will be removed in the next `resumes` schema change (Application Documents phase). See `docs/database/README.md` Phase A decisions and `MLD.md` § `files` / § `resumes.file_id` for ownership/provenance and migration details.
+
 ---
 
 ### COMPANY
@@ -310,8 +312,9 @@ erDiagram
 - status
 - generated_by
 - approved_at
+- version_no
 
-**Règles :** Un CV peut être générique (sans cible) ou ciblé vers une opportunité (au plus un CV ciblé par opportunité). Les versions approuvées sont immuables.
+**Règles :** Un CV peut être générique ou ciblé ; plusieurs versions (`version_no` auto-incrémenté par opportunité) sont autorisées — la contrainte historique « au plus un CV ciblé par opportunité » est levée par `2026_08_24_235959_fix_resumes_unique_for_versioning`. Les versions approuvées sont immuables. La référence historique `FILE` pour l'export est **dépréciée** (Option B — entités purpose-specific) et sera supprimée lors de la prochaine évolution du schéma `resumes` (phase Application Documents) — voir `docs/database/README.md` Phase A decisions et `MLD.md` § `resumes.file_id`.
 
 ---
 
@@ -354,6 +357,8 @@ erDiagram
 - metadata
 
 **Règles :** Le type peut être `task`, `reminder`, `interview` ou `follow_up`. Une tâche appartient toujours à un candidat et peut optionnellement être liée à une candidature.
+
+> **Phase A recommendation for Phase D (core-hardening-baseline):** Le modèle recommandé est **Option C — entrée `TASK`/`reminder` + enregistrement dédié `interviews`** (lien 1:0..1 de `tasks` vers `interviews`). `interview` comme valeur de `TASK.type` est alors déprécié au profit de la table `interviews` (voir `docs/database/README.md` Phase A decisions et `MLD.md` § `tasks` / future § `interviews`). Aucune table `interviews` n'est créée en Phase A.
 
 ---
 

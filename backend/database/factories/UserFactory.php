@@ -50,4 +50,11 @@ class UserFactory extends Factory
             'account_status' => UserAccountStatus::Suspended,
         ]);
     }
+
+    public function disabled(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'account_status' => UserAccountStatus::Disabled,
+        ]);
+    }
 }

@@ -1,10 +1,12 @@
 openapi: 3.1.0
 info:
-  title: CareerPilot AI API — Skills and Evidence
+  title: CareerPilot AI API
   version: 1.0.0
   description: |
-    Skills and Evidence capability.
-    All endpoints require Sanctum cookie-based SPA authentication.
+    CareerPilot AI — full API surface (Phase A core-hardening baseline).
+    All authenticated endpoints require Sanctum cookie-based SPA authentication.
+    Common security: throttle, X-Request-ID propagation, RFC9457 ProblemDetails, account_disabled guard via active.account middleware.
+    See route table: `php artisan route:list --path=api` (82 routes). This file federates: auth, profile, skills, cv-ingestion, opportunities, matching, clarification, resumes, company-research.
 
 servers:
   - url: http://careerpilot-api.test/api/v1
@@ -544,6 +546,1031 @@ paths:
         '422':
           $ref: '#/components/responses/ValidationError'
 
+  /opportunities/{opportunity}/company-research:
+    get:
+      operationId: getCompanyResearch
+      summary: Get company research brief for opportunity
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: opportunity
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Company research status and brief
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CompanyResearchBrief'
+                  request_id:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: startCompanyResearch
+      summary: Start company research for opportunity
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: opportunity
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                company_website:
+                  type: string
+                  format: uri
+                  maxLength: 500
+                  nullable: true
+                pasted_content:
+                  type: string
+                  maxLength: 20000
+                  nullable: true
+      responses:
+        '202':
+          description: Research started, processing
+          headers:
+            Location:
+              schema:
+                type: string
+              description: URL to poll for status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CompanyResearchBrief'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+  /opportunities/{opportunity}/company-research/refresh:
+    post:
+      operationId: refreshCompanyResearch
+      summary: Refresh company research
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: opportunity
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                company_website:
+                  type: string
+                  format: uri
+                  maxLength: 500
+                  nullable: true
+                pasted_content:
+                  type: string
+                  maxLength: 20000
+                  nullable: true
+      responses:
+        '202':
+          description: Research refresh started
+          headers:
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CompanyResearchBrief'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /health:
+    get:
+      operationId: health
+      summary: Health check
+      security: []
+      responses:
+        '200':
+          description: Service health
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  request_id:
+                    type: string
+
+  /auth/register:
+    post:
+      operationId: register
+      summary: Register a new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [full_name, email, password, password_confirmation]
+              properties:
+                full_name:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                password_confirmation:
+                  type: string
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+                  request_id:
+                    type: string
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /auth/login:
+    post:
+      operationId: login
+      summary: Login (checks account_status; disabled→403 account_disabled after credential check)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+        '403':
+          description: Account disabled or suspended
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              example:
+                type: https://careerpilot.example/problems/account_disabled
+                title: Forbidden
+                status: 403
+                code: account_disabled
+                detail: Your account has been disabled.
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      summary: Request password reset link (anti-enumeration: always 202-like response)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Reset link queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  request_id:
+                    type: string
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/reset-password:
+    post:
+      operationId: resetPassword
+      summary: Reset password with token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, token, password, password_confirmation]
+              properties:
+                email:
+                  type: string
+                  format: email
+                token:
+                  type: string
+                password:
+                  type: string
+                password_confirmation:
+                  type: string
+      responses:
+        '200':
+          description: Password reset
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /auth/logout:
+    delete:
+      operationId: logout
+      summary: Logout current session
+      security:
+        - cookieAuth: []
+      responses:
+        '204':
+          description: Logged out
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          description: Account disabled (EnsureActiveAccount)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /me:
+    get:
+      operationId: me
+      summary: Current authenticated user (inside auth:sanctum + active.account — returns 403 account_disabled for disabled sessions)
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/User'
+                  request_id:
+                    type: string
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          description: Account disabled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /profile:
+    get:
+      operationId: getProfile
+      summary: Get candidate profile with completion and items
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Profile'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+    patch:
+      operationId: updateProfile
+      summary: Update profile fields (optimistic concurrency via updated_at)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                updated_at:
+                  type: string
+                  format: date-time
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Profile'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /profile/duplicates:
+    get:
+      operationId: profileDuplicates
+      summary: Duplicate report for profile items/skills/languages
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Duplicate report
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+
+  /profile/cleanup/items:
+    post:
+      operationId: cleanupItems
+      summary: Merge duplicate profile items (keep_id + duplicate_ids + allow_possible)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [keep_id, duplicate_ids]
+              properties:
+                keep_id:
+                  type: integer
+                duplicate_ids:
+                  type: array
+                  items:
+                    type: integer
+                  minItems: 1
+                  uniqueItems: true
+                allow_possible:
+                  type: boolean
+      responses:
+        '200':
+          description: Merged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /profile/cleanup/skills:
+    post:
+      operationId: cleanupSkills
+      summary: Merge duplicate candidate skills
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [keep_id, duplicate_ids]
+              properties:
+                keep_id:
+                  type: integer
+                duplicate_ids:
+                  type: array
+                  items:
+                    type: integer
+                  minItems: 1
+                  uniqueItems: true
+      responses:
+        '200':
+          description: Merged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /profile/cleanup/languages:
+    post:
+      operationId: cleanupLanguages
+      summary: Deduplicate languages
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                keep_language:
+                  type: string
+                  maxLength: 50
+                duplicate_languages:
+                  type: array
+                  items:
+                    type: string
+                  minItems: 1
+      responses:
+        '200':
+          description: Merged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /cv:
+    get:
+      operationId: listCvDocuments
+      summary: List CV documents
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: CV list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CvDocument'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+    post:
+      operationId: uploadCv
+      summary: Upload CV (pdf/docx, 20M, private storage, opaque name)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/CvDocument'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /cv/{cvDocument}/suggestions:
+    get:
+      operationId: cvSuggestions
+      summary: CV extracted suggestions
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: cvDocument
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Suggestions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /opportunities/ingestions:
+    get:
+      operationId: listIngestions
+      summary: List job opportunity ingestions (cursor/pagination)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Ingestions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/JobIngestion'
+                  meta:
+                    type: object
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+    post:
+      operationId: createIngestion
+      summary: Create job ingestion from URL/text
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source_url:
+                  type: string
+                  format: uri
+                description:
+                  type: string
+      responses:
+        '201':
+          description: Created (202 async where queued)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/JobIngestion'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /opportunities/{opportunity}/matches:
+    get:
+      operationId: listMatches
+      summary: List match analyses for opportunity
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: opportunity
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Match analyses
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MatchAnalysis'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+    post:
+      operationId: createMatch
+      summary: Create match analysis (async 202 with operation polling where applicable)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: opportunity
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MatchAnalysis'
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /matches/{matchAnalysis}:
+    get:
+      operationId: getMatch
+      summary: Get match analysis detail
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: matchAnalysis
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Match analysis
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MatchAnalysis'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /matches/{matchAnalysis}/clarifications:
+    get:
+      operationId: listClarifications
+      summary: List clarification questions for match analysis
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: matchAnalysis
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Clarifications
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+    post:
+      operationId: generateClarifications
+      summary: Generate clarification questions (throttle: clarification-generate 10/m)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: matchAnalysis
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Generated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+        '429':
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /resumes:
+    get:
+      operationId: listResumes
+      summary: List resumes (ordered by version_no desc, cursor pagination)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, approved]
+        - name: opportunity_id
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Resumes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Resume'
+                  meta:
+                    type: object
+                    properties:
+                      next_cursor:
+                        type: string
+                        nullable: true
+                      has_more:
+                        type: boolean
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+    post:
+      operationId: createResumePlaceholder
+      summary: Create resume is via POST /opportunities/{opportunity}/resumes
+      security:
+        - cookieAuth: []
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Resume'
+
+  /opportunities/{opportunity}/resumes:
+    post:
+      operationId: createResume
+      summary: Create tailored resume (version_no auto-increments per opportunity under lock; unique constraint guards race)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: opportunity
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                opportunity_id:
+                  type: integer
+                title:
+                  type: string
+      responses:
+        '201':
+          description: Resume created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Resume'
+                  request_id:
+                    type: string
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /resumes/{resume}:
+    get:
+      operationId: getResume
+      summary: Get resume (stale/stale_reason computed from own fingerprints vs fresh)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: resume
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Resume
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Resume'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateResume
+      summary: Update draft resume content (refreshes snapshots, bumps version; 409 resume_immutable for approved)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: resume
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: object
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Resume'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      operationId: deleteResume
+      summary: Delete resume (only draft mutable per policy)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: resume
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Forbidden (policy)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /resumes/{resume}/tailor:
+    post:
+      operationId: tailorResume
+      summary: Tailor resume (refreshes fingerprints, deterministic relevance fallback, minimum content floor)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: resume
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                use_ai:
+                  type: boolean
+      responses:
+        '200':
+          description: Tailoring proposals/metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+
+  /resumes/{resume}/approve:
+    post:
+      operationId: approveResume
+      summary: Approve draft resume (409 resume_stale if fingerprints stale; approved immutable)
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: resume
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Approved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Resume'
+        '409':
+          description: Stale or immutable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+              examples:
+                stale:
+                  value:
+                    type: https://careerpilot.example/problems/resume_stale
+                    title: Conflict
+                    status: 409
+                    code: resume_stale
+                    detail: Your profile or opportunity changed since this CV was generated. Regenerate the CV before approving it.
+
 components:
   securitySchemes:
     cookieAuth:
@@ -684,6 +1711,136 @@ components:
           type: string
           format: date-time
 
+    CompanyResearchBrief:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ResearchStatus'
+        researched_at:
+          type: string
+          format: date-time
+          nullable: true
+        stale:
+          type: boolean
+        stale_reason:
+          type: string
+          nullable: true
+        version:
+          type: integer
+        fallback_reason:
+          type: string
+          nullable: true
+        brief:
+          type: object
+          nullable: true
+        overview:
+          type: object
+          nullable: true
+          properties:
+            name:
+              type: string
+              nullable: true
+            website:
+              type: string
+              nullable: true
+            industry:
+              type: string
+              nullable: true
+            headquarters:
+              type: string
+              nullable: true
+            description:
+              type: string
+              nullable: true
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResearchClaim'
+        technology_context:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResearchClaim'
+        role_context:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResearchClaim'
+        recent_information:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResearchClaim'
+        candidate_preparation:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResearchClaim'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResearchSource'
+        generated_at:
+          type: string
+          format: date-time
+          nullable: true
+        ai_meta:
+          type: object
+          nullable: true
+
+    ResearchStatus:
+      type: string
+      enum:
+        - not_researched
+        - processing
+        - completed
+        - limited
+        - failed
+
+    ResearchClaim:
+      type: object
+      properties:
+        text:
+          type: string
+        kind:
+          type: string
+          enum:
+            - fact
+            - inference
+            - unknown
+        confidence:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+          nullable: true
+        source_ids:
+          type: array
+          items:
+            type: integer
+
+    ResearchSource:
+      type: object
+      properties:
+        id:
+          type: integer
+        url:
+          type: string
+        title:
+          type: string
+          nullable: true
+        retrieved_at:
+          type: string
+          format: date-time
+          nullable: true
+        source_type:
+          type: string
+          enum:
+            - official_website
+            - official_blog
+            - careers
+            - job_posting
+            - reputable_secondary
+            - opportunity
+            - pasted
+
     ProblemDetail:
       type: object
       properties:
@@ -708,6 +1865,125 @@ components:
         request_id:
           type: string
           nullable: true
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+        email:
+          type: string
+          format: email
+        account_status:
+          type: string
+          enum: [active, suspended, disabled]
+        email_verified_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    Profile:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        profile_completion:
+          type: integer
+        headline:
+          type: string
+          nullable: true
+
+    CvDocument:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        original_name:
+          type: string
+        mime:
+          type: string
+        size:
+          type: integer
+
+    JobIngestion:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+          enum: [draft, queued, processing, review_ready, failed, confirmed]
+        source_url:
+          type: string
+          nullable: true
+        title:
+          type: string
+          nullable: true
+        confirmed_opportunity_id:
+          type: integer
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+
+    MatchAnalysis:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+        score:
+          type: number
+          nullable: true
+        stale:
+          type: boolean
+        findings:
+          type: array
+          items:
+            type: object
+
+    Resume:
+      type: object
+      properties:
+        id:
+          type: integer
+        candidate_profile_id:
+          type: integer
+        opportunity_id:
+          type: integer
+        status:
+          type: string
+          enum: [draft, approved]
+        title:
+          type: string
+        version_no:
+          type: integer
+        stale:
+          type: boolean
+        stale_reason:
+          type: string
+          nullable: true
+        content:
+          type: object
+        profile_snapshot:
+          type: object
+          nullable: true
+        opportunity_snapshot:
+          type: object
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
 
   responses:
     Unauthenticated:

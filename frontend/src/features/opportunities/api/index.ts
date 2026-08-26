@@ -19,6 +19,7 @@ export const opportunityKeys = {
   list: (page?: number) =>
     [...opportunityKeys.all, 'list', ...(page === undefined ? [] : [page])] as const,
   detail: (id: number) => [...opportunityKeys.all, 'detail', id] as const,
+  companyResearch: (id: number) => [...opportunityKeys.all, 'company-research', id] as const,
 }
 
 export async function fetchIngestions(params?: {
@@ -129,4 +130,25 @@ export async function fetchOpportunities(params?: {
 
 export async function fetchOpportunity(id: number): Promise<JobOpportunity> {
   return (await client.get(`/api/v1/opportunities/${id}`)).data.data
+}
+
+export async function fetchCompanyResearch(
+  id: number,
+): Promise<import('../types').CompanyResearchBrief> {
+  return (await client.get(`/api/v1/opportunities/${id}/company-research`)).data.data
+}
+
+export async function startCompanyResearch(
+  id: number,
+  data?: { company_website?: string; pasted_content?: string },
+): Promise<import('../types').CompanyResearchBrief> {
+  return (await client.post(`/api/v1/opportunities/${id}/company-research`, data ?? {})).data.data
+}
+
+export async function refreshCompanyResearch(
+  id: number,
+  data?: { company_website?: string; pasted_content?: string },
+): Promise<import('../types').CompanyResearchBrief> {
+  return (await client.post(`/api/v1/opportunities/${id}/company-research/refresh`, data ?? {}))
+    .data.data
 }

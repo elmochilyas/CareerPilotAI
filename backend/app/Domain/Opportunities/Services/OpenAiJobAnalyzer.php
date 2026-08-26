@@ -22,7 +22,7 @@ class OpenAiJobAnalyzer implements JobAnalyzer
         $maxLength = Config::integer('job-ingestion.max_description_length', 100000);
         $truncated = Str::limit($description, $maxLength, '... [TRUNCATED]');
         $schemaVersion = Config::string('job-ingestion.analysis_schema_version', '1.0.0');
-        $promptVersion = '1.0.0';
+        $promptVersion = '2.0.0';
 
         $apiKey = Config::get('ai.providers.openai.key');
         if (empty($apiKey)) {

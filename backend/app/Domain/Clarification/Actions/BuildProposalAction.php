@@ -6,6 +6,7 @@ use App\Domain\Clarification\Enums\ClarificationAnswerType;
 use App\Domain\Clarification\Enums\ClarificationProposalField;
 use App\Domain\Clarification\Enums\ClarificationProposalStatus;
 use App\Domain\Clarification\Enums\ClarificationTargetType;
+use App\Domain\Clarification\Services\ClarificationAuditWriter;
 use App\Domain\Matching\Enums\MatchCategory;
 use App\Domain\Matching\Enums\RequirementSourceType;
 use App\Domain\Skills\Enums\SkillState;
@@ -54,7 +55,7 @@ final class BuildProposalAction
             );
         }
 
-        return DB::transaction(function () use ($answer, $finding): ClarificationProposal {
+        $proposal = DB::transaction(function () use ($answer, $finding): ClarificationProposal {
             $locked = ClarificationAnswer::query()
                 ->whereKey($answer->getKey())
                 ->lockForUpdate()
@@ -101,6 +102,19 @@ final class BuildProposalAction
 
             return $proposal;
         }, attempts: 3);
+
+        // Append-only audit for proposal generation (best-effort, outside transaction so it persists)
+        app(ClarificationAuditWriter::class)->write('proposal_generated', [
+            'answer_id' => $answer->id,
+            'proposal_id' => $proposal->id,
+            'user_id' => $answer->user_id,
+            'match_analysis_id' => $answer->question->match_analysis_id,
+            'target_type' => $proposal->target_type,
+            'target_id' => $proposal->target_id,
+            'field' => ClarificationProposalField::STATE,
+        ]);
+
+        return $proposal;
     }
 
     private function isSkillFinding(MatchFinding $finding): bool

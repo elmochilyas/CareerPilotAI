@@ -25,6 +25,21 @@ it('returns success for unknown email without leaking existence', function () {
     $response->assertJsonStructure(['message']);
 });
 
+it('returns success for a disabled account without revealing account status', function () {
+    User::factory()->disabled()->create(['email' => 'disabled@example.com']);
+
+    $knownResponse = $this->postJson('/api/v1/auth/forgot-password', [
+        'email' => 'disabled@example.com',
+    ]);
+    $unknownResponse = $this->postJson('/api/v1/auth/forgot-password', [
+        'email' => 'unknown-alias@example.com',
+    ]);
+
+    $knownResponse->assertStatus(202);
+    $unknownResponse->assertStatus(202);
+    expect($knownResponse->json('message'))->toBe($unknownResponse->json('message'));
+});
+
 it('rejects invalid email format', function () {
     $response = $this->postJson('/api/v1/auth/forgot-password', [
         'email' => 'not-an-email',

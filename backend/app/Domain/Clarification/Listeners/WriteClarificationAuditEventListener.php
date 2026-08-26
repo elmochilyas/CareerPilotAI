@@ -3,22 +3,19 @@
 namespace App\Domain\Clarification\Listeners;
 
 use App\Domain\Clarification\Events\ProposalAccepted;
-use App\Models\ClarificationAuditEvent;
-use App\Support\RequestIdContext;
+use App\Domain\Clarification\Services\ClarificationAuditWriter;
 use Illuminate\Support\Facades\Log;
-use Throwable;
 
-/**
- * Writes an immutable audit record when a clarification proposal is accepted.
- * Best-effort observability: a failure here must never roll back or mask the
- * already-committed trusted profile mutation.
- */
 final class WriteClarificationAuditEventListener
 {
+    public function __construct(
+        private readonly ClarificationAuditWriter $writer,
+    ) {}
+
     public function handle(ProposalAccepted $event): void
     {
         try {
-            ClarificationAuditEvent::create([
+            $this->writer->write('proposal_accepted', [
                 'answer_id' => $event->answer->id,
                 'proposal_id' => $event->proposal->id,
                 'user_id' => $event->answer->user_id,
@@ -30,12 +27,11 @@ final class WriteClarificationAuditEventListener
                 'after_value' => $event->afterValue,
                 'metadata' => $event->metadata,
             ]);
-        } catch (Throwable $exception) {
-            Log::warning('Failed to write clarification audit event.', [
+        } catch (\Throwable $e) {
+            Log::warning('Failed to write clarification audit event (listener).', [
                 'proposal_id' => $event->proposal->id,
                 'answer_id' => $event->answer->id,
-                'request_id' => RequestIdContext::get(),
-                'error' => $exception->getMessage(),
+                'error' => $e->getMessage(),
             ]);
         }
     }
