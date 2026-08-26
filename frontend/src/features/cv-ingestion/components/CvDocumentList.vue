@@ -187,7 +187,7 @@ watch(
         :key="doc.id"
         :data-cv-id="doc.id"
         :class="[
-          'group flex items-center gap-4 rounded-xl border p-4 transition-all',
+          'group flex flex-col gap-3 rounded-xl border p-4 transition-all sm:flex-row sm:items-center sm:gap-4',
           doc.id === highlightId
             ? 'border-amber-300 bg-amber-50 ring-1 ring-amber-300 shadow-sm'
             : 'border-slate-200 bg-white hover:border-slate-300 hover:shadow-sm',
@@ -195,13 +195,13 @@ watch(
       >
         <button
           type="button"
-          class="flex min-w-0 flex-1 items-center gap-4 rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40"
+          class="flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 sm:gap-4"
           :aria-label="`Open ${doc.original_name}`"
           @click="emit('open', doc)"
         >
           <!-- Status dot -->
           <span
-            class="flex h-2.5 w-2.5 shrink-0 rounded-full"
+            class="hidden h-2.5 w-2.5 shrink-0 rounded-full sm:flex"
             :class="statusConfig[doc.status].dot"
             :title="statusConfig[doc.status].label"
             aria-hidden="true"
@@ -234,14 +234,21 @@ watch(
             >
               {{ doc.original_name }}
             </span>
-            <span class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500">
+            <span
+              class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-none text-slate-500"
+            >
+              <span
+                class="hidden h-2.5 w-2.5 shrink-0 rounded-full sm:hidden"
+                :class="statusConfig[doc.status].dot"
+                aria-hidden="true"
+              />
               <span>{{ formatSize(doc.size) }}</span>
               <span aria-hidden="true">&middot;</span>
               <span :title="new Date(doc.created_at).toLocaleString()">{{
                 formatDate(doc.created_at)
               }}</span>
               <span aria-hidden="true">&middot;</span>
-              <Badge :variant="statusConfig[doc.status].variant">
+              <Badge :variant="statusConfig[doc.status].variant" class="shrink-0">
                 {{ statusConfig[doc.status].label }}
               </Badge>
             </span>
@@ -249,7 +256,9 @@ watch(
         </button>
 
         <!-- Actions -->
-        <div class="flex shrink-0 items-center gap-1.5">
+        <div
+          class="flex w-full shrink-0 items-center justify-end gap-1.5 sm:w-auto sm:justify-start"
+        >
           <Button
             v-if="isProcessing(doc.status)"
             variant="outline"

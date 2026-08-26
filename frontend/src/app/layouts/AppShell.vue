@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { X, Menu } from '@lucide/vue'
 import SkipLink from '@/components/ui/SkipLink.vue'
 import Sidebar from '@/components/navigation/Sidebar.vue'
@@ -39,7 +39,9 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
 })
 
-const sidebarWidth = collapsed.value ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)'
+const sidebarWidth = computed(() =>
+  collapsed.value ? 'calc(var(--sidebar-collapsed-width) + 1.5rem)' : 'var(--sidebar-width)',
+)
 </script>
 
 <template>
@@ -47,7 +49,7 @@ const sidebarWidth = collapsed.value ? 'var(--sidebar-collapsed-width)' : 'var(-
 
   <button
     type="button"
-    class="appshell-hamburger fixed top-3 left-3 z-[var(--z-sticky)] flex size-9 items-center justify-center rounded-xl bg-[var(--surface-primary)] text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] lg:hidden"
+    class="appshell-hamburger fixed top-3 left-3 z-[var(--z-sticky)] flex size-9 items-center justify-center rounded-xl bg-[var(--surface-primary)] text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] md:hidden"
     aria-label="Toggle sidebar"
     @click="toggleSidebar"
   >
@@ -56,18 +58,28 @@ const sidebarWidth = collapsed.value ? 'var(--sidebar-collapsed-width)' : 'var(-
 
   <div class="flex">
     <div
-      class="hidden lg:block lg:shrink-0 lg:sticky lg:top-0 lg:h-screen lg:relative lg:z-[1]"
+      class="hidden lg:block lg:shrink-0 lg:sticky lg:top-0 lg:h-screen lg:z-[1] transition-[width,padding] duration-300 ease-out-expo"
+      :class="collapsed ? 'p-3' : 'p-0'"
       :style="{ width: sidebarWidth }"
     >
-      <Sidebar class="h-full" />
+      <Sidebar
+        class="h-full overflow-hidden transition-[border-radius] duration-300 ease-out-expo"
+        :class="collapsed ? 'rounded-2xl shadow-[var(--shadow-neo-sidebar)]' : 'rounded-none'"
+        :collapsed="collapsed"
+        @update:collapsed="collapsed = $event"
+      />
     </div>
 
     <div
-      v-if="!collapsed"
-      class="hidden md:block lg:hidden md:shrink-0 md:sticky md:top-0 md:h-screen md:relative md:z-[1]"
-      :style="{ width: 'var(--sidebar-collapsed-width)' }"
+      v-if="collapsed"
+      class="hidden md:block lg:hidden md:shrink-0 md:sticky md:top-0 md:h-screen md:z-[1] p-3 transition-[width] duration-300 ease-out-expo"
+      :style="{ width: 'calc(var(--sidebar-collapsed-width) + 1.5rem)' }"
     >
-      <Sidebar class="h-full" collapsed />
+      <Sidebar
+        class="h-full rounded-2xl overflow-hidden shadow-[var(--shadow-neo-sidebar)]"
+        collapsed
+        @update:collapsed="collapsed = $event"
+      />
     </div>
 
     <Teleport to="body">
@@ -84,7 +96,7 @@ const sidebarWidth = collapsed.value ? 'var(--sidebar-collapsed-width)' : 'var(-
           class="fixed inset-y-0 left-0 z-[var(--z-overlay)] w-[var(--sidebar-width)] md:hidden"
         >
           <div class="relative flex h-full">
-            <Sidebar class="h-full" />
+            <Sidebar class="h-full" @update:collapsed="collapsed = $event" />
             <button
               type="button"
               class="absolute top-3 right-3 flex size-8 items-center justify-center rounded-xl text-white/70 transition-colors hover:bg-white/10 hover:text-white"
@@ -98,7 +110,7 @@ const sidebarWidth = collapsed.value ? 'var(--sidebar-collapsed-width)' : 'var(-
       </Transition>
     </Teleport>
 
-    <main :id="mainId" class="flex-1 bg-[var(--surface-page)] relative z-0" tabindex="-1">
+    <main :id="mainId" class="flex-1 bg-[var(--surface-page)] relative z-0 min-w-0" tabindex="-1">
       <div
         class="mx-auto px-4 py-6 sm:px-6 lg:px-8"
         :style="{ maxWidth: 'var(--content-max-width)' }"
