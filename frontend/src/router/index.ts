@@ -139,7 +139,7 @@ const router = createRouter({
         {
           path: '',
           name: '404',
-          component: () => import('@/features/auth/pages/LoginPage.vue'),
+          component: () => import('@/features/error/pages/NotFound.vue'),
         },
       ],
     },

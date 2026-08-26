@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { AlertCircle } from '@lucide/vue'
 import { resetPassword, fetchCsrfCookie } from '@/features/auth/api'
+import { extractProblemDetail } from '@/api/client/problem-detail'
+import BackButton from '@/components/ui/BackButton.vue'
 import Button from '@/components/ui/Button.vue'
 import FormField from '@/components/ui/FormField.vue'
 import Input from '@/components/ui/Input.vue'
@@ -16,21 +19,33 @@ const form = ref({
   password_confirmation: '',
 })
 const errors = ref<Record<string, string[]>>({})
+const serverError = ref('')
 const submitting = ref(false)
 
 async function handleSubmit(): Promise<void> {
   errors.value = {}
+  serverError.value = ''
   submitting.value = true
   try {
     await fetchCsrfCookie()
     await resetPassword(form.value)
     await router.push({ name: 'login', query: { reset: 'success' } })
   } catch (e: unknown) {
-    if (e && typeof e === 'object' && 'response' in e) {
+    const detail = extractProblemDetail(e as never)
+    if (detail?.errors && typeof detail.errors === 'object') {
+      errors.value = detail.errors as Record<string, string[]>
+    } else if (detail) {
+      serverError.value =
+        detail.status >= 500 ? 'An unexpected error occurred. Please try again.' : detail.detail
+    } else if (e && typeof e === 'object' && 'response' in e) {
       const error = e as { response?: { data?: { errors?: Record<string, string[]> } } }
       if (error.response?.data?.errors) {
         errors.value = error.response.data.errors
+      } else {
+        serverError.value = 'An unexpected error occurred. Please try again.'
       }
+    } else {
+      serverError.value = 'An unexpected error occurred. Please try again.'
     }
   } finally {
     submitting.value = false
@@ -40,6 +55,8 @@ async function handleSubmit(): Promise<void> {
 
 <template>
   <form @submit.prevent="handleSubmit" class="space-y-5">
+    <BackButton :to="{ name: 'login' }" label="Back to sign in" class="mb-4" />
+
     <div class="text-center">
       <h1 class="text-[var(--text-xl)] font-semibold tracking-tight text-[var(--text-primary)]">
         Set new password
@@ -51,6 +68,16 @@ async function handleSubmit(): Promise<void> {
 
     <input type="hidden" name="email" :value="form.email" />
     <input type="hidden" name="token" :value="form.token" />
+
+    <div
+      v-if="serverError"
+      class="flex items-center gap-2 rounded-[var(--radius-xl)] bg-[var(--color-error-50)] px-4 py-3 text-[var(--text-base)] text-[var(--color-error-700)]"
+      style="box-shadow: var(--shadow-neo-inset)"
+      role="alert"
+    >
+      <AlertCircle class="size-4 shrink-0 text-[var(--color-error-500)]" aria-hidden="true" />
+      {{ serverError }}
+    </div>
 
     <FormField label="New password" :error="errors.password?.[0]" required>
       <Input
@@ -75,14 +102,5 @@ async function handleSubmit(): Promise<void> {
     <Button type="submit" :loading="submitting" :disabled="submitting" class="w-full">
       Reset password
     </Button>
-
-    <p class="text-center text-[var(--text-base)] text-[var(--text-secondary)]">
-      <RouterLink
-        :to="{ name: 'login' }"
-        class="font-medium text-[var(--color-primary-600)] hover:text-[var(--color-primary-700)]"
-      >
-        Back to sign in
-      </RouterLink>
-    </p>
   </form>
 </template>

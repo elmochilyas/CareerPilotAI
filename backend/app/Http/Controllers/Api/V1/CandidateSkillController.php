@@ -28,9 +28,12 @@ use App\Http\Requests\Api\V1\UpdateEvidenceRequest;
 use App\Http\Resources\Api\V1\CandidateSkillCollection;
 use App\Http\Resources\Api\V1\CandidateSkillResource;
 use App\Models\CandidateProfile;
+use App\Models\CandidateSkill;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 
 class CandidateSkillController
@@ -50,6 +53,8 @@ class CandidateSkillController
 
     public function index(ListCandidateSkillsRequest $request): CandidateSkillCollection
     {
+        Gate::authorize('viewAny', CandidateSkill::class);
+
         $profile = $request->user()->candidateProfile()->first();
 
         if ($profile === null) {
@@ -65,6 +70,8 @@ class CandidateSkillController
 
     public function store(StoreCandidateSkillRequest $request): CandidateSkillResource
     {
+        Gate::authorize('create', CandidateSkill::class);
+
         $profile = $this->getProfile($request);
 
         $data = new CandidateSkillData(
@@ -85,6 +92,9 @@ class CandidateSkillController
     public function show(Request $request, int $id): CandidateSkillResource
     {
         $profile = $this->getProfile($request);
+        $skill = $this->resolveOwnedSkill($profile, $id);
+        Gate::authorize('view', $skill);
+
         $skill = $this->showAction->execute($profile, $id);
 
         return new CandidateSkillResource($skill);
@@ -93,6 +103,8 @@ class CandidateSkillController
     public function update(UpdateCandidateSkillRequest $request, int $id): CandidateSkillResource
     {
         $profile = $this->getProfile($request);
+        $skill = $this->resolveOwnedSkill($profile, $id);
+        Gate::authorize('update', $skill);
 
         $skill = $this->updateAction->execute(
             profile: $profile,
@@ -110,6 +122,9 @@ class CandidateSkillController
     public function archive(ArchiveCandidateSkillRequest $request, int $id): CandidateSkillResource
     {
         $profile = $this->getProfile($request);
+        $skill = $this->resolveOwnedSkill($profile, $id);
+        Gate::authorize('archive', $skill);
+
         $skill = $this->archiveAction->execute($profile, $id, $request->validated('updated_at'));
 
         return new CandidateSkillResource($skill);
@@ -118,6 +133,9 @@ class CandidateSkillController
     public function restore(RestoreCandidateSkillRequest $request, int $id): CandidateSkillResource
     {
         $profile = $this->getProfile($request);
+        $skill = $this->resolveOwnedSkill($profile, $id);
+        Gate::authorize('restore', $skill);
+
         $targetState = SkillState::from($request->validated('state'));
 
         $skill = $this->restoreAction->execute($profile, $id, $targetState, $request->validated('updated_at'));
@@ -128,6 +146,9 @@ class CandidateSkillController
     public function destroy(DeleteCandidateSkillRequest $request, int $id): JsonResponse
     {
         $profile = $this->getProfile($request);
+        $skill = $this->resolveOwnedSkill($profile, $id);
+        Gate::authorize('delete', $skill);
+
         $this->deleteAction->execute($profile, $id);
 
         return response()->json(null, 204);
@@ -136,6 +157,8 @@ class CandidateSkillController
     public function storeEvidence(StoreEvidenceRequest $request, int $id): CandidateSkillResource
     {
         $profile = $this->getProfile($request);
+        $skill = $this->resolveOwnedSkill($profile, $id);
+        Gate::authorize('addEvidence', $skill);
 
         $evidenceData = new EvidenceData(
             type: $request->validated('type'),
@@ -156,6 +179,9 @@ class CandidateSkillController
     public function updateEvidence(UpdateEvidenceRequest $request, int $id, string $evidenceKey): CandidateSkillResource
     {
         $profile = $this->getProfile($request);
+        $skill = $this->resolveOwnedSkill($profile, $id);
+        Gate::authorize('updateEvidence', $skill);
+
         $skill = $this->updateEvidenceAction->execute(
             $profile,
             $id,
@@ -170,6 +196,9 @@ class CandidateSkillController
     public function destroyEvidence(DeleteEvidenceRequest $request, int $id, string $evidenceKey): CandidateSkillResource
     {
         $profile = $this->getProfile($request);
+        $skill = $this->resolveOwnedSkill($profile, $id);
+        Gate::authorize('removeEvidence', $skill);
+
         $skill = $this->removeEvidenceAction->execute(
             $profile,
             $id,
@@ -178,6 +207,24 @@ class CandidateSkillController
         );
 
         return new CandidateSkillResource($skill);
+    }
+
+    /**
+     * Resolve the skill scoped to the owning profile. A foreign id is
+     * indistinguishable from a missing one (404), and the policy check that
+     * follows guards against future call sites bypassing this scoping.
+     */
+    private function resolveOwnedSkill(CandidateProfile $profile, int $id): CandidateSkill
+    {
+        $skill = CandidateSkill::query()
+            ->where('candidate_profile_id', $profile->id)
+            ->find($id);
+
+        if ($skill === null) {
+            throw (new ModelNotFoundException)->setModel(CandidateSkill::class, [$id]);
+        }
+
+        return $skill;
     }
 
     private function getProfile(Request $request): CandidateProfile

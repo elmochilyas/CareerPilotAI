@@ -9,6 +9,9 @@ use App\Domain\Clarification\Policies\ClarificationProposalPolicy;
 use App\Domain\Clarification\Policies\ClarificationQuestionPolicy;
 use App\Domain\Clarification\Services\Contracts\ClarificationAssistant;
 use App\Domain\Clarification\Services\OpenAiClarificationAssistant;
+use App\Domain\CompanyResearch\Services\Contracts\CompanyResearchAnalyzer;
+use App\Domain\CompanyResearch\Services\FakeCompanyResearchAnalyzer;
+use App\Domain\CompanyResearch\Services\OpenAiCompanyResearchAnalyzer;
 use App\Domain\CvIngestion\Policies\CvDocumentPolicy;
 use App\Domain\CvIngestion\Policies\CvImportBatchPolicy;
 use App\Domain\CvIngestion\Policies\CvSuggestionPolicy;
@@ -24,6 +27,8 @@ use App\Domain\Opportunities\Services\Contracts\JobAnalyzer;
 use App\Domain\Opportunities\Services\OpenAiJobAnalyzer;
 use App\Domain\Profile\Policies\ProfileItemPolicy;
 use App\Domain\Resumes\Policies\ResumePolicy;
+use App\Domain\Skills\Policies\CandidateSkillPolicy;
+use App\Models\CandidateSkill;
 use App\Models\ClarificationAnswer;
 use App\Models\ClarificationProposal;
 use App\Models\ClarificationQuestion;
@@ -53,11 +58,20 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(JobAnalyzer::class, OpenAiJobAnalyzer::class);
         $this->app->bind(RequirementClassifier::class, OpenAiRequirementClassifier::class);
         $this->app->bind(ClarificationAssistant::class, OpenAiClarificationAssistant::class);
+
+        $this->app->bind(CompanyResearchAnalyzer::class, function ($app) {
+            if ($app->environment('testing')) {
+                return $app->make(FakeCompanyResearchAnalyzer::class);
+            }
+
+            return $app->make(OpenAiCompanyResearchAnalyzer::class);
+        });
     }
 
     public function boot(): void
     {
         Gate::policy(ProfileItem::class, ProfileItemPolicy::class);
+        Gate::policy(CandidateSkill::class, CandidateSkillPolicy::class);
         Gate::policy(CvDocument::class, CvDocumentPolicy::class);
         Gate::policy(CvSuggestion::class, CvSuggestionPolicy::class);
         Gate::policy(CvImportBatch::class, CvImportBatchPolicy::class);
@@ -93,6 +107,10 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('matching-recalculate', fn (Request $request): Limit => $this->matchingLimit($request, 'recalculate_rate_limit'));
         RateLimiter::for('clarification-write', fn (Request $request): Limit => $this->clarificationWriteLimit($request));
         RateLimiter::for('clarification-generate', fn (Request $request): Limit => $this->clarificationGenerateLimit($request));
+
+        RateLimiter::for('company-research-create', fn (Request $request): Limit => Limit::perHour(10)->by($this->rateLimitKey($request)));
+        RateLimiter::for('company-research-refresh', fn (Request $request): Limit => Limit::perHour(10)->by($this->rateLimitKey($request)));
+        RateLimiter::for('company-research-read', fn (Request $request): Limit => Limit::perMinute(60)->by($this->rateLimitKey($request)));
 
         Route::bind('cvDocument', function (string $value): CvDocument {
             $userId = request()->user()?->id;

@@ -74,13 +74,10 @@ class AuthController extends Controller
         ForgotPasswordRequest $request,
         SendPasswordResetLinkAction $action,
     ): JsonResponse {
-        $status = $action->execute($request->input('email'));
+        $action->execute($request->input('email'));
 
-        if ($status === Password::RESET_LINK_SENT) {
-            return response()->json(['message' => __($status)], 202);
-        }
-
-        return response()->json(['message' => __($status)], 202);
+        // Anti-enumeration: the response never reveals whether the account exists.
+        return response()->json(['message' => __('We have emailed your password reset link.')], 202);
     }
 
     public function resetPassword(

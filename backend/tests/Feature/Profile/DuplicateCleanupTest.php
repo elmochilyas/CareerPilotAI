@@ -405,3 +405,134 @@ it('exposes duplicates via API and respects ownership', function () {
     $response2->assertStatus(200);
     expect($response2->json('data.groups'))->toHaveCount(0);
 });
+
+it('rejects malformed merge payload via API validation', function () {
+    $response = $this->actingAs($this->user)->postJson('/api/v1/profile/cleanup/items', []);
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['keep_id', 'duplicate_ids']);
+    expect($response->json('code'))->toBe('validation_error');
+    expect($response->json('request_id'))->toBeString();
+
+    $response2 = $this->actingAs($this->user)->postJson('/api/v1/profile/cleanup/items', [
+        'keep_id' => 999999,
+        'duplicate_ids' => [],
+    ]);
+    $response2->assertStatus(422);
+    expect($response2->json('code'))->toBe('validation_error');
+});
+
+it('rejects duplicate values inside duplicate_ids', function () {
+    $keep = ProfileItem::factory()->experience()->create([
+        'candidate_profile_id' => $this->profile->id,
+        'title' => 'Backend',
+        'organization' => 'Acme',
+        'display_order' => 0,
+    ]);
+    $dup = ProfileItem::factory()->experience()->create([
+        'candidate_profile_id' => $this->profile->id,
+        'title' => ' backend ',
+        'organization' => ' acme ',
+        'display_order' => 1,
+    ]);
+
+    $response = $this->actingAs($this->user)->postJson('/api/v1/profile/cleanup/items', [
+        'keep_id' => $keep->id,
+        'duplicate_ids' => [$dup->id, $dup->id],
+    ]);
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['duplicate_ids.1']);
+    expect($response->json('code'))->toBe('validation_error');
+
+    $skill = Skill::factory()->create(['name' => 'JS', 'normalized_name' => 'js']);
+    $keepSkill = CandidateSkill::factory()->create([
+        'candidate_profile_id' => $this->profile->id,
+        'skill_id' => $skill->id,
+    ]);
+    $dupSkill = CandidateSkill::factory()->create([
+        'candidate_profile_id' => $this->profile->id,
+        'skill_id' => null,
+        'custom_skill_name' => 'JS',
+    ]);
+
+    $response2 = $this->actingAs($this->user)->postJson('/api/v1/profile/cleanup/skills', [
+        'keep_id' => $keepSkill->id,
+        'duplicate_ids' => [$dupSkill->id, $dupSkill->id],
+    ]);
+    $response2->assertStatus(422);
+});
+
+it('rejects keep_id included in duplicate_ids at request validation', function () {
+    $keep = ProfileItem::factory()->experience()->create([
+        'candidate_profile_id' => $this->profile->id,
+        'title' => 'Backend',
+        'organization' => 'Acme',
+        'display_order' => 0,
+    ]);
+
+    $response = $this->actingAs($this->user)->postJson('/api/v1/profile/cleanup/items', [
+        'keep_id' => $keep->id,
+        'duplicate_ids' => [$keep->id],
+    ]);
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['keep_id']);
+    expect($response->json('code'))->toBe('validation_error');
+    expect($response->json('request_id'))->toBeString();
+});
+
+it('rejects non-boolean allow_possible', function () {
+    $keep = ProfileItem::factory()->experience()->create([
+        'candidate_profile_id' => $this->profile->id,
+        'title' => 'Backend',
+        'organization' => 'Acme',
+        'display_order' => 0,
+    ]);
+    $dup = ProfileItem::factory()->experience()->create([
+        'candidate_profile_id' => $this->profile->id,
+        'title' => ' backend ',
+        'organization' => ' acme ',
+        'display_order' => 1,
+    ]);
+
+    $response = $this->actingAs($this->user)->postJson('/api/v1/profile/cleanup/items', [
+        'keep_id' => $keep->id,
+        'duplicate_ids' => [$dup->id],
+        'allow_possible' => 'not-a-boolean',
+    ]);
+    $response->assertStatus(422);
+    $response->assertJsonValidationErrors(['allow_possible']);
+});
+
+it('rejects client-supplied profile ownership field', function () {
+    $keep = ProfileItem::factory()->experience()->create([
+        'candidate_profile_id' => $this->profile->id,
+        'title' => 'Backend',
+        'organization' => 'Acme',
+        'display_order' => 0,
+    ]);
+    $dup = ProfileItem::factory()->experience()->create([
+        'candidate_profile_id' => $this->profile->id,
+        'title' => ' backend ',
+        'organization' => ' acme ',
+        'display_order' => 1,
+    ]);
+
+    $response = $this->actingAs($this->user)->postJson('/api/v1/profile/cleanup/items', [
+        'keep_id' => $keep->id,
+        'duplicate_ids' => [$dup->id],
+        'candidate_profile_id' => 9999,
+    ]);
+    $response->assertStatus(422);
+    expect($response->json('code'))->toBe('validation_error');
+});
+
+it('returns rfc9457 shape with request_id on validation failures', function () {
+    $response = $this->actingAs($this->user)->postJson('/api/v1/profile/cleanup/skills', [
+        'keep_id' => 'not-an-int',
+        'duplicate_ids' => 'not-an-array',
+    ]);
+    $response->assertStatus(422);
+    $response->assertJsonStructure(['type', 'title', 'status', 'detail', 'code', 'errors', 'request_id']);
+    expect($response->json('code'))->toBe('validation_error');
+    expect($response->json('status'))->toBe(422);
+    expect($response->json('request_id'))->toBeString();
+});

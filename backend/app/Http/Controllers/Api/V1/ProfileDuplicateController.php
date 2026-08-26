@@ -7,6 +7,9 @@ use App\Domain\Profile\Actions\MergeCandidateSkillsAction;
 use App\Domain\Profile\Actions\MergeProfileItemsAction;
 use App\Domain\Profile\Services\ProfileDuplicateDetector;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Profile\CleanupItemsRequest;
+use App\Http\Requests\Api\V1\Profile\CleanupLanguagesRequest;
+use App\Http\Requests\Api\V1\Profile\CleanupSkillsRequest;
 use App\Models\CandidateProfile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -26,14 +29,9 @@ class ProfileDuplicateController extends Controller
         return response()->json(['data' => $report]);
     }
 
-    public function cleanupItems(Request $request, MergeProfileItemsAction $action): JsonResponse
+    public function cleanupItems(CleanupItemsRequest $request, MergeProfileItemsAction $action): JsonResponse
     {
-        $validated = $request->validate([
-            'keep_id' => ['required', 'integer', 'exists:profile_items,id'],
-            'duplicate_ids' => ['required', 'array', 'min:1'],
-            'duplicate_ids.*' => ['integer', 'exists:profile_items,id'],
-            'allow_possible' => ['sometimes', 'boolean'],
-        ]);
+        $validated = $request->validated();
 
         $profile = CandidateProfile::where('user_id', $request->user()->id)->firstOrFail();
 
@@ -42,13 +40,9 @@ class ProfileDuplicateController extends Controller
         return response()->json(['data' => $result]);
     }
 
-    public function cleanupSkills(Request $request, MergeCandidateSkillsAction $action): JsonResponse
+    public function cleanupSkills(CleanupSkillsRequest $request, MergeCandidateSkillsAction $action): JsonResponse
     {
-        $validated = $request->validate([
-            'keep_id' => ['required', 'integer', 'exists:candidate_skills,id'],
-            'duplicate_ids' => ['required', 'array', 'min:1'],
-            'duplicate_ids.*' => ['integer', 'exists:candidate_skills,id'],
-        ]);
+        $validated = $request->validated();
 
         $profile = CandidateProfile::where('user_id', $request->user()->id)->firstOrFail();
 
@@ -57,13 +51,9 @@ class ProfileDuplicateController extends Controller
         return response()->json(['data' => $result]);
     }
 
-    public function cleanupLanguages(Request $request, DeduplicateLanguagesAction $action): JsonResponse
+    public function cleanupLanguages(CleanupLanguagesRequest $request, DeduplicateLanguagesAction $action): JsonResponse
     {
-        $validated = $request->validate([
-            'keep_language' => ['sometimes', 'string', 'max:50'],
-            'duplicate_languages' => ['sometimes', 'array'],
-            'duplicate_languages.*' => ['string'],
-        ]);
+        $validated = $request->validated();
 
         $profile = CandidateProfile::where('user_id', $request->user()->id)->firstOrFail();
 
