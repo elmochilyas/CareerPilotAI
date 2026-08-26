@@ -2,6 +2,7 @@
 
 namespace App\Domain\Opportunities\Actions;
 
+use App\Domain\CompanyResearch\Services\CompanyResolver;
 use App\Domain\Opportunities\Enums\JobIngestionStatus;
 use App\Domain\Opportunities\Services\JobIngestionStateService;
 use App\Exceptions\Api\ConflictException;
@@ -12,12 +13,14 @@ use App\Models\JobOpportunitySkill;
 use App\Models\JobRequirement;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ConfirmOpportunityAction
 {
     public function __construct(
         private JobIngestionStateService $stateService,
         private GeneratePreviewAction $previewAction,
+        private CompanyResolver $companyResolver,
     ) {}
 
     public function execute(JobOpportunityIngestion $ingestion, string $versionToken): JobOpportunity
@@ -63,8 +66,28 @@ class ConfirmOpportunityAction
                 ->firstOrCreate([], ['profile_completion' => 0]);
             $previewData = $preview['data'];
 
+            $companyId = null;
+
+            try {
+                $overview = $this->section($previewData, 'overview');
+                $companyName = $this->nullableString($overview['company'] ?? null);
+                $applicationUrl = $this->nullableString($overview['application_url'] ?? null);
+                $website = $applicationUrl !== null ? $this->extractDomain($applicationUrl) : null;
+
+                if ($companyName !== null || $website !== null) {
+                    $company = $this->companyResolver->resolveOrCreate($companyName, $website);
+
+                    $companyId = $company?->getKey();
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Company resolution failed during confirmation', [
+                    'ingestion_id' => $lockedIngestion->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             $opportunity = JobOpportunity::query()->create(
-                $this->buildOpportunityData($lockedIngestion, $previewData, $candidateProfile)
+                $this->buildOpportunityData($lockedIngestion, $previewData, $candidateProfile, $companyId)
             );
 
             $this->createRequirements($opportunity, $previewData);
@@ -87,6 +110,7 @@ class ConfirmOpportunityAction
         JobOpportunityIngestion $ingestion,
         array $previewData,
         CandidateProfile $profile,
+        ?int $companyId = null,
     ): array {
         $overview = $this->section($previewData, 'overview');
         $workDetails = $this->section($previewData, 'work_details');
@@ -96,6 +120,7 @@ class ConfirmOpportunityAction
         return [
             'candidate_profile_id' => $profile->id,
             'ingestion_id' => $ingestion->id,
+            'company_id' => $companyId,
             'title' => $this->stringValue($overview, 'title') ?? 'Untitled Position',
             'company_name' => $this->stringValue($overview, 'company'),
             'department' => $this->stringValue($overview, 'department'),
@@ -335,5 +360,16 @@ class ConfirmOpportunityAction
         }
 
         return $required ? 'required' : 'preferred';
+    }
+
+    private function extractDomain(?string $url): ?string
+    {
+        if ($url === null || trim($url) === '') {
+            return null;
+        }
+
+        $host = parse_url(trim($url), PHP_URL_HOST);
+
+        return is_string($host) && $host !== '' ? $host : trim($url);
     }
 }
