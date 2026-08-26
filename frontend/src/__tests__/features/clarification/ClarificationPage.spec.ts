@@ -329,26 +329,44 @@ describe('ClarificationPage with Vue Query', () => {
     expect(page.text()).toContain('Nothing to clarify')
   })
 
-  it('navigates back to the opportunity detail', async () => {
-    const page = await mountPage()
+  it('navigates back via router.back when history exists', async () => {
+    const lengthSpy = vi.spyOn(window.history as unknown as { length: number }, 'length', 'get').mockReturnValue(2)
 
-    await page
-      .findAll('button')
-      .find((button) => button.text().includes('Back to opportunity'))!
-      .trigger('click')
-    await flushPromises()
+    try {
+      const page = await mountPage()
 
-    // goBackToOpportunity uses router.back() when history.length >1 else router.replace
-    const wasCalled =
-      mocks.back.mock.calls.length > 0 ||
-      mocks.replace.mock.calls.length > 0 ||
-      mocks.push.mock.calls.length > 0
-    expect(wasCalled).toBe(true)
-    if (mocks.replace.mock.calls.length > 0) {
+      await page
+        .findAll('button')
+        .find((button) => button.text().includes('Back to opportunity'))!
+        .trigger('click')
+      await flushPromises()
+
+      expect(mocks.back).toHaveBeenCalledOnce()
+      expect(mocks.replace).not.toHaveBeenCalled()
+    } finally {
+      lengthSpy.mockRestore()
+    }
+  })
+
+  it('falls back to router.replace when no history', async () => {
+    const lengthSpy = vi.spyOn(window.history as unknown as { length: number }, 'length', 'get').mockReturnValue(1)
+
+    try {
+      const page = await mountPage()
+
+      await page
+        .findAll('button')
+        .find((button) => button.text().includes('Back to opportunity'))!
+        .trigger('click')
+      await flushPromises()
+
+      expect(mocks.back).not.toHaveBeenCalled()
       expect(mocks.replace).toHaveBeenCalledWith({
         name: 'opportunities-detail',
         params: { id: 5 },
       })
+    } finally {
+      lengthSpy.mockRestore()
     }
   })
 })
